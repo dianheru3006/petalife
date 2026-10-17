@@ -86,23 +86,118 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
   };
 
-  // Quick Link Capture State
+  // Quick Link Capture State & Modal Sheet State
   const [quickUrl, setQuickUrl] = useState('');
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
   const [isSavingLink, setIsSavingLink] = useState(false);
   const [isLinkSheetOpen, setIsLinkSheetOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
-  const linkInputRef = useRef<HTMLInputElement>(null);
 
+  // Accessible Modal Focus Trap & Restoration Refs
+  const linkInputRef = useRef<HTMLInputElement>(null);
+  const linkModalRef = useRef<HTMLDivElement>(null);
+  const linkSheetTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const wardrobeModalRef = useRef<HTMLDivElement>(null);
+  const wardrobeCloseBtnRef = useRef<HTMLButtonElement>(null);
+  const wardrobeTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // Focus trap, Escape key, and focus restoration for Quick Link Capture Modal
   useEffect(() => {
-    if (isLinkSheetOpen) {
-      const focusTimer = setTimeout(() => {
-        linkInputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(focusTimer);
-    }
+    if (!isLinkSheetOpen) return;
+
+    const focusTimer = setTimeout(() => {
+      linkInputRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsLinkSheetOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const modal = linkModalRef.current;
+        if (!modal) return;
+        const focusable = modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !modal.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !modal.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleKeyDown);
+      linkSheetTriggerRef.current?.focus();
+    };
   }, [isLinkSheetOpen]);
+
+  // Focus trap, Escape key, and focus restoration for Wardrobe Modal
+  useEffect(() => {
+    if (!isWardrobeOpen) return;
+
+    const focusTimer = setTimeout(() => {
+      wardrobeCloseBtnRef.current?.focus();
+    }, 50);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsWardrobeOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const modal = wardrobeModalRef.current;
+        if (!modal) return;
+        const focusable = modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !modal.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !modal.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleKeyDown);
+      wardrobeTriggerRef.current?.focus();
+    };
+  }, [isWardrobeOpen]);
 
   // Live Date & Indonesian Greeting
   const [greeting, setGreeting] = useState<string>('Selamat malam');
@@ -470,6 +565,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         <div className="absolute top-3.5 right-3 z-30 flex flex-col gap-2 select-none">
           {/* Quick Capture Sheet Trigger (Primary Learning Action visible immediately on 360x640px) */}
           <button
+            ref={linkSheetTriggerRef}
             type="button"
             onClick={() => setIsLinkSheetOpen(true)}
             className="w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
@@ -503,6 +599,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
           {/* Wardrobe Modal Sheet Trigger */}
           <button
+            ref={wardrobeTriggerRef}
             type="button"
             onClick={() => setIsWardrobeOpen(true)}
             className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
@@ -698,7 +795,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             if (e.target === e.currentTarget) setIsLinkSheetOpen(false);
           }}
         >
-          <div className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
+          <div ref={linkModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
               <div className="flex items-center gap-2">
@@ -779,7 +876,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   className="flex-1 h-12 bg-[#BA5218] hover:bg-[#A34310] disabled:opacity-50 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
                 >
                   <BookmarkPlus className="w-4 h-4" />
-                  <span>{isSavingLink ? 'Menyimpan...' : 'Simpan ke Vault (+10 XP)'}</span>
+                  <span>{isSavingLink ? 'Menyimpan...' : 'Simpan ke Vault'}</span>
                 </button>
               </div>
             </form>
@@ -798,7 +895,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             if (e.target === e.currentTarget) setIsWardrobeOpen(false);
           }}
         >
-          <div className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
+          <div ref={wardrobeModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
               <div className="flex items-center gap-2">
@@ -815,6 +912,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 </div>
               </div>
               <button
+                ref={wardrobeCloseBtnRef}
                 type="button"
                 onClick={() => setIsWardrobeOpen(false)}
                 className="w-11 h-11 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#E57399]"
