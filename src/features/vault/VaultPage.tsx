@@ -106,7 +106,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       createdAt: now,
       updatedAt: now,
       notes: customNotes.trim() || 'Added from quick capture.',
-      summary: 'Ready for study and daily quiz recall.'
+      summary: 'Ready for study and personal reflection.'
     };
 
     onAddLink(newLink);
@@ -173,7 +173,7 @@ export const VaultPage: FC<VaultPageProps> = ({
               <span>Capture & Study Material Vault</span>
             </h3>
             <p className="text-xs sm:text-sm text-[#828292]">
-              Save links from YouTube, TikTok, Reels, or blogs to feed into daily recall quizzes.
+              Save links from YouTube, TikTok, Reels, or blogs to build your visual learning vault.
             </p>
           </div>
           <Button

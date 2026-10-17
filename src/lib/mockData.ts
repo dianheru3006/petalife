@@ -153,6 +153,6 @@ export const initialChatMessages: ChatMessage[] = [
 export const initialDailyGoals: DailyGoal[] = [
   { id: 'goal-1', label: 'Save 1 learning link today', isCompleted: true, xpReward: 20 },
   { id: 'goal-2', label: 'Feed Mochi his morning snack', isCompleted: true, xpReward: 15 },
-  { id: 'goal-3', label: 'Complete 1 daily quiz review', isCompleted: false, xpReward: 35 },
+  { id: 'goal-3', label: 'Review 1 saved video in Vault', isCompleted: false, xpReward: 25 },
   { id: 'goal-4', label: 'Jot down 1 reflection note', isCompleted: false, xpReward: 20 },
 ];

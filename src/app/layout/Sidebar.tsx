@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import type { NavigationTab } from '../../lib/types';
-import { Home, Bookmark, HelpCircle, FileText, Bot, Heart } from 'lucide-react';
+import { Home, Bookmark, FileText, Bot, Heart } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface SidebarProps {
@@ -20,7 +20,6 @@ export const Sidebar: FC<SidebarProps> = ({ currentTab, onSelectTab, petLevel })
   const navItems: NavItem[] = [
     { id: 'home', label: 'Pet Room', icon: <Home className="w-5 h-5" /> },
     { id: 'vault', label: 'Content Vault', icon: <Bookmark className="w-5 h-5" />, badge: '4' },
-    { id: 'quiz', label: 'Daily Quiz', icon: <HelpCircle className="w-5 h-5" />, badge: 'New' },
     { id: 'notes', label: 'Notes', icon: <FileText className="w-5 h-5" /> },
     { id: 'assistant', label: 'AI Assistant', icon: <Bot className="w-5 h-5" /> },
   ];

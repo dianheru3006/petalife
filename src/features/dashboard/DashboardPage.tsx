@@ -82,10 +82,10 @@ export const DashboardPage: FC<DashboardPageProps> = ({
           <div className="mt-4 pt-3 border-t border-[#F2ECE1] text-[11px] text-[#828292] flex items-center justify-between">
             <span>Resets daily at 00:00</span>
             <button
-              onClick={() => onNavigate('quiz')}
+              onClick={() => onNavigate('vault')}
               className="text-[#D97736] font-bold hover:underline cursor-pointer flex items-center gap-1"
             >
-              <span>Take Quiz</span>
+              <span>Explore Vault</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>

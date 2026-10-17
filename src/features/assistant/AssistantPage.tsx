@@ -23,7 +23,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
     'Summarize my vault 📚',
     'What recipes do I have saved? 🍳',
     'Explain Clean Architecture from my notes 💻',
-    'Quiz me on my notes 🎯',
+    'What should I review next? 📖',
   ];
 
   const handleSend = (textToSend?: string) => {

@@ -57,10 +57,10 @@
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Daily Quiz",
-      "short_name": "Quiz",
-      "description": "Active recall challenges for Mochi XP",
-      "url": "/#quiz",
+      "name": "Personal Notes",
+      "short_name": "Notes",
+      "description": "Jot down takeaways and recipes",
+      "url": "/#notes",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]

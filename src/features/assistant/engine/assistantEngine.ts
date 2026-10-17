@@ -34,13 +34,13 @@ export function processAssistantMessage(
     query.includes('level')
   ) {
     const hungerStatus = pet.hunger >= 90 ? 'super full and energetic' : pet.hunger < 30 ? 'getting hungry' : 'feeling cozy';
-    const reply = `🐾 **Mochi's Current Status (Level ${pet.level})**:\n\n• **Hunger:** ${pet.hunger}% (${hungerStatus})\n• **Mood:** ${pet.mood}% (Joyful & Cozy)\n• **Energy:** ${pet.energy}%\n• **Growth XP:** ${pet.exp} / ${pet.expToNextLevel} XP\n• **Learning Streak:** ${pet.streakDays} consecutive days! 🔥\n\nKeep reviewing materials or taking daily quizzes to help Mochi level up!`;
+    const reply = `🐾 **Mochi's Current Status (Level ${pet.level})**:\n\n• **Hunger:** ${pet.hunger}% (${hungerStatus})\n• **Mood:** ${pet.mood}% (Joyful & Cozy)\n• **Energy:** ${pet.energy}%\n• **Growth XP:** ${pet.exp} / ${pet.expToNextLevel} XP\n• **Learning Streak:** ${pet.streakDays} consecutive days! 🔥\n\nKeep reviewing materials in your Vault and writing reflection notes to help Mochi level up!`;
 
     return {
       replyText: reply,
       suggestedAction: {
-        label: pet.hunger < 100 ? 'Feed Mochi on Home' : 'Solve Quiz for +35 XP',
-        targetTab: pet.hunger < 100 ? 'home' : 'quiz',
+        label: pet.hunger < 100 ? 'Feed Mochi on Home' : 'Explore Content Vault',
+        targetTab: pet.hunger < 100 ? 'home' : 'vault',
       },
     };
   }
@@ -78,20 +78,7 @@ export function processAssistantMessage(
     };
   }
 
-  // 3. Quiz / Active Recall Request
-  if (
-    query.includes('quiz') ||
-    query.includes('practice') ||
-    query.includes('test me') ||
-    query.includes('active recall')
-  ) {
-    return {
-      replyText: `🎯 **Active Recall Challenge Ready!**\n\nI have generated personalized practice questions from your saved reflection notes and video takeaways. Solving questions feeds Mochi with +35 XP!`,
-      suggestedAction: { label: 'Start Daily Quiz', targetTab: 'quiz' },
-    };
-  }
-
-  // 4. Content Search in Notes & Vault
+  // 3. Content Search in Notes & Vault
   // Extract keywords
   const matchedNotes = notes.filter(n =>
     n.title.toLowerCase().includes(query) ||
@@ -151,7 +138,7 @@ export function processAssistantMessage(
 
   // 7. General Knowledge / Friendly Companion Fallback
   return {
-    replyText: `✨ **Mochi Assistant**: I looked through your ${links.length} saved links and ${notes.length} notes, but couldn't find an exact match for "${userQuery}".\n\nTry asking me:\n• *"Summarize my vault"*\n• *"How is Mochi doing?"*\n• *"What recipes do I have?"*\n• *"Quiz me on my notes"*`,
+    replyText: `✨ **Mochi Assistant**: I looked through your ${links.length} saved links and ${notes.length} notes, but couldn't find an exact match for "${userQuery}".\n\nTry asking me:\n• *"Summarize my vault"*\n• *"How is Mochi doing?"*\n• *"What recipes do I have?"*\n• *"What should I review next?"*`,
     suggestedAction: { label: 'Explore Content Vault', targetTab: 'vault' },
   };
 }

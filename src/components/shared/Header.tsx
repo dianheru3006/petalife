@@ -28,9 +28,8 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet }) => {
   const titles: Record<NavigationTab, { title: string; subtitle: string }> = {
     home: { title: 'Good morning, Dian! ☀️', subtitle: 'Mochi is energized and waiting for new lessons.' },
     vault: { title: 'Content Vault 📚', subtitle: 'Shorts, Reels, and articles saved for your growth.' },
-    quiz: { title: 'Daily Quiz Review 🎯', subtitle: 'Feed Mochi by answering questions from your saved content.' },
     notes: { title: 'Personal Notes 📝', subtitle: 'Quick takeaways, reflections, and recipe notes.' },
-    assistant: { title: 'AI Study Assistant ✨', subtitle: 'Summarize, brainstorm, and generate quizzes instantly.' },
+    assistant: { title: 'AI Study Assistant ✨', subtitle: 'Recall, summarize, and connect ideas across your materials.' },
   };
 
   const current = titles[currentTab] || titles.home;

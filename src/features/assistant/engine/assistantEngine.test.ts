@@ -81,15 +81,16 @@ describe('Assistant Engine (Phase 4)', () => {
     expect(res.suggestedAction?.targetTab).toBe('notes');
   });
 
-  it('provides active recall quiz invitation when asked for a quiz', () => {
-    const res = processAssistantMessage('Quiz me please', {
+  it('recommends next material to review when user asks what to review', () => {
+    const res = processAssistantMessage('What should I review next?', {
       links: mockLinks,
       notes: mockNotes,
       pet: mockPet,
     });
 
-    expect(res.replyText).toContain('Active Recall Challenge');
-    expect(res.suggestedAction?.targetTab).toBe('quiz');
+    expect(res.replyText).toContain('Recommended to review next');
+    expect(res.replyText).toContain('Clean Architecture Fast');
+    expect(res.suggestedAction?.targetTab).toBe('vault');
   });
 
   it('handles empty Vault gracefully with friendly prompt', () => {

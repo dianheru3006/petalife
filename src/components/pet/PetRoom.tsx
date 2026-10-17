@@ -4,7 +4,7 @@ import type { Pet, NavigationTab } from '../../lib/types';
 import { MochiPet } from './MochiPet';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Button } from '../ui/Button';
-import { Sparkles, Cookie, HelpCircle, FileText, BookmarkPlus, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Cookie, Bot, FileText, BookmarkPlus, CheckCircle2 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 
 export interface PetRoomProps {
@@ -186,7 +186,7 @@ export const PetRoom: FC<PetRoomProps> = ({ pet, onFeed, onNavigate }) => {
 
         {isFull && (
           <p className="text-xs text-[#8A857A] text-center font-medium">
-            ✨ Tummy is full! Earn more XP today by reviewing links in <span className="font-bold text-[#D97736]">Vault</span> or solving the <span className="font-bold text-[#7161BF]">Daily Quiz</span>.
+            ✨ Tummy is full! Earn more XP today by reviewing links in <span className="font-bold text-[#D97736]">Vault</span> or jotting down <span className="font-bold text-[#36955E]">Notes</span>.
           </p>
         )}
       </div>
@@ -204,11 +204,11 @@ export const PetRoom: FC<PetRoomProps> = ({ pet, onFeed, onNavigate }) => {
           </button>
           <span>•</span>
           <button
-            onClick={() => onNavigate('quiz')}
+            onClick={() => onNavigate('assistant')}
             className="flex items-center gap-1 hover:text-[#7161BF] transition-colors py-1 px-2 rounded-lg hover:bg-white cursor-pointer font-medium"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Daily Quiz</span>
+            <Bot className="w-3.5 h-3.5" />
+            <span>AI Assistant</span>
           </button>
           <span>•</span>
           <button

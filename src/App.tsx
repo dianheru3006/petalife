@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages, initialDailyGoals } from './lib/mockData';
 import { feedPet, awardXp, calculateTimeDecay } from './features/pet/engine/petEngine';
@@ -7,12 +7,10 @@ import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksR
 import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
 import { initializeDatabase } from './lib/db/seed';
 import { recordRewardClaim } from './lib/db/rewardLedgerRepository';
-import { generateActiveRecallQuiz } from './lib/quiz/quizGenerator';
 import { processAssistantMessage } from './features/assistant/engine/assistantEngine';
 import { AppLayout } from './app/layout/AppLayout';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { VaultPage } from './features/vault/VaultPage';
-import { QuizPage } from './features/quiz/QuizPage';
 import { NotesPage } from './features/notes/NotesPage';
 import { AssistantPage } from './features/assistant/AssistantPage';
 
@@ -74,11 +72,6 @@ export function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Dynamically generate Smart Daily Quiz strictly from real notes & vault takeaways (Phase 3B)
-  const quizQuestions = useMemo(() => {
-    return generateActiveRecallQuiz(savedLinks, notes);
-  }, [savedLinks, notes]);
-
   // 1. Feeding Interaction via Engine
   const handleFeedPet = () => {
     setPet(prev => {
@@ -97,25 +90,6 @@ export function App() {
 
       return result.pet;
     });
-  };
-
-  // 2. Claiming XP from Quiz via Engine
-  const handleQuizRewardClaimed = (xp: number) => {
-    setPet(prev => {
-      const awardResult = awardXp(prev, xp);
-      return {
-        ...awardResult.pet,
-        mood: Math.min(100, awardResult.pet.mood + 15),
-        state: 'happy',
-      };
-    });
-
-    // Mark daily quiz goal as done
-    setDailyGoals(prev => prev.map(g => g.id === 'goal-3' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
-
-    setTimeout(() => {
-      setPet(prev => ({ ...prev, state: 'idle' }));
-    }, 2000);
   };
 
   // 3. Vault Actions with IndexedDB Persistence
@@ -152,6 +126,11 @@ export function App() {
     try {
       const updated = await updateLink(id, { status });
       setSavedLinks(prev => prev.map(l => l.id === id ? updated : l));
+
+      // Fulfill daily goal for reviewing links
+      if (status === 'in_progress' || status === 'completed') {
+        setDailyGoals(prev => prev.map(g => g.id === 'goal-3' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
+      }
 
       // Phase 3C: Reward Mochi with +10 XP if user mastered the material (and not already rewarded)
       if (status === 'completed') {
@@ -306,14 +285,6 @@ export function App() {
           onUpdateLink={handleUpdateLink}
           onDeleteLink={handleDeleteLink}
           onUpdateStatus={handleUpdateStatus}
-        />
-      )}
-
-      {currentTab === 'quiz' && (
-        <QuizPage
-          questions={quizQuestions}
-          onRewardClaimed={handleQuizRewardClaimed}
-          onNavigate={setCurrentTab}
         />
       )}
 

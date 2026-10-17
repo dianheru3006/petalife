@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import type { NavigationTab } from '../../lib/types';
-import { Home, Bookmark, HelpCircle, FileText, Bot } from 'lucide-react';
+import { Home, Bookmark, FileText, Bot } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface BottomNavProps {
@@ -12,7 +12,6 @@ export const BottomNav: FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
   const tabs: { id: NavigationTab; label: string; icon: ReactNode }[] = [
     { id: 'home', label: 'Pet', icon: <Home className="w-5 h-5" /> },
     { id: 'vault', label: 'Vault', icon: <Bookmark className="w-5 h-5" /> },
-    { id: 'quiz', label: 'Quiz', icon: <HelpCircle className="w-5 h-5" /> },
     { id: 'notes', label: 'Notes', icon: <FileText className="w-5 h-5" /> },
     { id: 'assistant', label: 'AI', icon: <Bot className="w-5 h-5" /> },
   ];
