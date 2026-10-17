@@ -13,7 +13,6 @@ import {
   Sun,
   Plus,
   Bell,
-  PartyPopper,
   Clipboard,
   Shirt,
   Info,
@@ -222,41 +221,93 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-3">
-      {/* 1. Top Header directly on page (matching reference screenshot) */}
-      <div className="flex items-center justify-between px-4 sm:px-2 pt-2 pb-1">
-        <div>
-          <p className="text-xs text-[#7A7A8A] font-medium leading-none">{greeting},</p>
-          <h1 className="text-xl sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-1">Rumah Mochi</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Streak Celebration Popper */}
-          <button
-            onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
-            className="w-9 h-9 rounded-full bg-white/80 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#D97736] hover:bg-[#FFEFE8] transition-all cursor-pointer active:scale-95"
-            title={`Streak: ${pet.streakDays} hari`}
-          >
-            <PartyPopper className="w-4 h-4" />
-          </button>
-          {/* Notification Bell */}
-          <button
-            onClick={() => triggerSpeech('Semua catatan & target harian aman! 🌸', 3200)}
-            className="w-9 h-9 rounded-full bg-white/80 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#5A5A6A] hover:bg-[#FAF7F2] transition-all cursor-pointer active:scale-95"
-            title="Notifikasi"
-          >
-            <Bell className="w-4 h-4" />
-          </button>
+    <div className="w-full max-w-lg mx-auto space-y-2.5">
+      {/* 1. Unique Soft Welcome Banner (Replaces plain text with cozy, charming frosted card) */}
+      <div className="px-4 sm:px-2 pt-2 pb-0.5">
+        <div className="relative overflow-hidden rounded-3xl bg-white/85 backdrop-blur-md border border-white/90 shadow-[0_4px_18px_rgba(215,190,160,0.18)] p-3 sm:p-3.5 flex items-center justify-between">
+          {/* Subtle Ambient Pastel Glows inside Banner */}
+          <div className="absolute -top-6 -left-6 w-28 h-28 bg-gradient-to-br from-amber-200/35 via-orange-100/25 to-transparent rounded-full blur-xl pointer-events-none" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-gradient-to-tl from-purple-200/25 via-pink-100/25 to-transparent rounded-full blur-xl pointer-events-none" />
+
+          {/* Left: Mascot Avatar + Greetings */}
+          <div className="relative z-10 flex items-center gap-3">
+            {/* Cozy Mascot Avatar badge */}
+            <div
+              onClick={handlePetTap}
+              className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FFEBD6] via-[#FED7C5] to-[#FAD4C0] border border-white/95 shadow-xs flex items-center justify-center text-xl cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+              title="Ketuk Mochi!"
+            >
+              <span>🌱</span>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FFEFE8] text-[#D97736] border border-[#FED7C5]/60">
+                  ✨ {greeting}
+                </span>
+                <span className="text-[10px] font-bold text-[#8C8275] bg-[#EFE8DD]/80 px-2 py-0.5 rounded-full">
+                  ⭐ Lv. {pet.level} • {getStageName(pet.level)}
+                </span>
+              </div>
+              <h1 className="text-base sm:text-lg font-black text-[#2E2E3A] tracking-tight leading-snug mt-0.5 flex items-center gap-1">
+                <span>Rumah Mochi</span>
+                <span className="text-xs">🏡</span>
+              </h1>
+              <p className="text-[11px] text-[#7A7265] font-medium leading-none">
+                Ruang nyaman Dian untuk bertumbuh & belajar 🍵
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Actions (Streak + Party Popper + Notification + Lighting) */}
+          <div className="relative z-10 flex items-center gap-1.5">
+            {/* Streak Pill */}
+            <div
+              onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
+              className="px-2.5 py-1 rounded-xl bg-white/90 border border-[#EAE3D5] text-xs font-black text-[#D97736] shadow-xs flex items-center gap-1 cursor-pointer hover:bg-[#FFEFE8] transition-colors active:scale-95"
+              title={`Streak belajar: ${pet.streakDays} hari`}
+            >
+              <span>🔥</span>
+              <span>{pet.streakDays}d</span>
+            </div>
+
+            {/* Notification Bell */}
+            <button
+              onClick={() => triggerSpeech('Semua catatan & target harian aman terkendali! 🌸', 3200)}
+              className="w-8 h-8 rounded-xl bg-white/90 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#7A7A8A] hover:text-[#D97736] cursor-pointer transition-all active:scale-95"
+              title="Notifikasi"
+            >
+              <Bell className="w-4 h-4" />
+            </button>
+
+            {/* Lighting Toggle */}
+            <button
+              onClick={() => {
+                setLightingMode(prev => prev === 'warm' ? 'night' : prev === 'night' ? 'day' : 'warm');
+              }}
+              className="w-8 h-8 rounded-xl bg-white/90 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-all active:scale-95"
+              title={`Pencahayaan (${lightingMode})`}
+            >
+              {lightingMode === 'night' ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. 3D Isometric Room Canvas (BORDERLESS & FULL PAGE as in reference screenshot) */}
-      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden">
+      {/* 2. 3D Isometric Room Canvas (BORDERLESS, with soft feathered gradients top & bottom) */}
+      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden bg-[#EEE1CE]">
         {/* Background 3D Room Diorama */}
         <img
           src={roomBg}
           alt="Rumah Mochi 3D Living Room"
           className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         />
+
+        {/* TOP SOFT FEATHERED GRADIENT (Melts the top of the room into the background with zero harsh line) */}
+        <div className="absolute top-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-b from-[#FAF5EB] via-[#FAF5EB]/50 to-transparent pointer-events-none z-10" />
+
+        {/* BOTTOM SOFT FEATHERED GRADIENT (Melts the room floor into the status bar background) */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-t from-[#FAF5EB] via-[#FAF5EB]/50 to-transparent pointer-events-none z-10" />
 
         {/* Dynamic Ambient Lighting Overlay */}
         <div
