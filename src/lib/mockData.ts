@@ -141,7 +141,7 @@ export const initialChatMessages: ChatMessage[] = [
   {
     id: 'msg-1',
     sender: 'assistant',
-    text: "✨ Hello Dian! I'm your Petalife AI companion. I'm here to help you organize what you save, summarize videos, or create quick practice questions for Mochi!",
+    text: "✨ Halo! Aku Mochi, asisten belajarmu di Petalife. Aku siap membantumu mencari materi tersimpan di Vault, merangkum catatan, atau latihan kuis bareng Mochi!",
     timestamp: '10:00 AM',
     suggestedAction: {
       label: 'Explore Content Vault',

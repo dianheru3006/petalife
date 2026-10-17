@@ -60,8 +60,12 @@ export const AssistantPage: FC<AssistantPageProps> = ({
         </span>
       </div>
 
-      {/* Messages Thread Container */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 mb-3 scrollbar-thin">
+      {/* Messages Thread Container with screen reader announcement area */}
+      <div
+        className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 mb-3 scrollbar-thin"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         {messages.map(msg => {
           const isAssistant = msg.sender === 'assistant';
           return (
@@ -179,7 +183,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           placeholder="Ask Mochi to summarize your vault or help you study..."
-          className="flex-1 text-xs sm:text-sm px-3 py-2 bg-transparent text-[#2E2E3A] focus:outline-none placeholder-[#8E8E9E]"
+          className="flex-1 text-xs sm:text-sm px-3 py-2 bg-transparent text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#E88E4B] focus:ring-offset-1 rounded-xl placeholder-[#8E8E9E] transition-all duration-150"
         />
         <Button
           type="submit"
@@ -188,7 +192,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           title="Kirim pesan"
           variant="peach"
           size="sm"
-          className="rounded-xl px-3.5 py-2 cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center"
+          className="rounded-xl px-3.5 py-2 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <Send className="w-4 h-4" />
           <span className="hidden sm:inline">Send</span>

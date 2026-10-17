@@ -1,6 +1,7 @@
 import type { FC, KeyboardEvent } from 'react';
 import { useState, useEffect } from 'react';
 import { projectIsometric, getClockAngles } from './clockUtils';
+import { getUserDisplayName } from '../../lib/utils';
 
 interface LiveWallClockProps {
   onClockClick?: (speechText: string) => void;
@@ -26,8 +27,9 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
   const secondTail = projectIsometric(5, angles.secondAngle + 180, CX, CY);
 
   const handleClick = () => {
+    const user = getUserDisplayName();
     onClockClick?.(
-      `Sekarang jam ${angles.timeFormatted} ${angles.timeOfDay} Dian! Jangan lupa istirahat dan minum air ya 🍵⏰`
+      `Sekarang jam ${angles.timeFormatted} ${angles.timeOfDay} ${user}! Jangan lupa istirahat dan minum air ya 🍵⏰`
     );
   };
 

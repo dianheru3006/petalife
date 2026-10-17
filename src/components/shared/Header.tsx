@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { FC } from 'react';
-import { cn } from '../../lib/utils';
+import { cn, getUserDisplayName } from '../../lib/utils';
 import type { NavigationTab, Pet } from '../../lib/types';
 
 export interface HeaderProps {
@@ -13,6 +13,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+  const userName = getUserDisplayName();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -28,7 +29,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
   }, []);
 
   const titles: Record<NavigationTab, { title: string; subtitle: string }> = {
-    home: { title: 'Good morning, Dian! ☀️', subtitle: 'Mochi is energized and waiting for new lessons.' },
+    home: { title: `Halo, ${userName}! ☀️`, subtitle: 'Mochi is energized and waiting for new lessons.' },
     vault: { title: 'Content Vault 📚', subtitle: 'Shorts, Reels, and articles saved for your growth.' },
     notes: { title: 'Personal Notes 📝', subtitle: 'Quick takeaways, reflections, and recipe notes.' },
     assistant: { title: 'AI Study Assistant ✨', subtitle: 'Recall, summarize, and connect ideas across your materials.' },
@@ -80,9 +81,9 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
           )}
         >
           <div className="w-7 h-7 rounded-full bg-[#DCD6F3] text-[#7161BF] font-extrabold text-xs flex items-center justify-center">
-            D
+            {userName.charAt(0).toUpperCase()}
           </div>
-          <span className="text-xs font-bold text-[#4A4A5A] hidden sm:inline">Dian</span>
+          <span className="text-xs font-bold text-[#4A4A5A] hidden sm:inline">{userName}</span>
         </div>
       </div>
     </header>

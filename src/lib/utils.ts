@@ -33,3 +33,14 @@ export function isValidUrl(urlString: string): boolean {
     return false;
   }
 }
+
+export function getUserDisplayName(): string {
+  if (typeof window !== 'undefined') {
+    const tgUser = (window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { first_name?: string } } } } })
+      ?.Telegram?.WebApp?.initDataUnsafe?.user?.first_name;
+    if (tgUser && typeof tgUser === 'string' && tgUser.trim()) {
+      return tgUser.trim();
+    }
+  }
+  return 'Teman Mochi';
+}

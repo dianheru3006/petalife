@@ -1,6 +1,7 @@
 import type { FC, KeyboardEvent } from 'react';
 import { useState, useEffect } from 'react';
 import { getCalendarDisplayInfo } from './calendarUtils';
+import { getUserDisplayName } from '../../lib/utils';
 
 interface LiveCalendarProps {
   onCalendarClick?: (speechText: string) => void;
@@ -17,8 +18,9 @@ export const LiveCalendar: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
   }, []);
 
   const handleClick = () => {
+    const user = getUserDisplayName();
     onCalendarClick?.(
-      `Hari ini ${dateInfo.fullFormattedDate}! Semangat terus belajarnya ya Dian! 📅✨`
+      `Hari ini ${dateInfo.fullFormattedDate}! Semangat terus belajarnya ya ${user}! 📅✨`
     );
   };
 

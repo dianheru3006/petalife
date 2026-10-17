@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
-import { detectPlatform, cn } from '../../lib/utils';
+import { detectPlatform, cn, getUserDisplayName } from '../../lib/utils';
 import roomBg from '../../assets/room-bg.jpg';
 import { SnackBubble, CircularMeter } from './SnackBubble';
 import { SNACK_VARIANTS } from './snackData';
@@ -81,7 +81,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     if (willBeNight) {
-      triggerSpeech('Hoaaam... Selamat tidur & mimpi indah, Dian! 🌙💤', 4000);
+      triggerSpeech(`Hoaaam... Selamat tidur & mimpi indah, ${getUserDisplayName()}! 🌙💤`, 4000);
     } else {
       triggerSpeech('Selamat pagi! Semangat belajar lagi bareng Mochi! ☀️✨', 4000);
     }
@@ -134,7 +134,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             'Kenyang dan senang ✨',
             'Rumah Mochi hangat dan nyaman 🌸',
             'Ada materi seru yang mau dipelajari? 🎬',
-            'Mochi senang bersama Dian! 💖',
+            `Mochi senang bersama ${getUserDisplayName()}! 💖`,
           ];
           const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
           triggerSpeech(randomWhisper, 3200);
@@ -207,7 +207,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       const spins = [
         'Wuuush! Putar-putar seru! 🌀✨',
         'Tadaaa! Mochi bisa salto mini! 🌟',
-        'Penuh energi! Ayo belajar lagi bareng Dian! 🌀',
+        `Penuh energi! Ayo belajar lagi bareng ${getUserDisplayName()}! 🌀`,
       ];
       triggerSpeech(spins[Math.floor(Math.random() * spins.length)], 3600);
       return;
@@ -215,9 +215,9 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     if (action === 'wink') {
       const winks = [
-        'Mochi selalu siap menemani Dian! 😉🍵',
+        `Mochi selalu siap menemani ${getUserDisplayName()}! 😉🍵`,
         'Kedip manis buat kamu! Semangat belajarnya! ✨😉',
-        'Psst... Dian rajin banget hari ini! 😉🌟',
+        `Psst... ${getUserDisplayName()} rajin banget hari ini! 😉🌟`,
       ];
       triggerSpeech(winks[Math.floor(Math.random() * winks.length)], 3600);
       return;
@@ -226,7 +226,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     if (action === 'dance') {
       const danceLines = [
         'La la la~ Mochi suka menari! 🎵💃',
-        'Dian lihat! Mochi punya gerakan tarian baru! 🎶✨',
+        `${getUserDisplayName()} lihat! Mochi punya gerakan tarian baru! 🎶✨`,
         'Satu dua tiga, bergoyang gembira! 🎵',
         'Musik membuat hati Mochi berbunga-bunga! 🌸🎶',
       ];
@@ -238,7 +238,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       const studyLines = [
         'Ssst... Mochi lagi fokus mencatat materi baru! 📝✨',
         'Kacamata Mochi pas banget buat belajar! 👓📖',
-        'Satu catatan lagi, biar makin pintar bareng Dian! 💡📓',
+        `Satu catatan lagi, biar makin pintar bareng ${getUserDisplayName()}! 💡📓`,
       ];
       triggerSpeech(studyLines[Math.floor(Math.random() * studyLines.length)], 4000);
       return;
@@ -250,7 +250,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
     const cuteReplies = [
       'Yaaay! Semangat belajar bareng kamu! ✨',
-      'Mochi siap menemani Dian! 🍵',
+      `Mochi siap menemani ${getUserDisplayName()}! 🍵`,
       'Ada resep atau video baru yang seru? 🍳',
       `Streak belajarmu ${pet.streakDays} hari berturut-turut! 🔥`,
       contextualStatus.speechText,

@@ -16,7 +16,7 @@ export const TV_CHANNELS: TvChannel[] = [
     id: 'meadow',
     name: 'Padang Rumput Sejuk',
     channelNum: 'CH 02',
-    speechText: 'Pemandangan alam sejuk banget ya Dian! 🍃',
+    speechText: 'Pemandangan alam sejuk banget rasanya! 🍃',
   },
   {
     id: 'arcade',
