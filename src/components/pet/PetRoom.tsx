@@ -2,12 +2,8 @@ import type { FC, FormEvent } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import type { Pet, NavigationTab, SavedLink } from '../../lib/types';
 import { MochiPet, type MochiAction } from './MochiPet';
-import { ProgressBar } from '../ui/ProgressBar';
 import {
   Sparkles,
-  Bot,
-  FileText,
-  BookmarkPlus,
   CheckCircle2,
   Moon,
   Sun,
@@ -42,10 +38,10 @@ export interface PetRoomProps {
 export const PetRoom: FC<PetRoomProps> = ({
   pet,
   onFeed,
-  onNavigate,
+  onNavigate: _onNavigate,
   savedLinks = [],
   onAddLink,
-  notesCount = 3,
+  notesCount: _notesCount,
   isNightMode,
   onToggleNightMode,
 }) => {
@@ -377,6 +373,25 @@ export const PetRoom: FC<PetRoomProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Minimalist EXP Pill */}
+          <button
+            type="button"
+            onClick={() => triggerSpeech(`Mochi Level ${pet.level}! Butuh ${pet.expToNextLevel - pet.exp} XP lagi untuk naik level berikutnya ✨`, 3500)}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95 transition-colors duration-700 border',
+              activeNight
+                ? 'bg-[#FAF6EE] border-[#DDD2C2] text-[#483696] hover:bg-[#F2ECE0]'
+                : 'bg-[#FAF7F2] border-[#EAE3D5] text-[#483696] hover:bg-[#F2ECE0]'
+            )}
+            title={`Level ${pet.level} • ${pet.exp} / ${pet.expToNextLevel} XP`}
+            aria-label={`Level ${pet.level}, ${pet.exp} dari ${pet.expToNextLevel} XP`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#9E410E]" />
+            <span className="font-extrabold text-[#2E2E3A]">Lv.{pet.level}</span>
+            <span className="text-[#9E410E] font-extrabold">{pet.exp}/{pet.expToNextLevel}</span>
+            <span className="text-[10px] text-[#4A4A5A] font-semibold">XP</span>
+          </button>
+
           {/* Subtle streak pill */}
           <button
             type="button"
@@ -388,6 +403,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 : 'bg-[#FAF7F2] border-[#EAE3D5] hover:bg-[#F2ECE0]'
             )}
             title={`Streak: ${pet.streakDays} hari`}
+            aria-label={`Streak: ${pet.streakDays} hari`}
           >
             <span>🔥</span>
             <span>{pet.streakDays}d</span>
@@ -611,76 +627,6 @@ export const PetRoom: FC<PetRoomProps> = ({
             <Clipboard className="w-4 h-4" />
           </button>
         </form>
-      </div>
-
-      {/* 5. Pet XP Growth & Quick Nav Access Bar */}
-      <div className="pt-1">
-        <div
-          className={cn(
-            'rounded-3xl p-4 shadow-xs space-y-3 transition-colors duration-700 ease-out border',
-            activeNight
-              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-[#FAF7F2] border-[#ECE6DB]'
-          )}
-        >
-          <div className="flex justify-between items-center text-xs font-bold text-[#4A4A5A]">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#9E410E]" />
-              <span>Pertumbuhan Mochi (Level {pet.level} → {pet.level + 1})</span>
-            </span>
-            <span className="text-[#9E410E] font-extrabold">{pet.exp} / {pet.expToNextLevel} XP</span>
-          </div>
-          <ProgressBar
-            value={pet.exp}
-            max={pet.expToNextLevel}
-            color="orange"
-            size="md"
-          />
-
-          {/* Quick Shortcuts */}
-          <div
-            className={cn(
-              'pt-2 border-t flex items-center justify-between text-xs text-[#4A4A5A] transition-colors duration-700',
-              activeNight ? 'border-[#EAE1D0]' : 'border-[#F2ECE1]'
-            )}
-          >
-            <span className="font-semibold text-[#4A4A5A]">Akses Cepat:</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => onNavigate('vault')}
-                className={cn(
-                  'flex items-center gap-1 hover:text-[#9E410E] transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium',
-                  activeNight ? 'hover:bg-[#EFE8DA]' : 'hover:bg-[#FAF7F2]'
-                )}
-              >
-                <BookmarkPlus className="w-3.5 h-3.5" />
-                <span>Vault ({savedLinks.length})</span>
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => onNavigate('assistant')}
-                className={cn(
-                  'flex items-center gap-1 hover:text-[#483696] transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium',
-                  activeNight ? 'hover:bg-[#EFE8DA]' : 'hover:bg-[#FAF7F2]'
-                )}
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>AI Asisten</span>
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => onNavigate('notes')}
-                className={cn(
-                  'flex items-center gap-1 hover:text-[#1E6B3B] transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium',
-                  activeNight ? 'hover:bg-[#EFE8DA]' : 'hover:bg-[#FAF7F2]'
-                )}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Catatan ({notesCount})</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
