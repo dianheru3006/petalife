@@ -145,7 +145,7 @@ export function processAssistantMessage(
 
 /**
  * Hybrid Assistant Query:
- * Queries the remote Bot Asisten (audit-bot) backend for intelligent responses,
+ * Queries the remote Bot Asisten Heru (audit-narzo) backend for intelligent responses,
  * and seamlessly falls back to the local grounded IndexedDB engine if the bot server is offline.
  */
 export async function queryAssistant(
