@@ -15,7 +15,7 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/index-CDAX5RNa.css","./assets/index-CENOwph5.js","./assets/room-bg-B7tupBkv.jpg"];
+const BUILD_ASSETS = ["./assets/index-C3avjYUJ.css","./assets/index-rxALxaZ9.js","./assets/room-bg-B7tupBkv.jpg"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
 
@@ -67,7 +67,10 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => {
           const cached = await caches.match(request);
           if (cached) return cached;
-          return caches.match('/index.html');
+          const indexUrl = new URL('index.html', self.registration.scope).pathname;
+          const fallback = (await caches.match(indexUrl)) || (await caches.match(self.registration.scope)) || (await caches.match('./index.html'));
+          if (fallback) return fallback;
+          return caches.match('./');
         })
     );
     return;
