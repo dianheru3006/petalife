@@ -24,6 +24,7 @@ import { SnackBubble, CircularMeter } from './SnackBubble';
 import { SNACK_VARIANTS } from './snackData';
 import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
+import { LiveWallClock } from './LiveWallClock';
 
 export interface PetRoomProps {
   pet: Pet;
@@ -308,13 +309,16 @@ export const PetRoom: FC<PetRoomProps> = ({
           onTvInteraction={(speechText) => triggerSpeech(speechText, 3600)}
         />
 
-        {/* Live Wall Flip Calendar */}
+        {/* Live Wall Clock & Flip Calendar Overlay */}
         <svg
           viewBox="0 0 768 1376"
           preserveAspectRatio="xMidYMid slice"
           className="absolute inset-0 w-full h-full pointer-events-none z-10"
           aria-hidden="true"
         >
+          <LiveWallClock
+            onClockClick={(speechText) => triggerSpeech(speechText, 4000)}
+          />
           <LiveCalendar
             onCalendarClick={(speechText) => triggerSpeech(speechText, 4000)}
           />
