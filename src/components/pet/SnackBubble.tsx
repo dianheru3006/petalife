@@ -9,6 +9,7 @@ export interface CircularMeterProps {
   iconType: 'hunger' | 'mood' | 'energy';
   label: string;
   isNightMode?: boolean;
+  showPercentage?: boolean;
 }
 
 export const CircularMeter: FC<CircularMeterProps> = ({
@@ -18,6 +19,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
   iconType,
   label,
   isNightMode = false,
+  showPercentage = false,
 }) => {
   const percentage = Math.min(100, Math.max(0, (value / max) * 100));
   const radius = 12;
@@ -36,16 +38,19 @@ export const CircularMeter: FC<CircularMeterProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-1.5" title={`${label}: ${value}%`}>
-      <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center">
-        <svg className="w-7 h-7 sm:w-8 sm:h-8 transform -rotate-90" viewBox="0 0 32 32">
+    <div
+      className="flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-transform"
+      title={`${label}: ${value}%`}
+    >
+      <div className="relative w-8 h-8 flex items-center justify-center">
+        <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
           {/* Background Track Ring */}
           <circle
             cx="16"
             cy="16"
             r={radius}
-            stroke={isNightMode ? '#34374D' : '#ECE6DB'}
-            strokeWidth="2.5"
+            stroke={isNightMode ? '#34374D' : '#EAE2D5'}
+            strokeWidth="2.8"
             fill="none"
           />
           {/* Active Progress Arc */}
@@ -54,7 +59,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
             cy="16"
             r={radius}
             stroke={color}
-            strokeWidth="2.5"
+            strokeWidth="2.8"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"
@@ -67,7 +72,11 @@ export const CircularMeter: FC<CircularMeterProps> = ({
           {renderIcon()}
         </div>
       </div>
-      <span className={`text-[11px] font-bold ${isNightMode ? 'text-[#DDD9E5]' : 'text-[#4A4A5A]'}`}>{value}%</span>
+      {showPercentage && (
+        <span className={`text-[11px] font-bold ${isNightMode ? 'text-[#DDD9E5]' : 'text-[#4A4A5A]'}`}>
+          {value}%
+        </span>
+      )}
     </div>
   );
 };

@@ -310,7 +310,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         </div>
 
         {/* Floating Dream Soap Bubble pointing directly down to Hunger Meter */}
-        <div className="absolute bottom-3 left-2 sm:left-4 z-25">
+        <div className="absolute bottom-[66px] left-3 sm:left-4 z-25">
           <SnackBubble
             snack={currentSnack}
             onFeed={handleFeedClick}
@@ -319,61 +319,78 @@ export const PetRoom: FC<PetRoomProps> = ({
             isFeeding={isFeeding}
           />
         </div>
-      </div>
 
-      {/* 3. Status Row: Hunger, Mood, Energy, Name & Controls */}
-      <div className="flex items-center justify-between px-2 py-1 select-none">
-        {/* Left: Circular Progress Rings & Life Stage */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <CircularMeter
-            value={pet.hunger}
-            color="#D97736"
-            iconType="hunger"
-            label="Lapar / Makanan"
-          />
-          <CircularMeter
-            value={pet.mood}
-            color="#E57399"
-            iconType="mood"
-            label="Senang / Afeksi"
-          />
-          <CircularMeter
-            value={pet.energy}
-            color="#57B37C"
-            iconType="energy"
-            label="Energi / Segar"
-          />
-          <span className="text-xs font-semibold text-[#8A857A]">
-            {getStageName(pet.level)}
-          </span>
-        </div>
+        {/* 3. Status Dock Bar (Inside the Terrarium Border, No Percentage Text) */}
+        <div className={`absolute bottom-3 left-3 right-3 z-30 backdrop-blur-md rounded-2xl border shadow-xs px-3 sm:px-4 py-2 flex items-center justify-between select-none transition-colors duration-700 ${
+          activeNight ? 'bg-[#202236]/90 border-[#383B54] text-[#FAF7F2]' : 'bg-white/90 border-white/80 text-[#2E2E3A]'
+        }`}>
+          {/* Left: Circular Progress Rings & Life Stage */}
+          <div className="flex items-center gap-2">
+            <CircularMeter
+              value={pet.hunger}
+              color="#D97736"
+              iconType="hunger"
+              label="Lapar / Makanan"
+              isNightMode={activeNight}
+            />
+            <CircularMeter
+              value={pet.mood}
+              color="#E57399"
+              iconType="mood"
+              label="Senang / Afeksi"
+              isNightMode={activeNight}
+            />
+            <CircularMeter
+              value={pet.energy}
+              color="#57B37C"
+              iconType="energy"
+              label="Energi / Segar"
+              isNightMode={activeNight}
+            />
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ml-1 ${
+              activeNight ? 'text-[#C5BFD6] bg-[#2B2E46] border-[#3D405B]' : 'text-[#8A857A] bg-[#FAF7F2] border-[#ECE5DA]'
+            }`}>
+              {getStageName(pet.level)}
+            </span>
+          </div>
 
-        {/* Center: Pet Name & Info */}
-        <div
-          className="flex items-center gap-1 font-black text-sm text-[#2E2E3A] cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={handlePetTap}
-          title="Ketuk untuk berinteraksi dengan Mochi"
-        >
-          <span>{pet.name}</span>
-          <Info className="w-3.5 h-3.5 text-[#8A857A]" />
-        </div>
-
-        {/* Right: Dress-up & Night Mode Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
-            className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#2E2E3A] cursor-pointer transition-colors active:scale-95"
-            title="Koleksi / Baju Mochi"
+          {/* Center: Pet Name & Info */}
+          <div
+            className={`flex items-center gap-1 font-black text-xs sm:text-sm cursor-pointer hover:opacity-80 transition-opacity ${
+              activeNight ? 'text-[#FAF7F2]' : 'text-[#2E2E3A]'
+            }`}
+            onClick={handlePetTap}
+            title="Ketuk untuk berinteraksi dengan Mochi"
           >
-            <Shirt className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleToggleNight}
-            className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
-            title={activeNight ? 'Kembali ke mode siang' : 'Mode malam (matikan lampu kamar)'}
-          >
-            {activeNight ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
-          </button>
+            <span>{pet.name}</span>
+            <Info className={`w-3.5 h-3.5 ${activeNight ? 'text-[#9A95AA]' : 'text-[#8A857A]'}`} />
+          </div>
+
+          {/* Right: Dress-up & Night Mode Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-xs flex items-center justify-center cursor-pointer transition-colors active:scale-95 ${
+                activeNight
+                  ? 'bg-[#2B2E46] border border-[#3D405B] text-[#DDD9E8] hover:text-white'
+                  : 'bg-white border border-[#EAE3D5] text-[#6B6B7E] hover:text-[#2E2E3A]'
+              }`}
+              title="Koleksi / Baju Mochi"
+            >
+              <Shirt className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleToggleNight}
+              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-xs flex items-center justify-center cursor-pointer transition-colors active:scale-95 ${
+                activeNight
+                  ? 'bg-[#2B2E46] border border-[#3D405B] text-[#F4A261] hover:text-[#FFC599]'
+                  : 'bg-white border border-[#EAE3D5] text-[#6B6B7E] hover:text-[#7161BF]'
+              }`}
+              title={activeNight ? 'Kembali ke mode siang' : 'Mode malam (matikan lampu kamar)'}
+            >
+              {activeNight ? <Moon className="w-3.5 h-3.5 text-[#7161BF]" /> : <Sun className="w-3.5 h-3.5 text-[#F4A261]" />}
+            </button>
+          </div>
         </div>
       </div>
 
