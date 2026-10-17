@@ -6,7 +6,7 @@ export interface ClockHandPosition {
 export function projectIsometric(
   radius: number,
   angleDeg: number,
-  centerX = 271.5,
+  centerX = 274.5,
   centerY = 433.0
 ): ClockHandPosition {
   const rad = (angleDeg * Math.PI) / 180;

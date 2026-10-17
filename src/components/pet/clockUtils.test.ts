@@ -9,9 +9,9 @@ describe('Clock Utils & Isometric Projection', () => {
     expect(pos.y).toBe(402.5); // 422.5 - 20
   });
 
-  it('uses default center CX=271.5 and CY=433.0', () => {
+  it('uses default center CX=274.5 and CY=433.0', () => {
     const pos = projectIsometric(15, 0);
-    expect(pos.x).toBe(271.5);
+    expect(pos.x).toBe(274.5);
     expect(pos.y).toBe(418.0); // 433.0 - 15
   });
 

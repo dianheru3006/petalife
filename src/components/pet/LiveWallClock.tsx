@@ -6,7 +6,7 @@ interface LiveWallClockProps {
   onClockClick?: (speechText: string) => void;
 }
 
-const CX = 271.5;
+const CX = 274.5;
 const CY = 433.0;
 
 export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
@@ -109,7 +109,7 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
 
       {/* 6. Interactive Click Target over the Clock Dial */}
       <polygon
-        points="226,432.5 271,375.5 316,425.5 271,492.5"
+        points="229,432.5 274,375.5 319,425.5 274,492.5"
         fill="transparent"
         className="cursor-pointer pointer-events-auto outline-hidden"
         onClick={handleClick}
