@@ -11,6 +11,8 @@ export interface DashboardPageProps {
   onFeedPet: () => void;
   onToggleGoal: (id: string) => void;
   onNavigate: (tab: NavigationTab) => void;
+  onAddLink?: (newLink: SavedLink) => void;
+  notesCount?: number;
 }
 
 export const DashboardPage: FC<DashboardPageProps> = ({
@@ -20,13 +22,22 @@ export const DashboardPage: FC<DashboardPageProps> = ({
   onFeedPet,
   onToggleGoal,
   onNavigate,
+  onAddLink,
+  notesCount,
 }) => {
   const completedGoalsCount = dailyGoals.filter(g => g.isCompleted).length;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* 1. Main Stage: Cozy Pet Room */}
-      <PetRoom pet={pet} onFeed={onFeedPet} onNavigate={onNavigate} />
+      <PetRoom
+        pet={pet}
+        savedLinks={savedLinks}
+        onFeed={onFeedPet}
+        onNavigate={onNavigate}
+        onAddLink={onAddLink}
+        notesCount={notesCount}
+      />
 
       {/* 2. Grid Section: Daily Goals & Quick Knowledge Vault */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

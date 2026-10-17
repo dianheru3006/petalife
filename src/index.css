@@ -90,6 +90,19 @@
   animation: float-heart 1.2s ease-out forwards;
 }
 
+@keyframes float-bubble {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(3deg);
+  }
+}
+
+.anim-float-bubble {
+  animation: float-bubble 3s ease-in-out infinite;
+}
+
 .anim-gentle-sway {
   animation: gentle-sway 4s ease-in-out infinite;
 }

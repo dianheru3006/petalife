@@ -275,6 +275,8 @@ export function App() {
           onFeedPet={handleFeedPet}
           onToggleGoal={handleToggleGoal}
           onNavigate={setCurrentTab}
+          onAddLink={handleAddLink}
+          notesCount={notes.length}
         />
       )}
 
