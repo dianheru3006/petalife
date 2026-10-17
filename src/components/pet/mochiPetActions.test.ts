@@ -3,12 +3,13 @@ import type { MochiAction, GazeDirection } from './MochiPet';
 
 describe('MochiPet Action & Movement Constants', () => {
   it('supports all defined interactive tap actions', () => {
-    const validActions: MochiAction[] = ['idle', 'hop', 'wiggle', 'spin', 'wink'];
-    expect(validActions).toHaveLength(5);
+    const validActions: MochiAction[] = ['idle', 'hop', 'wiggle', 'spin', 'wink', 'dance'];
+    expect(validActions).toHaveLength(6);
     expect(validActions).toContain('hop');
     expect(validActions).toContain('wiggle');
     expect(validActions).toContain('spin');
     expect(validActions).toContain('wink');
+    expect(validActions).toContain('dance');
   });
 
   it('supports all defined idle gaze directions', () => {
@@ -25,11 +26,13 @@ describe('MochiPet Action & Movement Constants', () => {
       wiggle: 750,
       spin: 750,
       wink: 700,
+      dance: 1400,
     };
 
     expect(actionDurations.hop).toBeGreaterThanOrEqual(500);
     expect(actionDurations.wiggle).toBeGreaterThanOrEqual(600);
     expect(actionDurations.spin).toBeGreaterThanOrEqual(700);
     expect(actionDurations.wink).toBeGreaterThanOrEqual(600);
+    expect(actionDurations.dance).toBeGreaterThanOrEqual(1000);
   });
 });

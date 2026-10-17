@@ -15,6 +15,7 @@ import {
   Clipboard,
   Shirt,
   Info,
+  Music,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -62,6 +63,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
   const [lastFedText, setLastFedText] = useState<string | null>(null);
   const [localNight, setLocalNight] = useState<boolean>(false);
+  const [forcedAction, setForcedAction] = useState<{ id: number; action: MochiAction } | undefined>(undefined);
   const activeNight = isNightMode !== undefined ? isNightMode : localNight;
 
   // When night mode is active, Mochi enters a calm, resting sleep state
@@ -220,6 +222,17 @@ export const PetRoom: FC<PetRoomProps> = ({
       return;
     }
 
+    if (action === 'dance') {
+      const danceLines = [
+        'La la la~ Mochi suka menari! 🎵💃',
+        'Dian lihat! Mochi punya gerakan tarian baru! 🎶✨',
+        'Satu dua tiga, bergoyang gembira! 🎵',
+        'Musik membuat hati Mochi berbunga-bunga! 🌸🎶',
+      ];
+      triggerSpeech(danceLines[Math.floor(Math.random() * danceLines.length)], 4000);
+      return;
+    }
+
     if (isFull) {
       triggerSpeech('Perut Mochi kenyang dan hatiku senang! ✨', 3500);
       return;
@@ -232,6 +245,15 @@ export const PetRoom: FC<PetRoomProps> = ({
       contextualStatus.speechText,
     ];
     triggerSpeech(cuteReplies[Math.floor(Math.random() * cuteReplies.length)], 3800);
+  };
+
+  const handleDanceClick = () => {
+    if (activeNight) {
+      triggerSpeech('Ssst... Mochi sedang mimpi indah... 🌙💤', 3500);
+      return;
+    }
+    setForcedAction({ id: Date.now(), action: 'dance' });
+    handlePetTap('dance');
   };
 
   const handleQuickAddLink = async (e: FormEvent) => {
@@ -389,7 +411,12 @@ export const PetRoom: FC<PetRoomProps> = ({
 
         {/* The Center Mat & Proportional 3D Mochi (Reflects Sleep State when Night Mode Active) */}
         <div className="absolute top-[48%] sm:top-[49%] left-[49%] -translate-x-1/2 z-20 flex flex-col items-center">
-          <MochiPet pet={effectivePet} onPetClick={handlePetTap} showBubble={false} />
+          <MochiPet
+            pet={effectivePet}
+            onPetClick={handlePetTap}
+            forcedAction={forcedAction}
+            showBubble={false}
+          />
         </div>
 
         {/* Floating Snack Bubble pointing directly down to Hunger Meter (Resting during bedtime) */}
@@ -443,8 +470,17 @@ export const PetRoom: FC<PetRoomProps> = ({
             <Info className="w-3.5 h-3.5 text-[#8A857A]" />
           </button>
 
-          {/* Right: Dress-up & Night Mode Actions */}
+          {/* Right: Dance, Dress-up & Night Mode Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={handleDanceClick}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#E57399] hover:text-[#D97736] hover:bg-[#FFF5F7] cursor-pointer transition-all active:scale-95"
+              title="Ajak Mochi Menari 🎵"
+              aria-label="Ajak Mochi menari"
+            >
+              <Music className="w-3.5 h-3.5" />
+            </button>
             <button
               type="button"
               onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}

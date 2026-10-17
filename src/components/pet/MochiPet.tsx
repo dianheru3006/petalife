@@ -1,10 +1,19 @@
 import type { FC } from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 
-export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink';
+export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance';
 export type GazeDirection = 'center' | 'left' | 'right';
+
+const ACTION_DURATIONS: Record<MochiAction, number> = {
+  idle: 0,
+  hop: 600,
+  wiggle: 750,
+  spin: 750,
+  wink: 700,
+  dance: 1400,
+};
 
 export interface MochiPetProps {
   pet: Pet;
@@ -12,6 +21,7 @@ export interface MochiPetProps {
   className?: string;
   speechText?: string;
   showBubble?: boolean;
+  forcedAction?: { id: number; action: MochiAction };
 }
 
 export const MochiPet: FC<MochiPetProps> = ({
@@ -20,12 +30,14 @@ export const MochiPet: FC<MochiPetProps> = ({
   className,
   speechText,
   showBubble = false,
+  forcedAction,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [currentAction, setCurrentAction] = useState<MochiAction>('idle');
   const [gaze, setGaze] = useState<GazeDirection>('center');
   const actionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gazeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastForcedIdRef = useRef<number | null>(null);
 
   const isFeeding = pet.state === 'feeding';
   const isSleeping = pet.state === 'sleeping';
@@ -60,6 +72,24 @@ export const MochiPet: FC<MochiPetProps> = ({
     };
   }, [isSleeping, isFeeding, currentAction]);
 
+  const triggerAction = useCallback((action: MochiAction) => {
+    setCurrentAction(action);
+    if (actionTimerRef.current) clearTimeout(actionTimerRef.current);
+    actionTimerRef.current = setTimeout(() => {
+      setCurrentAction('idle');
+    }, ACTION_DURATIONS[action]);
+  }, []);
+
+  // Listen for externally forced actions (e.g. user clicked "Ajak Menari 🎵")
+  useEffect(() => {
+    if (!forcedAction || isSleeping || forcedAction.id === lastForcedIdRef.current) return;
+    lastForcedIdRef.current = forcedAction.id;
+    const timer = setTimeout(() => {
+      triggerAction(forcedAction.action);
+    }, 10);
+    return () => clearTimeout(timer);
+  }, [forcedAction, isSleeping, triggerAction]);
+
   // Handle interactive clicks on Mochi with random animations
   const handleClick = () => {
     if (isSleeping) {
@@ -68,25 +98,11 @@ export const MochiPet: FC<MochiPetProps> = ({
     }
 
     // Pick a random delightful action, avoiding immediate repetition
-    const actions: MochiAction[] = ['hop', 'wiggle', 'spin', 'wink'];
+    const actions: MochiAction[] = ['hop', 'wiggle', 'spin', 'wink', 'dance'];
     const candidates = actions.filter(a => a !== currentAction);
     const chosen = candidates[Math.floor(Math.random() * candidates.length)];
 
-    setCurrentAction(chosen);
-
-    const durations: Record<MochiAction, number> = {
-      idle: 0,
-      hop: 600,
-      wiggle: 750,
-      spin: 750,
-      wink: 700,
-    };
-
-    if (actionTimerRef.current) clearTimeout(actionTimerRef.current);
-    actionTimerRef.current = setTimeout(() => {
-      setCurrentAction('idle');
-    }, durations[chosen]);
-
+    triggerAction(chosen);
     onPetClick?.(chosen);
   };
 
@@ -102,6 +118,8 @@ export const MochiPet: FC<MochiPetProps> = ({
         return 'anim-mochi-spin';
       case 'wink':
         return 'anim-mochi-wink';
+      case 'dance':
+        return 'anim-mochi-dance';
       default:
         return 'anim-mochi-idle';
     }
@@ -122,7 +140,14 @@ export const MochiPet: FC<MochiPetProps> = ({
       {/* Dynamic Floating Particles based on Action */}
       {(isFeeding || currentAction !== 'idle' || isHappy) && !isSleeping && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
-          {currentAction === 'spin' ? (
+          {currentAction === 'dance' ? (
+            <>
+              <span className="text-xl anim-float-note text-[#E57399] drop-shadow-xs">♪</span>
+              <span className="text-lg anim-float-note text-[#7161BF] drop-shadow-xs" style={{ animationDelay: '0.2s' }}>♫</span>
+              <span className="text-xl anim-float-note text-[#F4A261] drop-shadow-xs" style={{ animationDelay: '0.4s' }}>♬</span>
+              <span className="text-base anim-float-note text-[#4EAA77] drop-shadow-xs" style={{ animationDelay: '0.6s' }}>✨</span>
+            </>
+          ) : currentAction === 'spin' ? (
             <>
               <span className="text-lg anim-float-heart">⭐</span>
               <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>🌀</span>
@@ -297,9 +322,29 @@ export const MochiPet: FC<MochiPetProps> = ({
           {/* 4. Top-Left Volumetric Gleam / Soft 3D Specular Highlight */}
           <ellipse cx="82" cy="74" rx="38" ry="24" fill="url(#topGleam3D)" transform="rotate(-15 82 74)" />
 
-          {/* 5. 3D Rounded Little Paws */}
-          <ellipse cx="54" cy="138" rx="10" ry="8" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" transform="rotate(-12 54 138)" />
-          <ellipse cx="146" cy="138" rx="10" ry="8" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" transform="rotate(12 146 138)" />
+          {/* 5. 3D Rounded Little Paws (Wave up joyfully during dance) */}
+          <ellipse
+            cx="54"
+            cy={currentAction === 'dance' ? 130 : 138}
+            rx="10"
+            ry="8"
+            fill="url(#clayPaw)"
+            stroke="#C87A22"
+            strokeWidth="1.2"
+            transform={currentAction === 'dance' ? 'rotate(-28 54 130)' : 'rotate(-12 54 138)'}
+            style={{ transition: 'all 0.25s ease' }}
+          />
+          <ellipse
+            cx="146"
+            cy={currentAction === 'dance' ? 130 : 138}
+            rx="10"
+            ry="8"
+            fill="url(#clayPaw)"
+            stroke="#C87A22"
+            strokeWidth="1.2"
+            transform={currentAction === 'dance' ? 'rotate(28 146 130)' : 'rotate(12 146 138)'}
+            style={{ transition: 'all 0.25s ease' }}
+          />
 
           {/* 6. Soft Rosy Blushing Cheeks */}
           <ellipse cx="58" cy="112" rx="13" ry="8" fill="url(#blushClay)" />
@@ -317,6 +362,12 @@ export const MochiPet: FC<MochiPetProps> = ({
             <g fill="#E63946">
               <path d="M80 98 C76 91 68 94 68 100 C68 108 80 114 80 114 C80 114 92 108 92 100 C92 94 84 91 80 98 Z" transform="scale(0.85) translate(14, 12)" />
               <path d="M120 98 C116 91 108 94 108 100 C108 108 120 114 120 114 C120 114 132 108 132 100 C132 94 124 91 120 98 Z" transform="scale(0.85) translate(22, 12)" />
+            </g>
+          ) : currentAction === 'dance' ? (
+            /* Musical Happy Dancing Eyes (^ ^) */
+            <g stroke="#2C1A14" strokeWidth="3.5" strokeLinecap="round" fill="none">
+              <path d="M71 103 Q79 95 87 103" />
+              <path d="M113 103 Q121 95 129 103" />
             </g>
           ) : currentAction === 'wiggle' ? (
             /* Laughing Squint Curves (^ ^) */
@@ -385,6 +436,9 @@ export const MochiPet: FC<MochiPetProps> = ({
               strokeLinecap="round"
               fill="none"
             />
+          ) : currentAction === 'dance' ? (
+            /* Musical Singing Mouth (o) */
+            <ellipse cx="100" cy="115" rx="5.5" ry="7" fill="#FF7070" stroke="#2C1A14" strokeWidth="2.0" />
           ) : currentAction === 'wiggle' ? (
             /* Laughing open happy mouth */
             <path
