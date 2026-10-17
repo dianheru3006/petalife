@@ -53,12 +53,14 @@ export const MochiPet: FC<MochiPetProps> = ({
       )}
 
       {/* Pet Interactive Body Area — Proportional Sizing with Room */}
-      <div
+      <button
+        type="button"
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        aria-label="Elus Mochi"
         className={cn(
-          'relative w-22 h-22 sm:w-26 sm:h-26 cursor-pointer transition-transform duration-200 active:scale-95',
+          'relative w-22 h-22 sm:w-26 sm:h-26 cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-transform duration-200 active:scale-95',
           isFeeding
             ? 'anim-mochi-eating'
             : isHopping
@@ -68,7 +70,7 @@ export const MochiPet: FC<MochiPetProps> = ({
         title="Ketuk Mochi untuk mengelus!"
       >
         {/* 3D Clay Stylized SVG Character */}
-        <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+        <svg aria-hidden="true" viewBox="0 0 200 200" className="w-full h-full overflow-visible">
           <defs>
             {/* 3D Directional Clay Lighting: Top-Left Key Light matching Room sunbeam */}
             <radialGradient id="clayBody3D" cx="36%" cy="30%" r="70%" fx="32%" fy="24%">
@@ -248,7 +250,7 @@ export const MochiPet: FC<MochiPetProps> = ({
           <ellipse cx="78" cy="174" rx="12" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
           <ellipse cx="122" cy="174" rx="12" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
         </svg>
-      </div>
+      </button>
     </div>
   );
 };

@@ -21,15 +21,18 @@ export const BottomNav: FC<BottomNavProps> = ({
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-3 left-4 right-4 max-w-xs sm:max-w-sm mx-auto z-40 bg-white/92 backdrop-blur-md rounded-full border border-[#EAE3D5] shadow-lg px-2 py-1.5 flex items-center justify-between select-none">
+    <nav aria-label="Navigasi utama" className="lg:hidden fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-4 right-4 max-w-xs sm:max-w-sm mx-auto z-40 bg-white/92 backdrop-blur-md rounded-full border border-[#EAE3D5] shadow-lg px-2 py-1.5 flex items-center justify-between select-none">
       {tabs.map(tab => {
         const isActive = currentTab === tab.id;
         return (
           <button
+            type="button"
             key={tab.id}
             onClick={() => onSelectTab(tab.id)}
+            aria-label={tab.label}
+            aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-all duration-200 cursor-pointer flex items-center gap-1.5',
+              'transition-colors duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
               isActive
                 ? 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
                 : 'p-2 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#FAF7F2] rounded-full'

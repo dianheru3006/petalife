@@ -25,7 +25,7 @@ export const Sidebar: FC<SidebarProps> = ({ currentTab, onSelectTab, petLevel })
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-[#FFFDF9] border-r border-[#EFEAE1] p-5 select-none z-30">
+    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-[#FFFDF9] border-r border-[#EFEAE1] p-5 select-none z-30">
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-2 mb-8">
         <div className="w-10 h-10 rounded-2xl bg-[#FED7C5] border border-[#F4A261]/30 flex items-center justify-center text-xl shadow-xs">

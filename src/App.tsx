@@ -14,8 +14,15 @@ import { VaultPage } from './features/vault/VaultPage';
 import { NotesPage } from './features/notes/NotesPage';
 import { AssistantPage } from './features/assistant/AssistantPage';
 
+const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant'];
+
+function tabFromHash(): NavigationTab {
+  const hash = window.location.hash.slice(1);
+  return navigationTabs.find(tab => tab === hash) ?? 'home';
+}
+
 export function App() {
-  const [currentTab, setCurrentTab] = useState<NavigationTab>('home');
+  const [currentTab, setCurrentTab] = useState<NavigationTab>(tabFromHash);
   const [pet, setPet] = useState<Pet>(() => loadStoredPet(initialPet).pet);
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -24,6 +31,17 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isNightMode, setIsNightMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    const syncTabFromHash = () => setCurrentTab(tabFromHash());
+    window.addEventListener('hashchange', syncTabFromHash);
+    return () => window.removeEventListener('hashchange', syncTabFromHash);
+  }, []);
+
+  const handleSelectTab = (tab: NavigationTab) => {
+    setCurrentTab(tab);
+    window.location.hash = tab;
+  };
 
   // Initialize IndexedDB and load links + notes on mount
   useEffect(() => {
@@ -102,6 +120,7 @@ export function App() {
       setDailyGoals(prev => prev.map(g => g.id === 'goal-1' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
     } catch (err) {
       console.error('[App] Failed to save link to repository:', err);
+      throw err;
     }
   };
 
@@ -253,7 +272,7 @@ export function App() {
   return (
     <AppLayout
       currentTab={currentTab}
-      onSelectTab={setCurrentTab}
+      onSelectTab={handleSelectTab}
       pet={pet}
       isNightMode={isNightMode}
     >
@@ -276,7 +295,7 @@ export function App() {
           dailyGoals={dailyGoals}
           onFeedPet={handleFeedPet}
           onToggleGoal={handleToggleGoal}
-          onNavigate={setCurrentTab}
+          onNavigate={handleSelectTab}
           onAddLink={handleAddLink}
           notesCount={notes.length}
           isNightMode={isNightMode}
@@ -307,7 +326,7 @@ export function App() {
         <AssistantPage
           messages={chatMessages}
           onSendMessage={handleSendMessage}
-          onNavigate={setCurrentTab}
+          onNavigate={handleSelectTab}
         />
       )}
     </AppLayout>

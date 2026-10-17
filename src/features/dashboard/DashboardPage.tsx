@@ -11,7 +11,7 @@ export interface DashboardPageProps {
   onFeedPet: () => void;
   onToggleGoal: (id: string) => void;
   onNavigate: (tab: NavigationTab) => void;
-  onAddLink?: (newLink: SavedLink) => void;
+  onAddLink?: (newLink: SavedLink) => Promise<void>;
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;
@@ -46,7 +46,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
       />
 
       {/* 2. Grid Section: Daily Goals & Quick Knowledge Vault */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 px-1 sm:px-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-1 sm:px-0">
         {/* Daily Goals Card */}
         <div className="bg-white rounded-3xl p-5 border border-[#ECE6DB] shadow-xs flex flex-col justify-between">
           <div>
@@ -69,10 +69,12 @@ export const DashboardPage: FC<DashboardPageProps> = ({
             {/* Goals List */}
             <div className="space-y-2.5">
               {dailyGoals.map(goal => (
-                <div
+                <button
+                  type="button"
                   key={goal.id}
                   onClick={() => onToggleGoal(goal.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-2xl border transition-all cursor-pointer ${
+                  aria-pressed={goal.isCompleted}
+                  className={`w-full flex items-center justify-between text-left p-2.5 rounded-2xl border cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] ${
                     goal.isCompleted
                       ? 'bg-[#EAF6EE]/50 border-[#CCEBD6] text-[#36955E]'
                       : 'bg-[#FAF7F2] border-[#EFE8DD] text-[#4A4A5A] hover:bg-[#F5F0E6]'
@@ -91,7 +93,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
                   <span className="text-[11px] font-bold text-[#D97736] bg-white px-2 py-0.5 rounded-full border border-[#EAE6DF]">
                     +{goal.xpReward} XP
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           </div>

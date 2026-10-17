@@ -9,7 +9,7 @@ import { Search, Plus, ExternalLink, Trash2, Bookmark, Pencil, Check } from 'luc
 
 export interface VaultPageProps {
   links: SavedLink[];
-  onAddLink: (link: SavedLink) => void;
+  onAddLink: (link: SavedLink) => Promise<void>;
   onUpdateLink?: (id: string, updates: Partial<SavedLink>) => void;
   onDeleteLink: (id: string) => void;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
@@ -27,6 +27,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   const [customNotes, setCustomNotes] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [isSavingLink, setIsSavingLink] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
@@ -65,8 +66,9 @@ export const VaultPage: FC<VaultPageProps> = ({
     }
   };
 
-  const handleAddSubmit = (e: FormEvent) => {
+  const handleAddSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSavingLink) return;
     const trimmedUrl = urlInput.trim();
 
     if (!trimmedUrl) {
@@ -109,13 +111,20 @@ export const VaultPage: FC<VaultPageProps> = ({
       summary: 'Ready for study and personal reflection.'
     };
 
-    onAddLink(newLink);
-    setUrlInput('');
-    setCustomTitle('');
-    setCustomNotes('');
-    setIsAddingOpen(false);
-    setSuccessToast(`🎉 Saved to Vault: "${title}"`);
-    setTimeout(() => setSuccessToast(null), 3000);
+    setIsSavingLink(true);
+    try {
+      await onAddLink(newLink);
+      setUrlInput('');
+      setCustomTitle('');
+      setCustomNotes('');
+      setIsAddingOpen(false);
+      setSuccessToast(`🎉 Saved to Vault: "${title}"`);
+      setTimeout(() => setSuccessToast(null), 3000);
+    } catch {
+      setUrlError('Could not save this link locally. Check storage and try again.');
+    } finally {
+      setIsSavingLink(false);
+    }
   };
 
   // Filter links by search, category, and learning status
@@ -189,7 +198,7 @@ export const VaultPage: FC<VaultPageProps> = ({
 
         {/* Success Toast */}
         {successToast && (
-          <div className="mb-4 p-3 rounded-2xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#36955E] flex items-center gap-2 animate-fade-in">
+          <div role="status" className="mb-4 p-3 rounded-2xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#36955E] flex items-center gap-2 animate-fade-in">
             <span>✅</span>
             <span>{successToast}</span>
           </div>
@@ -217,7 +226,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                 }`}
               />
               {urlError && (
-                <p className="text-[11px] font-semibold text-[#C44A72] mt-1 pl-1">
+                <p role="alert" className="text-[11px] font-semibold text-[#C44A72] mt-1 pl-1">
                   ⚠️ {urlError}
                 </p>
               )}
@@ -261,8 +270,8 @@ export const VaultPage: FC<VaultPageProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="peach" size="sm">
-                <span>Save to Vault (+10 XP)</span>
+              <Button type="submit" variant="peach" size="sm" disabled={isSavingLink}>
+                <span>{isSavingLink ? 'Saving…' : 'Save to Vault (+10 XP)'}</span>
               </Button>
             </div>
           </form>

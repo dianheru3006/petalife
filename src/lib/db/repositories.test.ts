@@ -59,6 +59,17 @@ describe('IndexedDB Repositories & Data Layer', () => {
       const countAfter = await testDb.savedLinks.count();
       expect(countAfter).toBe(countBefore);
     });
+
+    it('seeds only once when initialization runs concurrently', async () => {
+      const results = await Promise.all([
+        initializeDatabase(testDb),
+        initializeDatabase(testDb),
+      ]);
+
+      expect(results.filter(result => result.seeded)).toHaveLength(1);
+      expect(await testDb.savedLinks.count()).toBe(4);
+      expect(await testDb.notes.count()).toBe(3);
+    });
   });
 
   describe('Links Repository CRUD & Queries', () => {

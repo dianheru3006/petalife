@@ -135,7 +135,9 @@
   .anim-mochi-idle,
   .anim-mochi-eating,
   .anim-float-heart,
-  .anim-gentle-sway {
+  .anim-gentle-sway,
+  .anim-float-bubble,
+  .animate-bounce {
     animation: none !important;
   }
 }

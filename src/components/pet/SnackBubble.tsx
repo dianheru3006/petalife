@@ -39,11 +39,16 @@ export const CircularMeter: FC<CircularMeterProps> = ({
 
   return (
     <div
-      className="flex items-center gap-1.5 cursor-pointer hover:scale-105 transition-transform"
-      title={`${label}: ${value}%`}
+      className="flex items-center gap-1.5"
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={Math.min(max, Math.max(0, value))}
+      title={label}
     >
-      <div className="relative w-8 h-8 flex items-center justify-center">
-        <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 32 32">
+      <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center">
+        <svg aria-hidden="true" className="w-7 h-7 sm:w-8 sm:h-8 transform -rotate-90" viewBox="0 0 32 32">
           {/* Background Track Ring */}
           <circle
             cx="16"
@@ -68,7 +73,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
           />
         </svg>
         {/* Center Indicator Icon */}
-        <div className="absolute inset-0 flex items-center justify-center" style={{ color }}>
+        <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center" style={{ color }}>
           {renderIcon()}
         </div>
       </div>
@@ -114,7 +119,14 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
   return (
     <div className={`relative flex flex-col items-center select-none ${className}`}>
       {/* Main Glass / Soap Dream Bubble */}
-      <div className="relative group cursor-pointer" onClick={handleClick}>
+      <button
+        type="button"
+        className="relative group cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D97736]"
+        onClick={handleClick}
+        disabled={isFeeding}
+        aria-label={isFull ? `${snack.name}, Mochi kenyang. Ganti camilan` : `Suapi Mochi ${snack.name}`}
+        title={isFull ? `${snack.name} (Perut kenyang • Ketuk untuk ganti makanan)` : `${snack.name} (Ketuk untuk suapi Mochi!)`}
+      >
         <div
           className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 anim-float-bubble shadow-md"
           style={{
@@ -124,11 +136,6 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
               '0 6px 18px rgba(160, 190, 240, 0.35), inset 0 2px 7px rgba(255, 255, 255, 0.95), inset 0 -2px 6px rgba(200, 220, 255, 0.5)',
             border: '1.5px solid rgba(255, 255, 255, 0.85)',
           }}
-          title={
-            isFull
-              ? `${snack.name} (Perut kenyang • Ketuk untuk ganti makanan)`
-              : `${snack.name} (Ketuk untuk suapi Mochi!)`
-          }
         >
           {/* Iridescent Rainbow Rim Sheen */}
           <div className="absolute inset-0 rounded-full pointer-events-none opacity-60 bg-gradient-to-tr from-cyan-300/30 via-pink-300/30 to-amber-200/30 mix-blend-overlay" />
@@ -145,7 +152,7 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
             <Icon />
           </div>
         </div>
-      </div>
+      </button>
 
       {/* Rising Bubble 2 (medium bubble, slightly offset) */}
       <div className="w-3 h-3 rounded-full border border-white/80 bg-white/50 shadow-xs mt-3.5 ml-1 relative">
