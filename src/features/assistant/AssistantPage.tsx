@@ -184,9 +184,11 @@ export const AssistantPage: FC<AssistantPageProps> = ({
         <Button
           type="submit"
           disabled={!inputText.trim()}
+          aria-label="Kirim pesan"
+          title="Kirim pesan"
           variant="peach"
           size="sm"
-          className="rounded-xl px-3.5 py-2 cursor-pointer"
+          className="rounded-xl px-3.5 py-2 cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center"
         >
           <Send className="w-4 h-4" />
           <span className="hidden sm:inline">Send</span>
