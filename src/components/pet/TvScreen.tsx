@@ -59,7 +59,6 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
       viewBox="0 0 768 1376"
       preserveAspectRatio="xMidYMid slice"
       className="absolute inset-0 w-full h-full pointer-events-none z-10"
-      aria-hidden="true"
     >
       <defs>
         {/* Exact Sub-Pixel Screen Polygon ClipPath */}
@@ -119,6 +118,7 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
 
       {/* --- DAYTIME ANIMATED CHANNELS (Clipped inside TV Screen bezel) --- */}
       <g
+        aria-hidden="true"
         clipPath="url(#tvScreenClip)"
         className={`transition-opacity duration-700 ease-out ${
           isNightMode ? 'opacity-0' : 'opacity-100'
@@ -372,6 +372,7 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
 
       {/* --- NIGHT MODE TURNED-OFF GLASS OVERLAY --- */}
       <g
+        aria-hidden="true"
         className={`transition-opacity duration-700 ease-out ${
           isNightMode ? 'opacity-100' : 'opacity-0'
         }`}
@@ -384,7 +385,7 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
       </g>
 
       {/* --- AMBIENT SPECULAR GLASS SHEEN (Always adds natural screen reflection) --- */}
-      <polygon points="276,520 394,458 394,547 276,607" fill="url(#tvGlassGlint)" />
+      <polygon aria-hidden="true" points="276,520 394,458 394,547 276,607" fill="url(#tvGlassGlint)" />
 
       {/* --- INTERACTIVE INVISIBLE CLICK TARGET OVER TV SCREEN --- */}
       <polygon

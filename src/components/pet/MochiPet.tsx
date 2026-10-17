@@ -81,9 +81,11 @@ export const MochiPet: FC<MochiPetProps> = ({
     }, ACTION_DURATIONS[action]);
   }, []);
 
-  // Listen for externally forced actions (e.g. user clicked "Ajak Menari 🎵")
+  // Listen for externally forced actions (e.g. user clicked "Ajak Menari 🎵" or link quick-capture studying)
   useEffect(() => {
-    if (!forcedAction || isSleeping || forcedAction.id === lastForcedIdRef.current) return;
+    if (!forcedAction || forcedAction.id === lastForcedIdRef.current) return;
+    // If sleeping, only allow studying action (Mochi wakes up temporarily to record knowledge)
+    if (isSleeping && forcedAction.action !== 'studying') return;
     lastForcedIdRef.current = forcedAction.id;
     const timer = setTimeout(() => {
       triggerAction(forcedAction.action);
@@ -109,6 +111,7 @@ export const MochiPet: FC<MochiPetProps> = ({
 
   const getAnimationClass = () => {
     if (isFeeding) return 'anim-mochi-eating';
+    if (currentAction === 'studying') return 'anim-mochi-studying';
     if (isSleeping) return 'anim-mochi-sleeping';
     switch (currentAction) {
       case 'hop':
@@ -121,8 +124,6 @@ export const MochiPet: FC<MochiPetProps> = ({
         return 'anim-mochi-wink';
       case 'dance':
         return 'anim-mochi-dance';
-      case 'studying':
-        return 'anim-mochi-studying';
       default:
         return 'anim-mochi-idle';
     }
@@ -141,7 +142,7 @@ export const MochiPet: FC<MochiPetProps> = ({
       )}
 
       {/* Dynamic Floating Particles based on Action */}
-      {(isFeeding || currentAction !== 'idle' || isHappy) && !isSleeping && (
+      {(isFeeding || currentAction !== 'idle' || isHappy) && (!isSleeping || currentAction === 'studying') && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
           {currentAction === 'studying' ? (
             <>
@@ -361,19 +362,7 @@ export const MochiPet: FC<MochiPetProps> = ({
           <ellipse cx="142" cy="112" rx="13" ry="8" fill="url(#blushClay)" />
 
           {/* 7. Eyes (Deep Chocolate Glossy Spheres or Expressive Action Shapes) */}
-          {isSleeping ? (
-            /* Sleeping Happy Curves */
-            <g stroke="#2C1A14" strokeWidth="3.5" strokeLinecap="round" fill="none">
-              <path d="M72 104 Q80 110 88 104" />
-              <path d="M112 104 Q120 110 128 104" />
-            </g>
-          ) : isFeeding ? (
-            /* Loving Heart Eyes */
-            <g fill="#E63946">
-              <path d="M80 98 C76 91 68 94 68 100 C68 108 80 114 80 114 C80 114 92 108 92 100 C92 94 84 91 80 98 Z" transform="scale(0.85) translate(14, 12)" />
-              <path d="M120 98 C116 91 108 94 108 100 C108 108 120 114 120 114 C120 114 132 108 132 100 C132 94 124 91 120 98 Z" transform="scale(0.85) translate(22, 12)" />
-            </g>
-          ) : currentAction === 'studying' ? (
+          {currentAction === 'studying' ? (
             /* Focused Scholarly Eyes with Sparkles (◕ ◕) */
             <g>
               {/* Left Eye */}
@@ -387,6 +376,18 @@ export const MochiPet: FC<MochiPetProps> = ({
               <circle cx="119.5" cy="97" r="3.6" fill="#FFFFFF" />
               <circle cx="125.5" cy="105" r="1.6" fill="#FFFFFF" />
               <polygon points="122,92 123.5,94.5 126,95 124,97 124.5,99.5 122,98 119.5,99.5 120,97 118,95 120.5,94.5" fill="#F4A261" />
+            </g>
+          ) : isSleeping ? (
+            /* Sleeping Happy Curves */
+            <g stroke="#2C1A14" strokeWidth="3.5" strokeLinecap="round" fill="none">
+              <path d="M72 104 Q80 110 88 104" />
+              <path d="M112 104 Q120 110 128 104" />
+            </g>
+          ) : isFeeding ? (
+            /* Loving Heart Eyes */
+            <g fill="#E63946">
+              <path d="M80 98 C76 91 68 94 68 100 C68 108 80 114 80 114 C80 114 92 108 92 100 C92 94 84 91 80 98 Z" transform="scale(0.85) translate(14, 12)" />
+              <path d="M120 98 C116 91 108 94 108 100 C108 108 120 114 120 114 C120 114 132 108 132 100 C132 94 124 91 120 98 Z" transform="scale(0.85) translate(22, 12)" />
             </g>
           ) : currentAction === 'dance' ? (
             /* Musical Happy Dancing Eyes (^ ^) */
@@ -452,21 +453,21 @@ export const MochiPet: FC<MochiPetProps> = ({
               strokeWidth="2.2"
               strokeLinejoin="round"
             />
-          ) : isSleeping ? (
-            /* Peaceful restful sleeping mouth */
-            <path
-              d="M96 112 Q100 115 104 112"
-              stroke="#2C1A14"
-              strokeWidth="2.0"
-              strokeLinecap="round"
-              fill="none"
-            />
           ) : currentAction === 'studying' ? (
             /* Cheerful focused study smile (◡) */
             <path
               d="M93 113 Q100 120 107 113"
               stroke="#2C1A14"
               strokeWidth="2.4"
+              strokeLinecap="round"
+              fill="none"
+            />
+          ) : isSleeping ? (
+            /* Peaceful restful sleeping mouth */
+            <path
+              d="M96 112 Q100 115 104 112"
+              stroke="#2C1A14"
+              strokeWidth="2.0"
               strokeLinecap="round"
               fill="none"
             />

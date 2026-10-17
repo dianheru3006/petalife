@@ -31,8 +31,9 @@ export const LiveCalendar: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
 
   return (
     <g className="select-none">
-      {/* Card 1: Tens digit of Date + Short Month */}
-      <g transform="translate(346, 407)">
+      <g aria-hidden="true">
+        {/* Card 1: Tens digit of Date + Short Month */}
+        <g transform="translate(346, 407)">
         <g transform="skewY(-28.07)">
           <text
             x="0"
@@ -80,6 +81,7 @@ export const LiveCalendar: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
             {dateInfo.d2}
           </text>
         </g>
+      </g>
       </g>
 
       {/* Interactive Clickable Area over the Flip Calendar */}

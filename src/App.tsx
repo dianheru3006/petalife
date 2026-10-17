@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
-import { initialPet, initialSavedLinks, initialNotes, initialChatMessages, initialDailyGoals } from './lib/mockData';
+import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
 import { feedPet, awardXp, calculateTimeDecay } from './features/pet/engine/petEngine';
 import { loadStoredPet, saveStoredPet } from './features/pet/engine/petStorage';
 import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksRepository';
@@ -8,6 +8,7 @@ import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesR
 import { initializeDatabase } from './lib/db/seed';
 import { recordRewardClaim } from './lib/db/rewardLedgerRepository';
 import { processAssistantMessage } from './features/assistant/engine/assistantEngine';
+import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { VaultPage } from './features/vault/VaultPage';
@@ -27,7 +28,7 @@ export function App() {
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
-  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(initialDailyGoals);
+  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(() => loadStoredDailyGoals());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isNightMode, setIsNightMode] = useState<boolean>(false);
@@ -91,6 +92,32 @@ export function App() {
     return () => clearInterval(timer);
   }, []);
 
+  // Helper to mark daily goals completed and award XP cleanly outside setState
+  const fulfillDailyGoal = async (goalId: string) => {
+    const todayKey = getTodayDateString();
+    const ledgerKey = `goal:${todayKey}:${goalId}`;
+
+    const goal = dailyGoals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    if (!goal.hasClaimedXp) {
+      try {
+        const isNew = await recordRewardClaim(ledgerKey, 'habit', goalId, goal.xpReward);
+        if (isNew) {
+          setPet(p => awardXp(p, goal.xpReward).pet);
+        }
+      } catch (err) {
+        console.error(`[App] Failed to claim reward for goal ${goalId}:`, err);
+      }
+    }
+
+    setDailyGoals(prev => {
+      const next = prev.map(g => g.id === goalId ? { ...g, isCompleted: true, hasClaimedXp: true } : g);
+      saveStoredDailyGoals(next);
+      return next;
+    });
+  };
+
   // 1. Feeding Interaction via Engine
   const handleFeedPet = () => {
     setPet(prev => {
@@ -99,9 +126,6 @@ export function App() {
         return prev;
       }
 
-      // Mark daily goal as done
-      setDailyGoals(goals => goals.map(g => g.id === 'goal-2' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
-
       // Return to idle after feeding animation completes
       setTimeout(() => {
         setPet(current => ({ ...current, state: 'idle' }));
@@ -109,6 +133,9 @@ export function App() {
 
       return result.pet;
     });
+
+    // Fulfill daily morning snack habit outside setState
+    fulfillDailyGoal('goal-2');
   };
 
   // 3. Vault Actions with IndexedDB Persistence
@@ -116,8 +143,16 @@ export function App() {
     try {
       const created = await createLink(newLink);
       setSavedLinks(prev => [created, ...prev]);
-      setPet(prev => awardXp(prev, 10).pet);
-      setDailyGoals(prev => prev.map(g => g.id === 'goal-1' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
+
+      // Daily limit on link save XP rewards (idempotent reward ledger entry)
+      const todayKey = getTodayDateString();
+      const linkLedgerKey = `link_save:${todayKey}:${created.id}`;
+      const isNewClaim = await recordRewardClaim(linkLedgerKey, 'link_save', created.id, 10);
+      if (isNewClaim) {
+        setPet(prev => awardXp(prev, 10).pet);
+      }
+
+      await fulfillDailyGoal('goal-1');
     } catch (err) {
       console.error('[App] Failed to save link to repository:', err);
       throw err;
@@ -149,7 +184,7 @@ export function App() {
 
       // Fulfill daily goal for reviewing links
       if (status === 'in_progress' || status === 'completed') {
-        setDailyGoals(prev => prev.map(g => g.id === 'goal-3' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
+        fulfillDailyGoal('goal-3');
       }
 
       // Phase 3C: Reward Mochi with +10 XP if user mastered the material (and not already rewarded)
@@ -180,7 +215,7 @@ export function App() {
       const created = await createNote(newNote);
       setNotes(prev => [created, ...prev]);
       setPet(prev => awardXp(prev, 15).pet);
-      setDailyGoals(prev => prev.map(g => g.id === 'goal-4' ? { ...g, isCompleted: true, hasClaimedXp: true } : g));
+      await fulfillDailyGoal('goal-4');
     } catch (err) {
       console.error('[App] Failed to save note to repository:', err);
     }
@@ -204,27 +239,36 @@ export function App() {
     }
   };
 
-  // 5. Goals Action with Idempotent Anti-Spam Guard (Fix for SEC-02)
-  const handleToggleGoal = (id: string) => {
-    const todayKey = new Date().toISOString().slice(0, 10);
+  // 5. Goals Action with Idempotent Anti-Spam Guard (Fix for SEC-02 & Clean State Updater)
+  const handleToggleGoal = async (id: string) => {
+    const todayKey = getTodayDateString();
     const ledgerKey = `goal:${todayKey}:${id}`;
 
-    setDailyGoals(prev => prev.map(g => {
-      if (g.id === id) {
-        const nextState = !g.isCompleted;
-        // Only award XP if transitioning to completed AND has not yet claimed XP for this goal today
-        if (nextState && !g.hasClaimedXp) {
-          recordRewardClaim(ledgerKey, 'habit', id, g.xpReward).then(isNew => {
-            if (isNew) {
-              setPet(p => awardXp(p, g.xpReward).pet);
-            }
-          });
-          return { ...g, isCompleted: true, hasClaimedXp: true };
+    const goal = dailyGoals.find(g => g.id === id);
+    if (!goal) return;
+
+    const nextState = !goal.isCompleted;
+    if (nextState && !goal.hasClaimedXp) {
+      try {
+        const isNew = await recordRewardClaim(ledgerKey, 'habit', id, goal.xpReward);
+        if (isNew) {
+          setPet(p => awardXp(p, goal.xpReward).pet);
         }
-        return { ...g, isCompleted: nextState };
+      } catch (err) {
+        console.error('[App] Failed to record reward claim:', err);
       }
-      return g;
-    }));
+      setDailyGoals(prev => {
+        const next = prev.map(g => g.id === id ? { ...g, isCompleted: true, hasClaimedXp: true } : g);
+        saveStoredDailyGoals(next);
+        return next;
+      });
+    } else {
+      setDailyGoals(prev => {
+        const next = prev.map(g => g.id === id ? { ...g, isCompleted: nextState } : g);
+        saveStoredDailyGoals(next);
+        return next;
+      });
+    }
   };
 
   // 6. Assistant Actions

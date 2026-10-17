@@ -1,6 +1,8 @@
-// Petalife Service Worker (Phase 5 - PWA & Offline Readiness)
-const CACHE_NAME = 'petalife-shell-v1';
-const PRECACHE_ASSETS = [
+// Petalife Service Worker (PWA & Complete Offline Precache)
+const CACHE_NAME = 'petalife-shell-v2';
+
+// 1. Static Web App Shell Assets
+const STATIC_PRECACHE = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -12,11 +14,16 @@ const PRECACHE_ASSETS = [
   '/icon-maskable.svg',
 ];
 
-// 1. Install & Pre-cache App Shell
+// 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
+const BUILD_ASSETS = [];
+
+const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
+
+// 1. Install & Pre-cache Full App Shell + Build Assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
+      return cache.addAll(ALL_PRECACHE);
     }).then(() => self.skipWaiting())
   );
 });

@@ -75,8 +75,8 @@ export interface DailyGoal {
 }
 
 export interface RewardLedgerEntry {
-  id: string; // e.g. "quiz:quiz-1", "link_mastered:link-1", "goal:2026-10-17:goal-2"
-  category: 'quiz' | 'habit' | 'link_mastered';
+  id: string; // e.g. "quiz:quiz-1", "link_mastered:link-1", "goal:2026-10-17:goal-2", "link_save:2026-10-17:link-1"
+  category: 'quiz' | 'habit' | 'link_mastered' | 'link_save';
   entityId: string;
   xpAwarded: number;
   awardedAt: number;

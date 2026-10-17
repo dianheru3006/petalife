@@ -12,10 +12,10 @@ const CY = 433.0;
 export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
   const [angles, setAngles] = useState(() => getClockAngles());
 
-  // Update clock hands smoothly every 250ms for live accurate second ticking
+  // Update clock hands every 1000ms to balance accuracy and CPU performance
   useEffect(() => {
     const update = () => setAngles(getClockAngles());
-    const timer = setInterval(update, 250);
+    const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -40,9 +40,10 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
 
   return (
     <g className="select-none">
-      {/* 1. Ambient Drop Shadows (offset dx=1.2, dy=1.8 matching 3D room light) */}
-      <line
-        x1={CX + 1.2}
+      <g aria-hidden="true">
+        {/* 1. Ambient Drop Shadows (offset dx=1.2, dy=1.8 matching 3D room light) */}
+        <line
+          x1={CX + 1.2}
         y1={CY + 1.8}
         x2={hourTip.x + 1.2}
         y2={hourTip.y + 1.8}
@@ -106,6 +107,7 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
         strokeWidth="0.8"
       />
       <circle cx={CX} cy={CY} r="1.1" fill="#3E2723" />
+      </g>
 
       {/* 6. Interactive Click Target over the Clock Dial */}
       <polygon

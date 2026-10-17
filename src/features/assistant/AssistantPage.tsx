@@ -44,11 +44,11 @@ export const AssistantPage: FC<AssistantPageProps> = ({
   };
 
   return (
-    <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-170px)] min-h-[460px]">
+    <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-170px)] min-h-0">
       {/* Grounded AI Assistant Badge */}
       <div
         className={cn(
-          'border px-3.5 py-1.5 rounded-2xl text-[11px] font-semibold flex items-center justify-between mb-4 shadow-2xs transition-colors duration-700',
+          'shrink-0 border px-3.5 py-1.5 rounded-2xl text-[11px] font-semibold flex items-center justify-between mb-3 shadow-2xs transition-colors duration-700',
           isNightMode
             ? 'bg-[#FAF2E6] border-[#ECC8B2] text-[#8C5D39]'
             : 'bg-[#FFF7EE] border-[#FED7C5] text-[#8C5D39]'
@@ -61,7 +61,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
       </div>
 
       {/* Messages Thread Container */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4 scrollbar-thin">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 mb-3 scrollbar-thin">
         {messages.map(msg => {
           const isAssistant = msg.sender === 'assistant';
           return (
@@ -168,7 +168,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           handleSend();
         }}
         className={cn(
-          'flex items-center gap-2 p-2 rounded-2xl border shadow-xs transition-colors duration-700',
+          'shrink-0 flex items-center gap-2 p-2 rounded-2xl border shadow-xs transition-colors duration-700',
           isNightMode
             ? 'bg-[#FAF6EE] border-[#DDD2C2]'
             : 'bg-[#FAF7F2] border-[#ECE6DB]'

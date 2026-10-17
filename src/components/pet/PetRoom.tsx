@@ -317,7 +317,9 @@ export const PetRoom: FC<PetRoomProps> = ({
       setForcedAction({ id: Date.now(), action: 'studying' });
 
       let studySpeech = `Materi baru dari ${domain}! Mochi pelajari dan catat di buku ya! 📖✨ (+10 XP)`;
-      if (platform === 'youtube') {
+      if (activeNight) {
+        studySpeech = 'Hoaamm... Mochi catat materinya ya walau udah malam 🌙📓✏️ (+10 XP)';
+      } else if (platform === 'youtube') {
         studySpeech = 'Wah, video YouTube baru! Mochi catat poin-poin pentingnya dulu ya! 📝✨ (+10 XP)';
       } else if (platform === 'tiktok' || platform === 'instagram') {
         studySpeech = 'Shorts baru! Mochi rangkum tips & ilmunya di buku catatan! 📱📓 (+10 XP)';
@@ -399,7 +401,6 @@ export const PetRoom: FC<PetRoomProps> = ({
           viewBox="0 0 768 1376"
           preserveAspectRatio="xMidYMid slice"
           className="absolute inset-0 w-full h-full pointer-events-none z-10"
-          aria-hidden="true"
         >
           <LiveWallClock
             onClockClick={(speechText) => triggerSpeech(speechText, 4000)}
