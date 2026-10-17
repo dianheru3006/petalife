@@ -41,14 +41,14 @@ export const BottomNav: FC<BottomNavProps> = ({
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-colors duration-200 cursor-pointer flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
+              'transition-colors duration-200 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
               isActive
                 ? isNightMode
-                  ? 'bg-[#E5DCCF] text-[#2E2E3A] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
-                  : 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
+                  ? 'bg-[#E5DCCF] text-[#2E2E3A] px-3.5 py-2 rounded-full font-bold text-xs shadow-xs'
+                  : 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-2 rounded-full font-bold text-xs shadow-xs'
                 : isNightMode
-                  ? 'p-2 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#EFE7D8] rounded-full'
-                  : 'p-2 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#FAF7F2] rounded-full'
+                  ? 'p-2.5 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#EFE7D8] rounded-full'
+                  : 'p-2.5 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#FAF7F2] rounded-full'
             )}
           >
             {tab.icon}

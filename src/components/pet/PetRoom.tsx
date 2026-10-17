@@ -316,6 +316,10 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       if (isAwarded) {
         setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+10 XP) [${countToday}/3 hari ini]`);
+      } else if (rewardRes?.reason === 'storage_error') {
+        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Penyimpanan reward offline)');
+      } else if (rewardRes?.reason === 'already_claimed') {
+        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Tautan ini sudah diklaim hari ini)');
       } else {
         setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Batas 3 reward/hari tercapai)');
       }

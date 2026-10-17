@@ -157,9 +157,8 @@ export async function queryAssistant(
   }
 ): Promise<AssistantResponse> {
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
-  // If hosted on GitHub Pages without a configured remote bot URL, skip relative /api call to prevent 404s
-  const isGitHubPages = typeof window !== 'undefined' && window.location?.hostname?.endsWith('github.io');
-  const apiUrl = envUrl || (!isGitHubPages ? '/api/petalife/chat' : null);
+  // Use configured remote bot URL if provided, otherwise default to /api/petalife/chat with automatic local fallback
+  const apiUrl = envUrl || '/api/petalife/chat';
 
   if (apiUrl) {
     try {

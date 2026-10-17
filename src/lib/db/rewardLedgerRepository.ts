@@ -56,7 +56,7 @@ export interface LinkRewardResult {
   awarded: boolean;
   xpAwarded: number;
   countToday: number;
-  reason?: 'already_claimed' | 'daily_cap_reached';
+  reason?: 'already_claimed' | 'daily_cap_reached' | 'storage_error';
 }
 
 /**
@@ -102,7 +102,7 @@ export async function claimDailyLinkReward(
     });
   } catch (err) {
     console.error('[RewardLedger] Failed to claim daily link reward:', err);
-    return { awarded: false, xpAwarded: 0, countToday: 0 };
+    return { awarded: false, xpAwarded: 0, countToday: 0, reason: 'storage_error' };
   }
 }
 

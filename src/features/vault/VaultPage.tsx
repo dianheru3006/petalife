@@ -122,11 +122,15 @@ export const VaultPage: FC<VaultPageProps> = ({
       setCustomTitle('');
       setCustomNotes('');
       setIsAddingOpen(false);
-      setSuccessToast(
-        isAwarded
-          ? `🎉 Saved to Vault: "${title}" (+10 XP) [${rewardRes?.countToday ?? 1}/3 today]`
-          : `🎉 Saved to Vault: "${title}" (Daily 3-reward cap reached)`
-      );
+      let rewardNotice = ' (Daily 3-reward cap reached)';
+      if (isAwarded) {
+        rewardNotice = ` (+10 XP) [${rewardRes?.countToday ?? 1}/3 today]`;
+      } else if (rewardRes?.reason === 'storage_error') {
+        rewardNotice = ' (Reward storage offline)';
+      } else if (rewardRes?.reason === 'already_claimed') {
+        rewardNotice = ' (Reward already claimed today)';
+      }
+      setSuccessToast(`🎉 Saved to Vault: "${title}"${rewardNotice}`);
       setTimeout(() => setSuccessToast(null), 3000);
     } catch {
       setUrlError('Could not save this link locally. Check storage and try again.');
