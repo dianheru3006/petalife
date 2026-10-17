@@ -15,7 +15,7 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/index-BDGQFIZ6.css","./assets/index-CxYJPXa8.js","./assets/room-bg-B7tupBkv.jpg"];
+const BUILD_ASSETS = ["./assets/index-Ce_o831m.css","./assets/index-D3Gx5ZCB.js","./assets/room-bg-B7tupBkv.jpg"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
 
