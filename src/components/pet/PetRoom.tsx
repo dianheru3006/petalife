@@ -19,6 +19,8 @@ import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/pe
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
 import { detectPlatform } from '../../lib/utils';
 import roomBg from '../../assets/room-bg.jpg';
+import { SnackBubble, CircularMeter } from './SnackBubble';
+import { SNACK_VARIANTS } from './snackData';
 
 export interface PetRoomProps {
   pet: Pet;
@@ -40,6 +42,10 @@ export const PetRoom: FC<PetRoomProps> = ({
   const isFull = !canFeedPet(pet);
   const isFeeding = pet.state === 'feeding';
   const contextualStatus = getPetContextualStatus(pet);
+
+  // Dynamic Snack Variety (cycles through Onigiri, Cake, Dango, Baozi, Pancake, Cookie, Pudding, Peach)
+  const [snackIndex, setSnackIndex] = useState(0);
+  const currentSnack = SNACK_VARIANTS[snackIndex];
 
   const [speech, setSpeech] = useState<string>(
     isFull ? 'Perut Mochi kenyang dan hatiku senang! ✨' : contextualStatus.speechText
@@ -76,6 +82,25 @@ export const PetRoom: FC<PetRoomProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  // Idle gentle food alternation ("kadang onigiri, kadang varian makanan lain")
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSnackIndex(prev => (prev + 1) % SNACK_VARIANTS.length);
+    }, 18000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleCycleNextSnack = () => {
+    const nextIdx = (snackIndex + 1) % SNACK_VARIANTS.length;
+    setSnackIndex(nextIdx);
+    const nextSnack = SNACK_VARIANTS[nextIdx];
+    if (isFull) {
+      setSpeech(`Perut Mochi kenyang! Nanti kita coba ${nextSnack.name} ya! ✨`);
+    } else {
+      setSpeech(`Mochi juga mau coba ${nextSnack.name}! 😋✨`);
+    }
+  };
+
   const handleFeedClick = () => {
     if (isFull) {
       setSpeech('Perut Mochi sudah kenyang dan hatiku senang! ✨');
@@ -86,12 +111,18 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     onFeed();
-    setSpeech('Nyam nyam! Enak sekali, terima kasih! 💖');
-    setLastFedText('+25 XP • Mochi Kenyang!');
+    setSpeech(currentSnack.feedSpeech);
+    setLastFedText(`+25 XP • ${currentSnack.shortName}!`);
+
+    // Transition to another delicious snack variant after feeding!
+    setTimeout(() => {
+      setSnackIndex(prev => (prev + 1) % SNACK_VARIANTS.length);
+    }, 1200);
+
     setTimeout(() => {
       setLastFedText(null);
       setSpeech('Mau simpan atau tonton video apa hari ini? 🎬');
-    }, 2500);
+    }, 2800);
   };
 
   const handlePetTap = () => {
@@ -241,23 +272,40 @@ export const PetRoom: FC<PetRoomProps> = ({
             <MochiPet pet={pet} onPetClick={handlePetTap} showBubble={false} />
           </div>
 
+          {/* Floating Dream Soap Bubble pointing directly down to Hunger Meter */}
+          <div className="absolute bottom-[56px] sm:bottom-[60px] left-3 sm:left-4 z-25">
+            <SnackBubble
+              snack={currentSnack}
+              onFeed={handleFeedClick}
+              onCycleNext={handleCycleNextSnack}
+              isFull={isFull}
+              isFeeding={isFeeding}
+            />
+          </div>
+
           {/* Bottom Status Row Overlay inside the Room Frame */}
           <div className="absolute bottom-3 left-4 right-4 z-20 bg-white/90 backdrop-blur-md rounded-2xl px-3 sm:px-4 py-2 border border-[#EAE3D5] shadow-xs flex items-center justify-between text-xs">
-            {/* Status Badges: Onigiri icon precisely placed on the eating/hunger info! */}
-            <div className="flex items-center gap-2.5 sm:gap-3 text-xs font-bold">
-              <span className="flex items-center gap-1.5 text-[#D97736]" title={`Lapar: ${pet.hunger}%`}>
-                <span className="text-sm">🍙</span>
-                <span>{pet.hunger}%</span>
-              </span>
-              <span className="flex items-center gap-1 text-[#E57399]" title={`Senang: ${pet.mood}%`}>
-                <span>💖</span>
-                <span>{pet.mood}%</span>
-              </span>
-              <span className="flex items-center gap-1 text-[#57B37C]" title={`Energi: ${pet.energy}%`}>
-                <span>⚡</span>
-                <span>{pet.energy}%</span>
-              </span>
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#FAF6EE] text-[#7161BF] border border-[#DCD6F3] text-[11px]">
+            {/* Status Badges: Circular Progress Rings matching reference screenshot */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <CircularMeter
+                value={pet.hunger}
+                color="#D97736"
+                iconType="hunger"
+                label="Lapar / Makanan"
+              />
+              <CircularMeter
+                value={pet.mood}
+                color="#E57399"
+                iconType="mood"
+                label="Senang / Afeksi"
+              />
+              <CircularMeter
+                value={pet.energy}
+                color="#57B37C"
+                iconType="energy"
+                label="Energi / Segar"
+              />
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#FAF6EE] text-[#7161BF] border border-[#DCD6F3] text-[11px] font-semibold">
                 {getStageName(pet.level)}
               </span>
             </div>
@@ -268,13 +316,14 @@ export const PetRoom: FC<PetRoomProps> = ({
               <button
                 onClick={handleFeedClick}
                 disabled={isFull || isFeeding}
-                className={`text-[11px] font-extrabold px-3 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
+                className={`text-[11px] font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
                   isFull
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-[#FED7C5] hover:bg-[#F4A261] text-[#7A3613] hover:text-white shadow-xs'
                 }`}
+                title={isFull ? 'Mochi sudah kenyang' : `Suapi ${currentSnack.name} (+25 XP)`}
               >
-                <span>{isFeeding ? 'Makan...' : isFull ? 'Kenyang' : '🍙 Suapi'}</span>
+                <span>{isFeeding ? 'Makan...' : isFull ? 'Kenyang' : `${currentSnack.emoji} Suapi`}</span>
               </button>
             </div>
           </div>
