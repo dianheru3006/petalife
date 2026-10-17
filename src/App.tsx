@@ -23,6 +23,7 @@ export function App() {
   const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(initialDailyGoals);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [storageError, setStorageError] = useState<string | null>(null);
+  const [isNightMode, setIsNightMode] = useState<boolean>(false);
 
   // Initialize IndexedDB and load links + notes on mount
   useEffect(() => {
@@ -254,6 +255,7 @@ export function App() {
       currentTab={currentTab}
       onSelectTab={setCurrentTab}
       pet={pet}
+      isNightMode={isNightMode}
     >
       {storageError && (
         <div className="mb-4 p-3 rounded-2xl bg-[#FFF9E6] border border-[#FFE8B8] text-xs font-semibold text-[#8C6D23] flex items-center justify-between">
@@ -277,6 +279,8 @@ export function App() {
           onNavigate={setCurrentTab}
           onAddLink={handleAddLink}
           notesCount={notes.length}
+          isNightMode={isNightMode}
+          onToggleNightMode={() => setIsNightMode(prev => !prev)}
         />
       )}
 

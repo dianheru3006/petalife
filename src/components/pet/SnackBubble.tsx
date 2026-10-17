@@ -8,6 +8,7 @@ export interface CircularMeterProps {
   color: string;
   iconType: 'hunger' | 'mood' | 'energy';
   label: string;
+  isNightMode?: boolean;
 }
 
 export const CircularMeter: FC<CircularMeterProps> = ({
@@ -16,6 +17,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
   color,
   iconType,
   label,
+  isNightMode = false,
 }) => {
   const percentage = Math.min(100, Math.max(0, (value / max) * 100));
   const radius = 12;
@@ -42,7 +44,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
             cx="16"
             cy="16"
             r={radius}
-            stroke="#ECE6DB"
+            stroke={isNightMode ? '#34374D' : '#ECE6DB'}
             strokeWidth="2.5"
             fill="none"
           />
@@ -65,7 +67,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
           {renderIcon()}
         </div>
       </div>
-      <span className="text-[11px] font-bold text-[#4A4A5A]">{value}%</span>
+      <span className={`text-[11px] font-bold ${isNightMode ? 'text-[#DDD9E5]' : 'text-[#4A4A5A]'}`}>{value}%</span>
     </div>
   );
 };

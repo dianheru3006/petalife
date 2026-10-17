@@ -30,6 +30,8 @@ export interface PetRoomProps {
   savedLinks?: SavedLink[];
   onAddLink?: (newLink: SavedLink) => void;
   notesCount?: number;
+  isNightMode?: boolean;
+  onToggleNightMode?: () => void;
 }
 
 export const PetRoom: FC<PetRoomProps> = ({
@@ -39,6 +41,8 @@ export const PetRoom: FC<PetRoomProps> = ({
   savedLinks = [],
   onAddLink,
   notesCount = 3,
+  isNightMode,
+  onToggleNightMode,
 }) => {
   const isFull = !canFeedPet(pet);
   const isFeeding = pet.state === 'feeding';
@@ -54,7 +58,23 @@ export const PetRoom: FC<PetRoomProps> = ({
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [lastFedText, setLastFedText] = useState<string | null>(null);
-  const [isNightMode, setIsNightMode] = useState<boolean>(false);
+  const [localNight, setLocalNight] = useState<boolean>(false);
+  const activeNight = isNightMode !== undefined ? isNightMode : localNight;
+
+  const handleToggleNight = () => {
+    const willBeNight = !activeNight;
+    if (onToggleNightMode) {
+      onToggleNightMode();
+    } else {
+      setLocalNight(prev => !prev);
+    }
+
+    if (willBeNight) {
+      triggerSpeech('Hoaaam... Selamat istirahat & mimpi indah, Dian! 🌙💤', 4000);
+    } else {
+      triggerSpeech('Selamat pagi! Semangat belajar lagi bareng Mochi! ☀️✨', 4000);
+    }
+  };
 
   // Quick Link Capture State
   const [quickUrl, setQuickUrl] = useState('');
@@ -222,12 +242,12 @@ export const PetRoom: FC<PetRoomProps> = ({
   return (
     <div className="w-full max-w-lg mx-auto space-y-2">
       {/* 1. Simple, Clean Header directly on canvas (matching reference screenshot) */}
-      <div className="flex items-center justify-between px-5 pt-3 pb-1 select-none">
+      <div className="flex items-center justify-between px-5 pt-3 pb-1 select-none transition-colors duration-700">
         <div>
-          <p className="text-xs text-[#8A857A] font-medium leading-none">
+          <p className={`text-xs font-medium leading-none ${activeNight ? 'text-[#A09BAC]' : 'text-[#8A857A]'}`}>
             {greeting},
           </p>
-          <h1 className="text-xl font-extrabold text-[#2E2E3A] tracking-tight mt-1">
+          <h1 className={`text-xl font-extrabold tracking-tight mt-1 ${activeNight ? 'text-[#FAF7F2]' : 'text-[#2E2E3A]'}`}>
             Rumah Mochi
           </h1>
         </div>
@@ -236,7 +256,11 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Subtle streak pill */}
           <div
             onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 border border-[#EAE3D5] text-xs font-bold text-[#D97736] shadow-xs cursor-pointer hover:bg-white transition-all active:scale-95"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-xs cursor-pointer transition-all active:scale-95 ${
+              activeNight
+                ? 'bg-[#222434] border border-[#34374D] text-[#F4A261] hover:bg-[#2A2C3E]'
+                : 'bg-white/80 border border-[#EAE3D5] text-[#D97736] hover:bg-white'
+            }`}
             title={`Streak: ${pet.streakDays} hari`}
           >
             <span>🔥</span>
@@ -246,24 +270,34 @@ export const PetRoom: FC<PetRoomProps> = ({
       </div>
 
       {/* 2. 3D Isometric Room Canvas (BORDERLESS, exact matching #EEE1CD with seamless feathered transitions) */}
-      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden bg-[#EEE1CD]">
+      <div className={`relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden transition-colors duration-700 ${
+        activeNight ? 'bg-[#181926]' : 'bg-[#EEE1CD]'
+      }`}>
         {/* Background 3D Room Diorama */}
         <img
           src={roomBg}
           alt="Rumah Mochi 3D Living Room"
-          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+          className={`absolute inset-0 w-full h-full object-cover object-center pointer-events-none transition-all duration-700 ${
+            activeNight ? 'brightness-90 contrast-[0.95]' : 'brightness-100'
+          }`}
         />
 
-        {/* TOP SOFT FEATHERED GRADIENT (Matches #EEE1CD exactly, melting seamlessly into the header) */}
-        <div className="absolute top-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-b from-[#EEE1CD] via-[#EEE1CD]/60 to-transparent pointer-events-none z-10" />
+        {/* TOP SOFT FEATHERED GRADIENT (Matches page bg exactly: #EEE1CD day / #181926 night) */}
+        <div className={`absolute top-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-b to-transparent pointer-events-none z-10 transition-all duration-700 ${
+          activeNight ? 'from-[#181926] via-[#181926]/70' : 'from-[#EEE1CD] via-[#EEE1CD]/70'
+        }`} />
 
-        {/* BOTTOM SOFT FEATHERED GRADIENT (Matches #EEE1CD exactly, melting seamlessly into the status row) */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-t from-[#EEE1CD] via-[#EEE1CD]/60 to-transparent pointer-events-none z-10" />
+        {/* BOTTOM SOFT FEATHERED GRADIENT (Matches page bg exactly: #EEE1CD day / #181926 night) */}
+        <div className={`absolute bottom-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-t to-transparent pointer-events-none z-10 transition-all duration-700 ${
+          activeNight ? 'from-[#181926] via-[#181926]/70' : 'from-[#EEE1CD] via-[#EEE1CD]/70'
+        }`} />
 
-        {/* Night Mode Ambient Overlay (Warm lighting mode completely removed as requested) */}
-        {isNightMode && (
-          <div className="absolute inset-0 transition-opacity duration-700 bg-[#1a1b35]/35 mix-blend-multiply pointer-events-none z-10" />
-        )}
+        {/* Night Mode Ambient Overlay (Seamless full-bleed midnight filter) */}
+        <div
+          className={`absolute inset-0 transition-opacity duration-700 pointer-events-none z-10 ${
+            activeNight ? 'opacity-100 bg-[#141522]/45 mix-blend-multiply' : 'opacity-0'
+          }`}
+        />
 
         {/* Toast Notification inside Room */}
         {lastFedText && (
@@ -280,9 +314,17 @@ export const PetRoom: FC<PetRoomProps> = ({
               : 'opacity-0 scale-90 translate-y-2 pointer-events-none'
           }`}
         >
-          <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] flex items-center gap-1.5 whitespace-nowrap">
+          <div className={`backdrop-blur-md px-4 py-2 rounded-2xl shadow-md border text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors duration-700 ${
+            activeNight
+              ? 'bg-[#222434]/95 text-[#FAF7F2] border-[#34374D]'
+              : 'bg-white/95 text-[#3A3340] border-[#EAE3D5]'
+          }`}>
             <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
+            <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 border-r border-b ${
+              activeNight
+                ? 'bg-[#222434] border-[#34374D]'
+                : 'bg-white border-[#EAE3D5]'
+            }`} />
           </div>
         </div>
 
@@ -312,51 +354,62 @@ export const PetRoom: FC<PetRoomProps> = ({
             color="#D97736"
             iconType="hunger"
             label="Lapar / Makanan"
+            isNightMode={activeNight}
           />
           <CircularMeter
             value={pet.mood}
             color="#E57399"
             iconType="mood"
             label="Senang / Afeksi"
+            isNightMode={activeNight}
           />
           <CircularMeter
             value={pet.energy}
             color="#57B37C"
             iconType="energy"
             label="Energi / Segar"
+            isNightMode={activeNight}
           />
-          <span className="text-xs font-semibold text-[#8A857A]">
+          <span className={`text-xs font-semibold ${activeNight ? 'text-[#A09BAC]' : 'text-[#8A857A]'}`}>
             {getStageName(pet.level)}
           </span>
         </div>
 
         {/* Center: Pet Name & Info */}
         <div
-          className="flex items-center gap-1 font-black text-sm text-[#2E2E3A] cursor-pointer hover:opacity-80 transition-opacity"
+          className={`flex items-center gap-1 font-black text-sm cursor-pointer hover:opacity-80 transition-opacity ${
+            activeNight ? 'text-[#FAF7F2]' : 'text-[#2E2E3A]'
+          }`}
           onClick={handlePetTap}
           title="Ketuk untuk berinteraksi dengan Mochi"
         >
           <span>{pet.name}</span>
-          <Info className="w-3.5 h-3.5 text-[#8A857A]" />
+          <Info className={`w-3.5 h-3.5 ${activeNight ? 'text-[#A09BAC]' : 'text-[#8A857A]'}`} />
         </div>
 
         {/* Right: Dress-up & Night Mode Actions */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
-            className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#2E2E3A] cursor-pointer transition-colors active:scale-95"
+            className={`w-8 h-8 rounded-full shadow-xs flex items-center justify-center cursor-pointer transition-colors active:scale-95 ${
+              activeNight
+                ? 'bg-[#222434] border border-[#34374D] text-[#A09BAC] hover:text-[#FAF7F2]'
+                : 'bg-white border border-[#EAE3D5] text-[#6B6B7E] hover:text-[#2E2E3A]'
+            }`}
             title="Koleksi / Baju Mochi"
           >
             <Shirt className="w-4 h-4" />
           </button>
           <button
-            onClick={() => {
-              setIsNightMode(prev => !prev);
-            }}
-            className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
-            title={isNightMode ? 'Kembali ke mode siang' : 'Mode malam (redupkan lampu)'}
+            onClick={handleToggleNight}
+            className={`w-8 h-8 rounded-full shadow-xs flex items-center justify-center cursor-pointer transition-colors active:scale-95 ${
+              activeNight
+                ? 'bg-[#222434] border border-[#34374D] text-[#F4A261] hover:text-[#F8C194]'
+                : 'bg-white border border-[#EAE3D5] text-[#6B6B7E] hover:text-[#7161BF]'
+            }`}
+            title={activeNight ? 'Kembali ke mode siang' : 'Mode malam (redupkan lampu)'}
           >
-            {isNightMode ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
+            {activeNight ? <Sun className="w-4 h-4 text-[#F4A261]" /> : <Moon className="w-4 h-4 text-[#7161BF]" />}
           </button>
         </div>
       </div>
@@ -378,7 +431,9 @@ export const PetRoom: FC<PetRoomProps> = ({
         <form onSubmit={handleQuickAddLink} className="relative flex items-center">
           <button
             type="submit"
-            className="absolute left-3.5 text-[#7A7A8A] hover:text-[#2E2E3A] cursor-pointer transition-colors"
+            className={`absolute left-3.5 cursor-pointer transition-colors ${
+              activeNight ? 'text-[#A09BAC] hover:text-[#FAF7F2]' : 'text-[#7A7A8A] hover:text-[#2E2E3A]'
+            }`}
             title="Simpan Tautan"
           >
             <Plus className="w-4 h-4" />
@@ -391,7 +446,11 @@ export const PetRoom: FC<PetRoomProps> = ({
               if (quickError) setQuickError(null);
             }}
             placeholder="Tempel link di sini..."
-            className="w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full bg-white border border-[#EAE3D5] text-[#2E2E3A] placeholder-[#9E9EA8] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all"
+            className={`w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full shadow-xs focus:outline-none focus:ring-2 transition-all ${
+              activeNight
+                ? 'bg-[#222434] border border-[#34374D] text-[#FAF7F2] placeholder-[#7E7A8E] focus:ring-[#7161BF]'
+                : 'bg-white border border-[#EAE3D5] text-[#2E2E3A] placeholder-[#9E9EA8] focus:ring-[#FED7C5]'
+            }`}
           />
           <button
             type="button"
@@ -405,7 +464,9 @@ export const PetRoom: FC<PetRoomProps> = ({
                 // Clipboard read blocked by permissions
               }
             }}
-            className="absolute right-3.5 text-[#7A7A8A] hover:text-[#D97736] cursor-pointer transition-colors"
+            className={`absolute right-3.5 cursor-pointer transition-colors ${
+              activeNight ? 'text-[#A09BAC] hover:text-[#F4A261]' : 'text-[#7A7A8A] hover:text-[#D97736]'
+            }`}
             title="Tempel dari Clipboard"
           >
             <Clipboard className="w-4 h-4" />
@@ -415,13 +476,17 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       {/* 5. Pet XP Growth & Quick Nav Access Bar */}
       <div className="px-4 sm:px-2 pt-2">
-        <div className="bg-white rounded-3xl p-4 border border-[#ECE6DB] shadow-xs space-y-3">
-          <div className="flex justify-between items-center text-xs font-bold text-[#4A4A5A]">
+        <div className={`rounded-3xl p-4 border shadow-xs space-y-3 transition-colors duration-700 ${
+          activeNight ? 'bg-[#222434] border-[#34374D]' : 'bg-white border-[#ECE6DB]'
+        }`}>
+          <div className={`flex justify-between items-center text-xs font-bold ${
+            activeNight ? 'text-[#FAF7F2]' : 'text-[#4A4A5A]'
+          }`}>
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#F4A261]" />
               <span>Pertumbuhan Mochi (Level {pet.level} → {pet.level + 1})</span>
             </span>
-            <span className="text-[#D97736] font-extrabold">{pet.exp} / {pet.expToNextLevel} XP</span>
+            <span className="text-[#F4A261] font-extrabold">{pet.exp} / {pet.expToNextLevel} XP</span>
           </div>
           <ProgressBar
             value={pet.exp}
@@ -431,12 +496,16 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
 
           {/* Quick Shortcuts */}
-          <div className="pt-2 border-t border-[#F2ECE1] flex items-center justify-between text-xs text-[#6B6B7E]">
-            <span className="font-semibold text-[#4A4A5A]">Akses Cepat:</span>
+          <div className={`pt-2 border-t flex items-center justify-between text-xs ${
+            activeNight ? 'border-[#34374D] text-[#A09BAC]' : 'border-[#F2ECE1] text-[#6B6B7E]'
+          }`}>
+            <span className={`font-semibold ${activeNight ? 'text-[#FAF7F2]' : 'text-[#4A4A5A]'}`}>Akses Cepat:</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onNavigate('vault')}
-                className="flex items-center gap-1 hover:text-[#D97736] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+                className={`flex items-center gap-1 transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium ${
+                  activeNight ? 'hover:text-[#F4A261] hover:bg-[#2A2C3E]' : 'hover:text-[#D97736] hover:bg-[#FAF7F2]'
+                }`}
               >
                 <BookmarkPlus className="w-3.5 h-3.5" />
                 <span>Vault ({savedLinks.length})</span>
@@ -444,7 +513,9 @@ export const PetRoom: FC<PetRoomProps> = ({
               <span>•</span>
               <button
                 onClick={() => onNavigate('assistant')}
-                className="flex items-center gap-1 hover:text-[#7161BF] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+                className={`flex items-center gap-1 transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium ${
+                  activeNight ? 'hover:text-[#A89AE8] hover:bg-[#2A2C3E]' : 'hover:text-[#7161BF] hover:bg-[#FAF7F2]'
+                }`}
               >
                 <Bot className="w-3.5 h-3.5" />
                 <span>AI Asisten</span>
@@ -452,7 +523,9 @@ export const PetRoom: FC<PetRoomProps> = ({
               <span>•</span>
               <button
                 onClick={() => onNavigate('notes')}
-                className="flex items-center gap-1 hover:text-[#36955E] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+                className={`flex items-center gap-1 transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium ${
+                  activeNight ? 'hover:text-[#57B37C] hover:bg-[#2A2C3E]' : 'hover:text-[#36955E] hover:bg-[#FAF7F2]'
+                }`}
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Catatan ({notesCount})</span>

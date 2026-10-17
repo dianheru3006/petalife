@@ -9,6 +9,7 @@ export interface AppLayoutProps {
   onSelectTab: (tab: NavigationTab) => void;
   pet: Pet;
   children: ReactNode;
+  isNightMode?: boolean;
 }
 
 export const AppLayout: FC<AppLayoutProps> = ({
@@ -16,9 +17,18 @@ export const AppLayout: FC<AppLayoutProps> = ({
   onSelectTab,
   pet,
   children,
+  isNightMode = false,
 }) => {
   return (
-    <div className={`flex min-h-screen ${currentTab === 'home' ? 'bg-[#EEE1CD]' : 'bg-[#FDFBF7]'} text-[#2E2E3A]`}>
+    <div
+      className={`flex min-h-screen transition-colors duration-700 ease-in-out ${
+        currentTab === 'home'
+          ? isNightMode
+            ? 'bg-[#181926] text-[#FAF7F2]'
+            : 'bg-[#EEE1CD] text-[#2E2E3A]'
+          : 'bg-[#FDFBF7] text-[#2E2E3A]'
+      }`}
+    >
       {/* Desktop Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -40,7 +50,11 @@ export const AppLayout: FC<AppLayoutProps> = ({
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <BottomNav currentTab={currentTab} onSelectTab={onSelectTab} />
+      <BottomNav
+        currentTab={currentTab}
+        onSelectTab={onSelectTab}
+        isNightMode={isNightMode}
+      />
     </div>
   );
 };
