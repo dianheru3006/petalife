@@ -52,22 +52,33 @@ export const MochiPet: FC<MochiPetProps> = ({
         </div>
       )}
 
+      {/* Floating zZz Dream Particles when Sleeping */}
+      {isSleeping && (
+        <div className="absolute -top-7 right-2 flex flex-col items-center z-30 pointer-events-none select-none">
+          <span className="text-xs font-black text-[#8B78D8] anim-float-zzz drop-shadow-xs" style={{ animationDelay: '0s' }}>z</span>
+          <span className="text-sm font-black text-[#7161BF] anim-float-zzz drop-shadow-xs -mr-3" style={{ animationDelay: '0.9s' }}>Z</span>
+          <span className="text-base font-black text-[#5844A8] anim-float-zzz drop-shadow-xs -mr-6" style={{ animationDelay: '1.8s' }}>Z</span>
+        </div>
+      )}
+
       {/* Pet Interactive Body Area — Proportional Sizing with Room */}
       <button
         type="button"
         onClick={handleClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        aria-label="Elus Mochi"
+        aria-label={isSleeping ? "Mochi sedang tidur lelap" : "Elus Mochi"}
         className={cn(
           'relative w-22 h-22 sm:w-26 sm:h-26 cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-transform duration-200 active:scale-95',
           isFeeding
             ? 'anim-mochi-eating'
             : isHopping
             ? 'anim-mochi-hop'
+            : isSleeping
+            ? 'anim-mochi-sleeping'
             : 'anim-mochi-idle'
         )}
-        title="Ketuk Mochi untuk mengelus!"
+        title={isSleeping ? "Ssst... Mochi sedang tidur lelap 🌙💤" : "Ketuk Mochi untuk mengelus!"}
       >
         {/* 3D Clay Stylized SVG Character */}
         <svg aria-hidden="true" viewBox="0 0 200 200" className="w-full h-full overflow-visible">
@@ -226,6 +237,15 @@ export const MochiPet: FC<MochiPetProps> = ({
               stroke="#2C1A14"
               strokeWidth="2.2"
               strokeLinejoin="round"
+            />
+          ) : isSleeping ? (
+            /* Peaceful restful sleeping mouth */
+            <path
+              d="M96 112 Q100 115 104 112"
+              stroke="#2C1A14"
+              strokeWidth="2.0"
+              strokeLinecap="round"
+              fill="none"
             />
           ) : isHappy || isHovered ? (
             <path

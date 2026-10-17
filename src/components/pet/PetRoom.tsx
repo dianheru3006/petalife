@@ -61,6 +61,11 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [localNight, setLocalNight] = useState<boolean>(false);
   const activeNight = isNightMode !== undefined ? isNightMode : localNight;
 
+  // When night mode is active, Mochi enters a calm, resting sleep state
+  const effectivePet: Pet = activeNight && !isFeeding
+    ? { ...pet, state: 'sleeping' }
+    : pet;
+
   const handleToggleNight = () => {
     const willBeNight = !activeNight;
     if (onToggleNightMode) {
@@ -70,7 +75,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     if (willBeNight) {
-      triggerSpeech('Hoaaam... Selamat istirahat & mimpi indah, Dian! 🌙💤', 4000);
+      triggerSpeech('Hoaaam... Selamat tidur & mimpi indah, Dian! 🌙💤', 4000);
     } else {
       triggerSpeech('Selamat pagi! Semangat belajar lagi bareng Mochi! ☀️✨', 4000);
     }
@@ -116,19 +121,23 @@ export const PetRoom: FC<PetRoomProps> = ({
   useEffect(() => {
     const whisperInterval = setInterval(() => {
       if (!isFeeding) {
-        const whispers = [
-          'Kenyang dan senang ✨',
-          'Rumah Mochi hangat dan nyaman 🌸',
-          'Ada materi seru yang mau dipelajari? 🎬',
-          'Mochi senang bersama Dian! 💖',
-        ];
-        const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
-        triggerSpeech(randomWhisper, 3200);
+        if (activeNight) {
+          triggerSpeech('Zzz... mimpi manis... 🌙💤', 2800);
+        } else {
+          const whispers = [
+            'Kenyang dan senang ✨',
+            'Rumah Mochi hangat dan nyaman 🌸',
+            'Ada materi seru yang mau dipelajari? 🎬',
+            'Mochi senang bersama Dian! 💖',
+          ];
+          const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
+          triggerSpeech(randomWhisper, 3200);
+        }
       }
     }, 45000);
 
     return () => clearInterval(whisperInterval);
-  }, [isFeeding]);
+  }, [isFeeding, activeNight]);
 
   // Idle gentle food alternation ("kadang onigiri, kadang varian makanan lain")
   useEffect(() => {
@@ -173,6 +182,10 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   const handlePetTap = () => {
+    if (activeNight) {
+      triggerSpeech('Ssst... Mochi sedang mimpi indah... 🌙💤', 3500);
+      return;
+    }
     if (isFull) {
       triggerSpeech('Perut Mochi kenyang dan hatiku senang! ✨', 3500);
       return;
@@ -280,93 +293,14 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       {/* 2. Terrarium / Living Diorama Card (CRISP, NO FOG GRADIENT, BORDERED) */}
       <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden border-2 border-[#E8DFCF] shadow-md bg-[#EEE1CD] select-none">
-        {/* Background 3D Room Diorama - 100% Crisp & Clear */}
+        {/* Background 3D Room Diorama - 100% Crisp, Pure & Warm */}
         <img
           src={roomBg}
           alt="Rumah Mochi 3D Living Room"
           className={`absolute inset-0 w-full h-full object-cover object-center pointer-events-none transition-all duration-700 ${
-            activeNight ? 'brightness-90 contrast-[0.95]' : 'brightness-100'
+            activeNight ? 'brightness-[0.93] saturate-[0.90] contrast-[1.02]' : 'brightness-100'
           }`}
         />
-
-        {/* Ambient Room Night Filter: ONLY on the 3D isometric hexagonal room, with floor lamp remaining bright */}
-        <svg
-          viewBox="0 0 768 1376"
-          preserveAspectRatio="xMidYMid slice"
-          className={`absolute inset-0 w-full h-full pointer-events-none z-10 transition-opacity duration-700 ${
-            activeNight ? 'opacity-100' : 'opacity-0'
-          }`}
-          aria-hidden="true"
-        >
-          <defs>
-            {/* Soft edge blur for hexagonal room mask */}
-            <filter id="hexRoomBlur" x="-10%" y="-10%" width="120%" height="120%">
-              <feGaussianBlur stdDeviation="3.5" />
-            </filter>
-            {/* Soft cutout blur for the lamp so it transitions smoothly into the dark room */}
-            <filter id="lampCutoutBlur" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="5.0" />
-            </filter>
-
-            {/* Mask: Hexagonal room is white (darkened), while lamp shade is black (CUT OUT / NOT darkened) */}
-            <mask id="hexNightMask">
-              <rect width="768" height="1376" fill="black" />
-              <polygon
-                points="414,237 755,455 755,805 385,1045 15,805 15,455"
-                fill="white"
-                filter="url(#hexRoomBlur)"
-              />
-              {/* Cut out the floor lamp shade from the dark mask so the lamp stays luminous and bright */}
-              <ellipse
-                cx="534"
-                cy="388"
-                rx="42"
-                ry="50"
-                fill="black"
-                filter="url(#lampCutoutBlur)"
-              />
-            </mask>
-
-            {/* Cozy radiant ambient glow casting down from the lampshade onto the armchair */}
-            <radialGradient id="lampAmbientGlow" cx="50%" cy="40%" r="50%">
-              <stop offset="0%" stopColor="#FFF2B2" stopOpacity="0.85" />
-              <stop offset="35%" stopColor="#FFD166" stopOpacity="0.55" />
-              <stop offset="65%" stopColor="#FF9F1C" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#FF8800" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-
-          {/* 1. Hexagonal Room Darkening Layer (Masked to avoid dimming the lamp) */}
-          <rect
-            width="768"
-            height="1376"
-            fill="#14172E"
-            fillOpacity="0.50"
-            mask="url(#hexNightMask)"
-            style={{ mixBlendMode: 'multiply' }}
-          />
-
-          {/* 2. Radiant warm ambient light cast over the lampshade, armchair, and corkboard */}
-          <ellipse
-            cx="534"
-            cy="420"
-            rx="180"
-            ry="160"
-            fill="url(#lampAmbientGlow)"
-            style={{ mixBlendMode: 'screen' }}
-          />
-
-          {/* 3. Luminous Lamp Shade Core (ensures the lamp itself stays bright and gleaming) */}
-          <ellipse
-            cx="534"
-            cy="388"
-            rx="32"
-            ry="38"
-            fill="#FFF8D6"
-            fillOpacity="0.75"
-            style={{ mixBlendMode: 'screen' }}
-          />
-        </svg>
 
         {/* Toast Notification inside Room */}
         {lastFedText && (
@@ -389,21 +323,23 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         </div>
 
-        {/* The Center Mat & Proportional 3D Mochi */}
+        {/* The Center Mat & Proportional 3D Mochi (Reflects Sleep State when Night Mode Active) */}
         <div className="absolute top-[48%] sm:top-[49%] left-[49%] -translate-x-1/2 z-20 flex flex-col items-center">
-          <MochiPet pet={pet} onPetClick={handlePetTap} showBubble={false} />
+          <MochiPet pet={effectivePet} onPetClick={handlePetTap} showBubble={false} />
         </div>
 
-        {/* Floating Dream Soap Bubble pointing directly down to Hunger Meter */}
-        <div className="absolute bottom-[66px] left-3 sm:left-4 z-25">
-          <SnackBubble
-            snack={currentSnack}
-            onFeed={handleFeedClick}
-            onCycleNext={handleCycleNextSnack}
-            isFull={isFull}
-            isFeeding={isFeeding}
-          />
-        </div>
+        {/* Floating Snack Bubble pointing directly down to Hunger Meter (Resting during bedtime) */}
+        {!activeNight && (
+          <div className="absolute bottom-[66px] left-3 sm:left-4 z-25">
+            <SnackBubble
+              snack={currentSnack}
+              onFeed={handleFeedClick}
+              onCycleNext={handleCycleNextSnack}
+              isFull={isFull}
+              isFeeding={isFeeding}
+            />
+          </div>
+        )}
 
         {/* 3. Status Dock Bar (Inside the Terrarium Border, Clean White Frosted Glass, No Percentage Text) */}
         <div className="absolute bottom-3 left-3 right-3 z-30 bg-white/92 backdrop-blur-md rounded-2xl border border-white/80 shadow-xs px-3 sm:px-4 py-2 flex items-center justify-between select-none text-[#2E2E3A]">
@@ -458,8 +394,8 @@ export const PetRoom: FC<PetRoomProps> = ({
               type="button"
               onClick={handleToggleNight}
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
-              title={activeNight ? 'Kembali ke mode siang' : 'Mode malam (matikan lampu kamar)'}
-              aria-label={activeNight ? 'Nyalakan lampu kamar Mochi' : 'Matikan lampu kamar Mochi'}
+              title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
+              aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
             >
               {activeNight ? <Moon className="w-3.5 h-3.5 text-[#7161BF]" /> : <Sun className="w-3.5 h-3.5 text-[#F4A261]" />}
             </button>
