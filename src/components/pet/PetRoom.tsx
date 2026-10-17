@@ -1,7 +1,7 @@
 import type { FC, FormEvent } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import type { Pet, NavigationTab, SavedLink } from '../../lib/types';
-import { MochiPet } from './MochiPet';
+import { MochiPet, type MochiAction } from './MochiPet';
 import { ProgressBar } from '../ui/ProgressBar';
 import {
   Sparkles,
@@ -184,17 +184,47 @@ export const PetRoom: FC<PetRoomProps> = ({
     }, 2800);
   };
 
-  const handlePetTap = () => {
+  const handlePetTap = (action?: MochiAction) => {
     if (activeNight) {
       triggerSpeech('Ssst... Mochi sedang mimpi indah... 🌙💤', 3500);
       return;
     }
+
+    if (action === 'wiggle') {
+      const giggles = [
+        'Hehehe, geli! 🌸',
+        'Kikiki, geli banget! 😆',
+        'Geli tapi seru! Jangan berhenti elus ya! 🌸',
+      ];
+      triggerSpeech(giggles[Math.floor(Math.random() * giggles.length)], 3600);
+      return;
+    }
+
+    if (action === 'spin') {
+      const spins = [
+        'Wuuush! Putar-putar seru! 🌀✨',
+        'Tadaaa! Mochi bisa salto mini! 🌟',
+        'Penuh energi! Ayo belajar lagi bareng Dian! 🌀',
+      ];
+      triggerSpeech(spins[Math.floor(Math.random() * spins.length)], 3600);
+      return;
+    }
+
+    if (action === 'wink') {
+      const winks = [
+        'Mochi selalu siap menemani Dian! 😉🍵',
+        'Kedip manis buat kamu! Semangat belajarnya! ✨😉',
+        'Psst... Dian rajin banget hari ini! 😉🌟',
+      ];
+      triggerSpeech(winks[Math.floor(Math.random() * winks.length)], 3600);
+      return;
+    }
+
     if (isFull) {
       triggerSpeech('Perut Mochi kenyang dan hatiku senang! ✨', 3500);
       return;
     }
     const cuteReplies = [
-      'Hehehe, geli! 🌸',
       'Yaaay! Semangat belajar bareng kamu! ✨',
       'Mochi siap menemani Dian! 🍵',
       'Ada resep atau video baru yang seru? 🍳',
@@ -406,7 +436,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           <button
             type="button"
             className="flex min-w-0 items-center gap-1 font-black text-xs sm:text-sm text-[#2E2E3A] cursor-pointer hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] rounded-md transition-opacity"
-            onClick={handlePetTap}
+            onClick={() => handlePetTap()}
             title="Ketuk untuk berinteraksi dengan Mochi"
           >
             <span className="truncate">{pet.name}</span>
