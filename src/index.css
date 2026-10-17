@@ -167,6 +167,288 @@
   animation: gentle-sway 4s ease-in-out infinite;
 }
 
+/* TV Channel Micro-Animations */
+@keyframes tv-fish-swim {
+  0% {
+    transform: translate(14px, 0px) scaleX(1);
+  }
+  48% {
+    transform: translate(-18px, -4px) scaleX(1);
+  }
+  50% {
+    transform: translate(-18px, -4px) scaleX(-1);
+  }
+  98% {
+    transform: translate(14px, 0px) scaleX(-1);
+  }
+  100% {
+    transform: translate(14px, 0px) scaleX(1);
+  }
+}
+
+@keyframes tv-fish-tail {
+  0%, 100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes tv-bubble-rise {
+  0% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-46px) translateX(6px);
+    opacity: 0;
+  }
+}
+
+@keyframes tv-seaweed-sway-1 {
+  0%, 100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes tv-seaweed-sway-2 {
+  0%, 100% {
+    transform: rotate(6deg);
+  }
+  50% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes tv-cloud-drift-1 {
+  0% {
+    transform: translateX(-40px);
+  }
+  100% {
+    transform: translateX(110px);
+  }
+}
+
+@keyframes tv-cloud-drift-2 {
+  0% {
+    transform: translateX(-60px);
+  }
+  100% {
+    transform: translateX(90px);
+  }
+}
+
+@keyframes tv-sun-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.75;
+  }
+}
+
+@keyframes tv-pixel-hop {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-9px);
+  }
+  55% {
+    transform: translateY(-11px);
+  }
+  75% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes tv-coin-spin {
+  0%, 100% {
+    transform: scaleX(1) translateY(0);
+  }
+  25% {
+    transform: scaleX(0.15) translateY(-2px);
+  }
+  50% {
+    transform: scaleX(1) translateY(-4px);
+  }
+  75% {
+    transform: scaleX(0.15) translateY(-2px);
+  }
+}
+
+@keyframes tv-flame-flicker {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+  }
+  25% {
+    transform: scaleY(1.12) scaleX(0.94) skewX(2deg);
+  }
+  50% {
+    transform: scaleY(0.92) scaleX(1.05) skewX(-1.5deg);
+  }
+  75% {
+    transform: scaleY(1.08) scaleX(0.96) skewX(1deg);
+  }
+}
+
+@keyframes tv-ember-float {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-38px) translateX(-9px);
+    opacity: 0;
+  }
+}
+
+@keyframes tv-petal-drift {
+  0% {
+    transform: translate(-15px, -15px) rotate(0deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(35px, 45px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes tv-crt-static {
+  0% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.anim-tv-fish {
+  animation: tv-fish-swim 7s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anim-tv-fish-tail {
+  animation: tv-fish-tail 0.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.anim-tv-bubble-1 {
+  animation: tv-bubble-rise 3.2s ease-in infinite;
+}
+
+.anim-tv-bubble-2 {
+  animation: tv-bubble-rise 4.1s ease-in infinite 1.2s;
+}
+
+.anim-tv-bubble-3 {
+  animation: tv-bubble-rise 3.8s ease-in infinite 2.1s;
+}
+
+.anim-tv-seaweed-1 {
+  animation: tv-seaweed-sway-1 3.5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+.anim-tv-seaweed-2 {
+  animation: tv-seaweed-sway-2 4.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+.anim-tv-cloud-1 {
+  animation: tv-cloud-drift-1 14s linear infinite;
+}
+
+.anim-tv-cloud-2 {
+  animation: tv-cloud-drift-2 18s linear infinite 5s;
+}
+
+.anim-tv-sun {
+  animation: tv-sun-pulse 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anim-tv-pixel-mochi {
+  animation: tv-pixel-hop 1.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+.anim-tv-coin {
+  animation: tv-coin-spin 2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anim-tv-flame {
+  animation: tv-flame-flicker 0.6s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+.anim-tv-ember-1 {
+  animation: tv-ember-float 2.2s ease-out infinite;
+}
+
+.anim-tv-ember-2 {
+  animation: tv-ember-float 2.8s ease-out infinite 0.9s;
+}
+
+.anim-tv-ember-3 {
+  animation: tv-ember-float 2.5s ease-out infinite 1.6s;
+}
+
+.anim-tv-petal-1 {
+  animation: tv-petal-drift 6s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anim-tv-petal-2 {
+  animation: tv-petal-drift 7.5s linear infinite 2.5s;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anim-tv-petal-3 {
+  animation: tv-petal-drift 5.5s linear infinite 4s;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anim-tv-crt-static {
+  animation: tv-crt-static 0.28s ease-out forwards;
+}
+
 /* Respect Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .anim-mochi-idle,
@@ -176,7 +458,28 @@
   .anim-float-zzz,
   .anim-gentle-sway,
   .anim-float-bubble,
-  .animate-bounce {
+  .animate-bounce,
+  .anim-tv-fish,
+  .anim-tv-fish-tail,
+  .anim-tv-bubble-1,
+  .anim-tv-bubble-2,
+  .anim-tv-bubble-3,
+  .anim-tv-seaweed-1,
+  .anim-tv-seaweed-2,
+  .anim-tv-cloud-1,
+  .anim-tv-cloud-2,
+  .anim-tv-sun,
+  .anim-tv-pixel-mochi,
+  .anim-tv-coin,
+  .anim-tv-flame,
+  .anim-tv-ember-1,
+  .anim-tv-ember-2,
+  .anim-tv-ember-3,
+  .anim-tv-petal-1,
+  .anim-tv-petal-2,
+  .anim-tv-petal-3,
+  .anim-tv-crt-static {
     animation: none !important;
   }
 }
+
