@@ -297,10 +297,55 @@ export const PetRoom: FC<PetRoomProps> = ({
         <img
           src={roomBg}
           alt="Rumah Mochi 3D Living Room"
-          className={`absolute inset-0 w-full h-full object-cover object-center pointer-events-none transition-all duration-700 ${
-            activeNight ? 'brightness-[0.93] saturate-[0.90] contrast-[1.02]' : 'brightness-100'
-          }`}
+          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         />
+
+        {/* TV Screen Off Overlay in Night Mode */}
+        <svg
+          viewBox="0 0 768 1376"
+          preserveAspectRatio="xMidYMid slice"
+          className={`absolute inset-0 w-full h-full pointer-events-none z-10 transition-opacity duration-700 ease-out ${
+            activeNight ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-hidden="true"
+        >
+          <defs>
+            {/* Sleek OLED/LCD dark glass gradient */}
+            <linearGradient id="tvOffGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1B1E26" />
+              <stop offset="60%" stopColor="#14161E" />
+              <stop offset="100%" stopColor="#181A22" />
+            </linearGradient>
+
+            {/* Faint ambient glass reflection glint across screen */}
+            <linearGradient id="tvGlassGlint" x1="20%" y1="0%" x2="80%" y2="100%">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.07" />
+              <stop offset="45%" stopColor="#FFFFFF" stopOpacity="0.02" />
+              <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* 1. TV Screen Dark Base (Turned Off) */}
+          <polygon
+            points="276,520 394,458 394,545 276,606"
+            fill="url(#tvOffGlass)"
+          />
+
+          {/* 2. Sleek Glass Specular Glint */}
+          <polygon
+            points="276,520 394,458 394,545 276,606"
+            fill="url(#tvGlassGlint)"
+          />
+
+          {/* 3. Tiny Red Standby LED Dot on TV Bezel */}
+          <circle
+            cx="384.5"
+            cy="552"
+            r="1.6"
+            fill="#EF4444"
+            opacity="0.85"
+          />
+        </svg>
 
         {/* Toast Notification inside Room */}
         {lastFedText && (
