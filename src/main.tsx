@@ -12,3 +12,11 @@ createRoot(document.getElementById('root')!).render(
 
 registerServiceWorker()
 
+// Safe Telegram Mini App viewport initialization if embedded
+try {
+  const tg = (window as unknown as { Telegram?: { WebApp?: { ready?: () => void; expand?: () => void } } }).Telegram?.WebApp;
+  tg?.ready?.();
+  tg?.expand?.();
+} catch {
+  // Ignored in standard browser environments
+}

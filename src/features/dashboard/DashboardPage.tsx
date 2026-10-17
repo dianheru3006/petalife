@@ -33,7 +33,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
   const completedGoalsCount = dailyGoals.filter(g => g.isCompleted).length;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-4 max-w-md mx-auto">
       {/* 1. Main Stage: Cozy Pet Room */}
       <PetRoom
         pet={pet}
@@ -46,8 +46,8 @@ export const DashboardPage: FC<DashboardPageProps> = ({
         onToggleNightMode={onToggleNightMode}
       />
 
-      {/* 2. Grid Section: Daily Goals & Quick Knowledge Vault */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-1 sm:px-0">
+      {/* 2. Mobile-First Stream: Daily Habits & Quick Knowledge Vault */}
+      <div className="flex flex-col gap-4">
         {/* Daily Goals Card */}
         <div
           className={cn(

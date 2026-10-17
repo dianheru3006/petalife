@@ -99,9 +99,9 @@ export const NotesPage: FC<NotesPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-4 max-w-md mx-auto">
       {/* Header & Add Note Button */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#ECE6DB] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#ECE6DB] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#36955E]" />
@@ -217,7 +217,7 @@ export const NotesPage: FC<NotesPageProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-3.5">
           {filteredNotes.map(note => {
             const cardColorStyle = colorCardStyles[note.color || 'cream'];
             return (

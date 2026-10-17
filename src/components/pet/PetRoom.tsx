@@ -354,7 +354,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       {/* 2. Terrarium / Living Diorama Card (CRISP, NO FOG GRADIENT, BORDERED) */}
       <div
         className={cn(
-          'relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden select-none transition-all duration-700 ease-out border-2',
+          'relative w-full aspect-[9/13] max-h-[560px] rounded-[32px] overflow-hidden select-none transition-all duration-700 ease-out border-2',
           activeNight
             ? 'border-[#DDD2C2] bg-[#E5D8C3] shadow-[0_16px_48px_rgba(100,80,60,0.12)]'
             : 'border-[#E8DFCF] bg-[#EEE1CD] shadow-md'
@@ -433,9 +433,9 @@ export const PetRoom: FC<PetRoomProps> = ({
         )}
 
         {/* 3. Status Dock Bar (Inside the Terrarium Border, Clean White Frosted Glass, No Percentage Text) */}
-        <div className="absolute bottom-3 left-3 right-3 z-30 bg-white/92 backdrop-blur-md rounded-2xl border border-white/80 shadow-xs px-3 sm:px-4 py-2 flex items-center justify-between select-none text-[#2E2E3A]">
+        <div className="absolute bottom-3 left-2.5 right-2.5 sm:left-3 sm:right-3 z-30 bg-white/92 backdrop-blur-md rounded-2xl border border-white/80 shadow-xs px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between select-none text-[#2E2E3A]">
           {/* Left: Circular Progress Rings & Life Stage */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <CircularMeter
               value={pet.hunger}
               color="#D97736"
@@ -454,7 +454,7 @@ export const PetRoom: FC<PetRoomProps> = ({
               iconType="energy"
               label="Energi / Segar"
             />
-            <span className="text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border sm:ml-1 text-[#8A857A] bg-[#FAF7F2] border-[#ECE5DA]">
+            <span className="text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border sm:ml-0.5 text-[#8A857A] bg-[#FAF7F2] border-[#ECE5DA]">
               {getStageName(pet.level)}
             </span>
           </div>
@@ -471,7 +471,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           </button>
 
           {/* Right: Dance, Dress-up & Night Mode Actions */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <button
               type="button"
               onClick={handleDanceClick}

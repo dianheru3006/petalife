@@ -1,6 +1,5 @@
 import type { FC, ReactNode } from 'react';
 import type { NavigationTab, Pet } from '../../lib/types';
-import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { Header } from '../../components/shared/Header';
 import { cn } from '../../lib/utils';
@@ -23,37 +22,36 @@ export const AppLayout: FC<AppLayoutProps> = ({
   return (
     <div
       className={cn(
-        'flex min-h-screen text-[#2E2E3A] transition-colors duration-700 ease-out',
-        isNightMode ? 'bg-[#EBE2D6]' : 'bg-[#FDFBF7]'
+        'min-h-screen w-full flex justify-center text-[#2E2E3A] transition-colors duration-700 ease-out',
+        isNightMode ? 'bg-[#E0D5C5]' : 'bg-[#F2ECE1]'
       )}
     >
-      {/* Desktop Sidebar */}
-      <Sidebar
-        currentTab={currentTab}
-        onSelectTab={onSelectTab}
-        petLevel={pet.level}
-        isNightMode={isNightMode}
-      />
-
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Mobile-First Mini App Frame: Edge-to-edge on mobile, centered phone canvas on desktop */}
+      <div
+        className={cn(
+          'w-full max-w-md min-h-screen flex flex-col relative transition-colors duration-700 ease-out sm:shadow-2xl sm:border-x',
+          isNightMode
+            ? 'bg-[#EBE2D6] sm:border-[#DDD2C2]'
+            : 'bg-[#FDFBF7] sm:border-[#EAE3D5]'
+        )}
+      >
         {/* Top Header - hidden on home tab since Terrarium has its own cozy title */}
         {currentTab !== 'home' && (
           <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />
         )}
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-8 overflow-x-hidden">
+        {/* Page Content: Mobile-optimized spacing with generous pb-28 clearance for BottomNav */}
+        <main className="flex-1 p-3.5 sm:p-4 pb-28 overflow-x-hidden w-full">
           {children}
         </main>
-      </div>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <BottomNav
-        currentTab={currentTab}
-        onSelectTab={onSelectTab}
-        isNightMode={isNightMode}
-      />
+        {/* Canonical Floating Bottom Navigation Bar */}
+        <BottomNav
+          currentTab={currentTab}
+          onSelectTab={onSelectTab}
+          isNightMode={isNightMode}
+        />
+      </div>
     </div>
   );
 };

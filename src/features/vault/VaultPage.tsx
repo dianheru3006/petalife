@@ -172,9 +172,9 @@ export const VaultPage: FC<VaultPageProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-4 max-w-md mx-auto">
       {/* Top Banner & Quick Add Card */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#ECE6DB] shadow-xs">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#ECE6DB] shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">

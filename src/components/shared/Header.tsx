@@ -39,17 +39,17 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
   return (
     <header
       className={cn(
-        'w-full flex items-center justify-between py-4 px-4 sm:px-8 border-b backdrop-blur-xs sticky top-0 z-20 transition-colors duration-700 ease-out',
+        'w-full flex items-center justify-between py-3 px-3.5 sm:px-4 border-b backdrop-blur-md sticky top-0 z-20 transition-colors duration-700 ease-out',
         isNightMode
           ? 'bg-[#F3ECE1]/85 border-[#E2D8C7]'
           : 'bg-[#FFFDF9]/80 border-[#EFEAE1]'
       )}
     >
-      <div className="min-w-0">
-        <h2 className="text-lg sm:text-xl font-extrabold text-[#2E2E3A] truncate tracking-tight">
+      <div className="min-w-0 flex-1 mr-2">
+        <h2 className="text-base sm:text-lg font-extrabold text-[#2E2E3A] truncate tracking-tight">
           {current.title}
         </h2>
-        <p className="text-xs sm:text-sm text-[#828292] truncate mt-0.5">
+        <p className="text-[11px] sm:text-xs text-[#828292] truncate mt-0.5">
           {current.subtitle}
         </p>
       </div>
