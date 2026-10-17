@@ -233,6 +233,16 @@ export const PetRoom: FC<PetRoomProps> = ({
       return;
     }
 
+    if (action === 'studying') {
+      const studyLines = [
+        'Ssst... Mochi lagi fokus mencatat materi baru! 📝✨',
+        'Kacamata Mochi pas banget buat belajar! 👓📖',
+        'Satu catatan lagi, biar makin pintar bareng Dian! 💡📓',
+      ];
+      triggerSpeech(studyLines[Math.floor(Math.random() * studyLines.length)], 4000);
+      return;
+    }
+
     if (isFull) {
       triggerSpeech('Perut Mochi kenyang dan hatiku senang! ✨', 3500);
       return;
@@ -302,8 +312,19 @@ export const PetRoom: FC<PetRoomProps> = ({
       await onAddLink(newLink);
       setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+10 XP)`);
       setQuickUrl('');
-      triggerSpeech('Wah, ada tautan baru yang tersimpan di Vault! 🎬', 3500);
-      setTimeout(() => setQuickSuccess(null), 3000);
+
+      // Trigger Mochi's dedicated studying & note-taking mode!
+      setForcedAction({ id: Date.now(), action: 'studying' });
+
+      let studySpeech = `Materi baru dari ${domain}! Mochi pelajari dan catat di buku ya! 📖✨ (+10 XP)`;
+      if (platform === 'youtube') {
+        studySpeech = 'Wah, video YouTube baru! Mochi catat poin-poin pentingnya dulu ya! 📝✨ (+10 XP)';
+      } else if (platform === 'tiktok' || platform === 'instagram') {
+        studySpeech = 'Shorts baru! Mochi rangkum tips & ilmunya di buku catatan! 📱📓 (+10 XP)';
+      }
+      triggerSpeech(studySpeech, 4500);
+
+      setTimeout(() => setQuickSuccess(null), 3500);
     } catch {
       setQuickError('Tautan gagal disimpan. Periksa penyimpanan lokal lalu coba lagi.');
     } finally {

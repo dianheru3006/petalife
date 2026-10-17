@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 
-export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance';
+export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying';
 export type GazeDirection = 'center' | 'left' | 'right';
 
 const ACTION_DURATIONS: Record<MochiAction, number> = {
@@ -13,6 +13,7 @@ const ACTION_DURATIONS: Record<MochiAction, number> = {
   spin: 750,
   wink: 700,
   dance: 1400,
+  studying: 4200,
 };
 
 export interface MochiPetProps {
@@ -120,6 +121,8 @@ export const MochiPet: FC<MochiPetProps> = ({
         return 'anim-mochi-wink';
       case 'dance':
         return 'anim-mochi-dance';
+      case 'studying':
+        return 'anim-mochi-studying';
       default:
         return 'anim-mochi-idle';
     }
@@ -140,7 +143,14 @@ export const MochiPet: FC<MochiPetProps> = ({
       {/* Dynamic Floating Particles based on Action */}
       {(isFeeding || currentAction !== 'idle' || isHappy) && !isSleeping && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
-          {currentAction === 'dance' ? (
+          {currentAction === 'studying' ? (
+            <>
+              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0s' }}>📖</span>
+              <span className="text-lg anim-float-note drop-shadow-xs" style={{ animationDelay: '0.2s' }}>✏️</span>
+              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0.4s' }}>💡</span>
+              <span className="text-base anim-float-note drop-shadow-xs" style={{ animationDelay: '0.6s' }}>✨</span>
+            </>
+          ) : currentAction === 'dance' ? (
             <>
               <span className="text-xl anim-float-note text-[#E57399] drop-shadow-xs">♪</span>
               <span className="text-lg anim-float-note text-[#7161BF] drop-shadow-xs" style={{ animationDelay: '0.2s' }}>♫</span>
@@ -363,6 +373,21 @@ export const MochiPet: FC<MochiPetProps> = ({
               <path d="M80 98 C76 91 68 94 68 100 C68 108 80 114 80 114 C80 114 92 108 92 100 C92 94 84 91 80 98 Z" transform="scale(0.85) translate(14, 12)" />
               <path d="M120 98 C116 91 108 94 108 100 C108 108 120 114 120 114 C120 114 132 108 132 100 C132 94 124 91 120 98 Z" transform="scale(0.85) translate(22, 12)" />
             </g>
+          ) : currentAction === 'studying' ? (
+            /* Focused Scholarly Eyes with Sparkles (◕ ◕) */
+            <g>
+              {/* Left Eye */}
+              <ellipse cx="78" cy="102" rx="8.5" ry="10.5" fill="#2C1A14" />
+              <circle cx="75.5" cy="97" r="3.6" fill="#FFFFFF" />
+              <circle cx="81.5" cy="105" r="1.6" fill="#FFFFFF" />
+              <polygon points="78,92 79.5,94.5 82,95 80,97 80.5,99.5 78,98 75.5,99.5 76,97 74,95 76.5,94.5" fill="#F4A261" />
+
+              {/* Right Eye */}
+              <ellipse cx="122" cy="102" rx="8.5" ry="10.5" fill="#2C1A14" />
+              <circle cx="119.5" cy="97" r="3.6" fill="#FFFFFF" />
+              <circle cx="125.5" cy="105" r="1.6" fill="#FFFFFF" />
+              <polygon points="122,92 123.5,94.5 126,95 124,97 124.5,99.5 122,98 119.5,99.5 120,97 118,95 120.5,94.5" fill="#F4A261" />
+            </g>
           ) : currentAction === 'dance' ? (
             /* Musical Happy Dancing Eyes (^ ^) */
             <g stroke="#2C1A14" strokeWidth="3.5" strokeLinecap="round" fill="none">
@@ -436,6 +461,15 @@ export const MochiPet: FC<MochiPetProps> = ({
               strokeLinecap="round"
               fill="none"
             />
+          ) : currentAction === 'studying' ? (
+            /* Cheerful focused study smile (◡) */
+            <path
+              d="M93 113 Q100 120 107 113"
+              stroke="#2C1A14"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              fill="none"
+            />
           ) : currentAction === 'dance' ? (
             /* Musical Singing Mouth (o) */
             <ellipse cx="100" cy="115" rx="5.5" ry="7" fill="#FF7070" stroke="#2C1A14" strokeWidth="2.0" />
@@ -482,6 +516,74 @@ export const MochiPet: FC<MochiPetProps> = ({
           {/* 9. Soft Stubby Clay Feet */}
           <ellipse cx="78" cy="174" rx="12" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
           <ellipse cx="122" cy="174" rx="12" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
+
+          {/* 10. Studying Accessories: Round Glasses, Open Notebook & Scribbling Pencil */}
+          {currentAction === 'studying' && (
+            <g>
+              {/* Round Wire Reading Glasses (👓) */}
+              <g className="transition-all duration-300">
+                {/* Left Lens Glare */}
+                <circle cx="78" cy="102" r="14.5" fill="#BEE3F8" fillOpacity="0.25" />
+                {/* Left Frame */}
+                <circle cx="78" cy="102" r="15" fill="none" stroke="#6C4E31" strokeWidth="2.6" />
+                <circle cx="78" cy="102" r="15" fill="none" stroke="#D97736" strokeWidth="1.2" opacity="0.6" />
+
+                {/* Right Lens Glare */}
+                <circle cx="122" cy="102" r="14.5" fill="#BEE3F8" fillOpacity="0.25" />
+                {/* Right Frame */}
+                <circle cx="122" cy="102" r="15" fill="none" stroke="#6C4E31" strokeWidth="2.6" />
+                <circle cx="122" cy="102" r="15" fill="none" stroke="#D97736" strokeWidth="1.2" opacity="0.6" />
+
+                {/* Nose Bridge */}
+                <path d="M93 100 Q100 95 107 100" fill="none" stroke="#6C4E31" strokeWidth="2.6" strokeLinecap="round" />
+
+                {/* Temples (Glasses sides) */}
+                <path d="M63 102 L48 99" fill="none" stroke="#6C4E31" strokeWidth="2.2" strokeLinecap="round" />
+                <path d="M137 102 L152 99" fill="none" stroke="#6C4E31" strokeWidth="2.2" strokeLinecap="round" />
+
+                {/* Dynamic Specular Lens Glints */}
+                <g className="anim-glasses-shine">
+                  <line x1="72" y1="94" x2="82" y2="108" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" opacity="0.75" />
+                  <line x1="116" y1="94" x2="126" y2="108" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" opacity="0.75" />
+                </g>
+              </g>
+
+              {/* Left Hand: Holding Open Study Notebook (📓) */}
+              <g transform="translate(42, 126) rotate(-8)">
+                {/* Notebook Cover */}
+                <rect x="0" y="0" width="32" height="40" rx="4" fill="#57B37C" stroke="#2E7D32" strokeWidth="1.5" />
+                {/* Spine */}
+                <rect x="0" y="0" width="6" height="40" rx="2" fill="#3D9960" />
+                {/* Pages */}
+                <rect x="7" y="3" width="22" height="34" rx="2" fill="#FAF7EE" />
+                {/* Note Lines */}
+                <line x1="10" y1="9" x2="26" y2="9" stroke="#90A4AE" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="10" y1="15" x2="26" y2="15" stroke="#90A4AE" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="10" y1="21" x2="26" y2="21" stroke="#90A4AE" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="10" y1="27" x2="22" y2="27" stroke="#90A4AE" strokeWidth="1.4" strokeLinecap="round" />
+                {/* Left Paw gripping notebook */}
+                <ellipse cx="26" cy="22" rx="7" ry="5.5" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
+              </g>
+
+              {/* Right Hand: Actively Scribbling with Yellow Pencil (✏️) */}
+              <g className="anim-pencil-scribble" style={{ transformOrigin: '135px 148px' }}>
+                <g transform="translate(124, 118) rotate(32)">
+                  {/* Pink Eraser */}
+                  <rect x="0" y="0" width="7" height="5" rx="1.5" fill="#FF8E7D" stroke="#E57373" strokeWidth="0.8" />
+                  {/* Silver Ferrule */}
+                  <rect x="0" y="5" width="7" height="3" fill="#B0BEC5" />
+                  {/* Yellow Hexagonal Body */}
+                  <rect x="0" y="8" width="7" height="24" rx="1" fill="#F4A261" stroke="#D97736" strokeWidth="1.0" />
+                  {/* Sharpened Wood Tip */}
+                  <polygon points="0,32 7,32 3.5,40" fill="#FFF0D0" stroke="#D97736" strokeWidth="0.8" />
+                  {/* Graphite Point */}
+                  <polygon points="2,37 5,37 3.5,41" fill="#263238" />
+                </g>
+                {/* Right Paw gripping pencil */}
+                <ellipse cx="132" cy="142" rx="7" ry="5.5" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
+              </g>
+            </g>
+          )}
         </svg>
       </button>
     </div>

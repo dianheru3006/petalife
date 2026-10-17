@@ -214,6 +214,72 @@
   transform-origin: bottom center;
 }
 
+/* Dedicated Study & Note-Taking Animation */
+@keyframes mochi-studying {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1, 1);
+  }
+  14% {
+    transform: translateY(-4px) rotate(-1.5deg) scale(1.02, 0.98);
+  }
+  28% {
+    transform: translateY(1px) rotate(1deg) scale(0.98, 1.02);
+  }
+  42% {
+    transform: translateY(-5px) rotate(-2deg) scale(1.03, 0.97);
+  }
+  56% {
+    transform: translateY(1.5px) rotate(1.5deg) scale(0.97, 1.03);
+  }
+  70% {
+    transform: translateY(-4px) rotate(-1deg) scale(1.02, 0.98);
+  }
+  84% {
+    transform: translateY(1px) rotate(0.8deg) scale(0.99, 1.01);
+  }
+}
+
+.anim-mochi-studying {
+  animation: mochi-studying 1.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes mochi-pencil-scribble {
+  0%, 100% {
+    transform: rotate(0deg) translate(0, 0);
+  }
+  25% {
+    transform: rotate(-10deg) translate(-2px, -3px);
+  }
+  50% {
+    transform: rotate(8deg) translate(2px, 1px);
+  }
+  75% {
+    transform: rotate(-6deg) translate(-1px, -2px);
+  }
+}
+
+.anim-pencil-scribble {
+  animation: mochi-pencil-scribble 0.28s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+@keyframes mochi-glasses-shine {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translateX(-3px);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateX(3px);
+  }
+}
+
+.anim-glasses-shine {
+  animation: mochi-glasses-shine 2s ease-in-out infinite alternate;
+}
+
 @keyframes float-music-note {
   0% {
     opacity: 0;
@@ -601,6 +667,8 @@
   .anim-mochi-idle,
   .anim-mochi-eating,
   .anim-mochi-sleeping,
+  .anim-mochi-studying,
+  .anim-pencil-scribble,
   .anim-float-heart,
   .anim-float-zzz,
   .anim-gentle-sway,
