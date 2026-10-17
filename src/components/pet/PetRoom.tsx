@@ -14,9 +14,6 @@ import {
   Sun,
   Lightbulb,
   Plus,
-  Tv,
-  BookOpen,
-  Pin,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -45,7 +42,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   const contextualStatus = getPetContextualStatus(pet);
 
   const [speech, setSpeech] = useState<string>(
-    isFull ? 'Kenyang dan senang 🌸' : contextualStatus.speechText
+    isFull ? 'Perut Mochi kenyang dan hatiku senang! ✨' : contextualStatus.speechText
   );
   const [lastFedText, setLastFedText] = useState<string | null>(null);
   const [lightingMode, setLightingMode] = useState<'warm' | 'day' | 'night'>('warm');
@@ -81,7 +78,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
   const handleFeedClick = () => {
     if (isFull) {
-      setSpeech('Perut Mochi sudah kenyang dan senang! 🌸');
+      setSpeech('Perut Mochi sudah kenyang dan hatiku senang! ✨');
       return;
     }
     if (isFeeding) {
@@ -157,8 +154,6 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
   };
 
-  const latestSavedLink = savedLinks.length > 0 ? savedLinks[0] : null;
-
   // Life stage name based on level
   const getStageName = (lvl: number) => {
     if (lvl <= 1) return 'Bayi';
@@ -225,39 +220,6 @@ export const PetRoom: FC<PetRoomProps> = ({
             </div>
           </div>
 
-          {/* Interactive Wall Hotspots (Clean, well-spaced) */}
-          {/* 1. Bookshelf Tag (Left Wall) */}
-          <button
-            onClick={() => onNavigate('notes')}
-            className="absolute top-[32%] left-[8%] sm:left-[10%] z-15 bg-white/90 backdrop-blur-sm border border-[#E0D7C4] text-[10px] sm:text-xs font-bold text-[#4A4A5A] px-2.5 py-1 rounded-xl shadow-xs hover:scale-105 hover:bg-[#F0EDF9] transition-all flex items-center gap-1 cursor-pointer"
-            title="Buka Catatan Belajar"
-          >
-            <BookOpen className="w-3 h-3 text-[#7161BF]" />
-            <span>Notes ({notesCount})</span>
-          </button>
-
-          {/* 2. Corkboard Pinned Note (Center-Right Wall) */}
-          <button
-            onClick={() => onNavigate('vault')}
-            className="absolute top-[26%] right-[22%] sm:right-[24%] z-15 bg-white/90 backdrop-blur-sm border border-[#E0D7C4] text-[10px] sm:text-xs font-bold text-[#4A4A5A] px-2.5 py-1 rounded-xl shadow-xs hover:scale-105 hover:bg-[#FFEFE8] transition-all flex items-center gap-1 cursor-pointer"
-            title="Lihat Pustaka Vault"
-          >
-            <Pin className="w-3 h-3 text-[#D97736]" />
-            <span>{savedLinks.length} Disimpan</span>
-          </button>
-
-          {/* 3. Television Screen Badge (Center Console) */}
-          <div
-            onClick={() => onNavigate('vault')}
-            className="absolute top-[41%] left-[36%] sm:left-[38%] z-15 max-w-[130px] sm:max-w-[160px] bg-white/90 backdrop-blur-md border border-[#DCD6F3] rounded-xl px-2 py-0.5 shadow-xs hover:scale-105 transition-all cursor-pointer truncate"
-            title="Buka Video Terbaru di Vault"
-          >
-            <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-[#7161BF]">
-              <Tv className="w-2.5 h-2.5 flex-shrink-0" />
-              <span className="truncate">{latestSavedLink ? latestSavedLink.title : 'Play Video'}</span>
-            </div>
-          </div>
-
           {/* Toast Notification inside Room */}
           {lastFedText && (
             <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-[#57B37C] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-md animate-bounce">
@@ -279,35 +241,12 @@ export const PetRoom: FC<PetRoomProps> = ({
             <MochiPet pet={pet} onPetClick={handlePetTap} showBubble={false} />
           </div>
 
-          {/* Floating Snack Bubble (Clean placement to the lower-left of the rug) */}
-          <div className="absolute top-[58%] sm:top-[57%] left-[27%] sm:left-[30%] z-25 anim-float-bubble">
-            <button
-              onClick={handleFeedClick}
-              disabled={isFull || isFeeding}
-              className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl backdrop-blur-md shadow-md border transition-all cursor-pointer ${
-                isFull
-                  ? 'bg-white/60 border-gray-300 opacity-60 cursor-not-allowed'
-                  : 'bg-white/85 border-[#FED7C5] hover:scale-110 active:scale-95 shadow-[#F4A261]/25'
-              }`}
-              title={isFull ? 'Mochi sudah kenyang!' : 'Beri Mochi camilan onigiri (+25 XP)'}
-            >
-              {/* Iridescent Bubble Glow */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#FED7C5]/40 to-white/80 pointer-events-none" />
-              <span className="relative z-10 transition-transform group-hover:scale-110">🍙</span>
-
-              {/* Little Hint Badge */}
-              <span className="absolute -bottom-1 bg-[#D97736] text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-xs">
-                +25
-              </span>
-            </button>
-          </div>
-
           {/* Bottom Status Row Overlay inside the Room Frame */}
           <div className="absolute bottom-3 left-4 right-4 z-20 bg-white/90 backdrop-blur-md rounded-2xl px-3 sm:px-4 py-2 border border-[#EAE3D5] shadow-xs flex items-center justify-between text-xs">
-            {/* Status Badges */}
+            {/* Status Badges: Onigiri icon precisely placed on the eating/hunger info! */}
             <div className="flex items-center gap-2.5 sm:gap-3 text-xs font-bold">
-              <span className="flex items-center gap-1 text-[#D97736]" title={`Lapar: ${pet.hunger}%`}>
-                <span>🍴</span>
+              <span className="flex items-center gap-1.5 text-[#D97736]" title={`Lapar: ${pet.hunger}%`}>
+                <span className="text-sm">🍙</span>
                 <span>{pet.hunger}%</span>
               </span>
               <span className="flex items-center gap-1 text-[#E57399]" title={`Senang: ${pet.mood}%`}>
@@ -323,19 +262,19 @@ export const PetRoom: FC<PetRoomProps> = ({
               </span>
             </div>
 
-            {/* Name & Quick Actions */}
+            {/* Name & Quick Suapi Action */}
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-[#2E2E3A]">{pet.name} ⓘ</span>
               <button
                 onClick={handleFeedClick}
                 disabled={isFull || isFeeding}
-                className={`text-[11px] font-extrabold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                className={`text-[11px] font-extrabold px-3 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
                   isFull
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#FED7C5] hover:bg-[#F4A261] text-[#7A3613] hover:text-white'
+                    : 'bg-[#FED7C5] hover:bg-[#F4A261] text-[#7A3613] hover:text-white shadow-xs'
                 }`}
               >
-                {isFeeding ? 'Makan...' : isFull ? 'Kenyang' : 'Suapi'}
+                <span>{isFeeding ? 'Makan...' : isFull ? 'Kenyang' : '🍙 Suapi'}</span>
               </button>
             </div>
           </div>
