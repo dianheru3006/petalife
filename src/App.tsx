@@ -7,7 +7,7 @@ import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksR
 import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
 import { initializeDatabase } from './lib/db/seed';
 import { recordRewardClaim } from './lib/db/rewardLedgerRepository';
-import { processAssistantMessage } from './features/assistant/engine/assistantEngine';
+import { queryAssistant } from './features/assistant/engine/assistantEngine';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
 import { DashboardPage } from './features/dashboard/DashboardPage';
@@ -272,7 +272,7 @@ export function App() {
   };
 
   // 6. Assistant Actions
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -282,8 +282,8 @@ export function App() {
 
     setChatMessages(prev => [...prev, userMsg]);
 
-    setTimeout(() => {
-      const response = processAssistantMessage(text, {
+    try {
+      const response = await queryAssistant(text, {
         links: savedLinks,
         notes,
         pet,
@@ -298,7 +298,9 @@ export function App() {
       };
 
       setChatMessages(prev => [...prev, aiMsg]);
-    }, 400);
+    } catch {
+      // In case of unexpected rejection, fall back cleanly
+    }
   };
 
   if (isLoading) {

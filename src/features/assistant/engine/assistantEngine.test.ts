@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { SavedLink, Note, Pet } from '../../../lib/types';
-import { processAssistantMessage } from './assistantEngine';
+import { processAssistantMessage, queryAssistant } from './assistantEngine';
 
 const mockPet: Pet = {
   name: 'Mochi',
@@ -113,6 +113,16 @@ describe('Assistant Engine (Phase 4)', () => {
 
     expect(res.replyText).toContain("couldn't find an exact match for");
     expect(res.suggestedAction?.targetTab).toBe('vault');
+  });
+
+  it('queryAssistant gracefully falls back to local engine when remote API is unreachable', async () => {
+    const res = await queryAssistant('How is Mochi doing?', {
+      links: mockLinks,
+      notes: mockNotes,
+      pet: mockPet,
+    });
+    expect(res.replyText).toContain('Level 2');
+    expect(res.replyText).toContain('80%');
   });
 });
 
