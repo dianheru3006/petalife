@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { TV_CHANNELS } from './tvChannelsData';
 
 interface TvScreenProps {
@@ -10,8 +10,6 @@ interface TvScreenProps {
 export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) => {
   const [channelIdx, setChannelIdx] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
-  const [showBadge, setShowBadge] = useState(false);
-  const badgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentChannel = TV_CHANNELS[channelIdx];
 
@@ -22,27 +20,14 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
     const interval = setInterval(() => {
       setChannelIdx(prev => (prev + 1) % TV_CHANNELS.length);
       setIsSwitching(true);
-      setShowBadge(true);
 
       setTimeout(() => {
         setIsSwitching(false);
       }, 260);
-
-      if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
-      badgeTimerRef.current = setTimeout(() => {
-        setShowBadge(false);
-      }, 2400);
     }, 25000);
 
     return () => clearInterval(interval);
   }, [isNightMode]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
-    };
-  }, []);
 
   const handleScreenClick = () => {
     if (isNightMode) {
@@ -53,7 +38,6 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
     const nextIdx = (channelIdx + 1) % TV_CHANNELS.length;
     setChannelIdx(nextIdx);
     setIsSwitching(true);
-    setShowBadge(true);
 
     const nextChannel = TV_CHANNELS[nextIdx];
     onTvInteraction?.(nextChannel.speechText);
@@ -61,11 +45,6 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
     setTimeout(() => {
       setIsSwitching(false);
     }, 260);
-
-    if (badgeTimerRef.current) clearTimeout(badgeTimerRef.current);
-    badgeTimerRef.current = setTimeout(() => {
-      setShowBadge(false);
-    }, 2500);
   };
 
   const handleKeyDown = (e: KeyboardEvent<SVGPolygonElement>) => {
@@ -297,10 +276,14 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
               />
             </g>
 
-            {/* Retro Arcade Text */}
-            <text x="284" y="538" fill="#F472B6" fontSize="7" fontFamily="monospace" fontWeight="bold">
-              HI 999
-            </text>
+            {/* Retro Arcade Pixel Hearts */}
+            <g fill="#F472B6" opacity="0.85">
+              <rect x="284" y="534" width="2" height="2" />
+              <rect x="287" y="534" width="2" height="2" />
+              <rect x="283" y="536" width="7" height="2" />
+              <rect x="284" y="538" width="5" height="2" />
+              <rect x="286" y="540" width="1" height="2" />
+            </g>
           </g>
         )}
 
@@ -385,25 +368,6 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
             className="anim-tv-crt-static"
           />
         )}
-
-        {/* On-Screen Channel Indicator Badge */}
-        <g
-          className={`transition-opacity duration-300 pointer-events-none select-none ${
-            showBadge ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <rect x="282" y="526" width="56" height="12" rx="3" fill="#000000" fillOpacity="0.65" />
-          <text
-            x="285"
-            y="535"
-            fill="#FFFFFF"
-            fontSize="5.5"
-            fontFamily="ui-monospace, monospace"
-            fontWeight="bold"
-          >
-            {currentChannel.channelNum} {currentChannel.name.slice(0, 7).toUpperCase()}
-          </text>
-        </g>
       </g>
 
       {/* --- NIGHT MODE TURNED-OFF GLASS OVERLAY --- */}
