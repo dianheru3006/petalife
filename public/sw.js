@@ -3,15 +3,15 @@ const CACHE_NAME = 'petalife-shell-v2';
 
 // 1. Static Web App Shell Assets
 const STATIC_PRECACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-192.svg',
-  '/icon-512.svg',
-  '/icon-maskable.svg',
+  './',
+  './index.html',
+  './manifest.json',
+  './favicon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-192.svg',
+  './icon-512.svg',
+  './icon-maskable.svg',
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)

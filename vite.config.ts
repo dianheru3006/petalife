@@ -17,7 +17,7 @@ function injectServiceWorkerAssetsPlugin(): Plugin {
 
       let assetFiles: string[] = [];
       if (fs.existsSync(assetsDir)) {
-        assetFiles = fs.readdirSync(assetsDir).map(file => `/assets/${file}`);
+        assetFiles = fs.readdirSync(assetsDir).map(file => `./assets/${file}`);
       }
 
       let swContent = fs.readFileSync(swFile, 'utf-8');
@@ -34,9 +34,15 @@ function injectServiceWorkerAssetsPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',
+  server: {
+    host: true,
+    allowedHosts: true,
+  },
   plugins: [
     react(),
     tailwindcss(),
     injectServiceWorkerAssetsPlugin(),
   ],
 })
+
