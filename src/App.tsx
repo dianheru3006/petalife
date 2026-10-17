@@ -310,6 +310,7 @@ export function App() {
           onUpdateLink={handleUpdateLink}
           onDeleteLink={handleDeleteLink}
           onUpdateStatus={handleUpdateStatus}
+          isNightMode={isNightMode}
         />
       )}
 
@@ -319,6 +320,7 @@ export function App() {
           onAddNote={handleAddNote}
           onUpdateNote={handleUpdateNote}
           onDeleteNote={handleDeleteNote}
+          isNightMode={isNightMode}
         />
       )}
 
@@ -327,6 +329,7 @@ export function App() {
           messages={chatMessages}
           onSendMessage={handleSendMessage}
           onNavigate={handleSelectTab}
+          isNightMode={isNightMode}
         />
       )}
     </AppLayout>

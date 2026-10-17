@@ -341,7 +341,7 @@ export const PetRoom: FC<PetRoomProps> = ({
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#D97736] shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95 transition-colors duration-700 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:bg-[#F2ECE0]'
-                : 'bg-white border-[#EAE3D5] hover:bg-[#FAF7F2]'
+                : 'bg-[#FAF7F2] border-[#EAE3D5] hover:bg-[#F2ECE0]'
             )}
             title={`Streak: ${pet.streakDays} hari`}
           >
@@ -475,7 +475,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             <button
               type="button"
               onClick={handleDanceClick}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#E57399] hover:text-[#D97736] hover:bg-[#FFF5F7] cursor-pointer transition-all active:scale-95"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAF7F2] border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#E57399] hover:text-[#D97736] hover:bg-[#FFF5F7] cursor-pointer transition-all active:scale-95"
               title="Ajak Mochi Menari 🎵"
               aria-label="Ajak Mochi menari"
             >
@@ -484,7 +484,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             <button
               type="button"
               onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#2E2E3A] cursor-pointer transition-colors active:scale-95"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAF7F2] border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#2E2E3A] cursor-pointer transition-colors active:scale-95"
               title="Koleksi / Baju Mochi"
               aria-label="Koleksi baju Mochi"
             >
@@ -493,7 +493,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             <button
               type="button"
               onClick={handleToggleNight}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAF7F2] border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
               title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
               aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
             >
@@ -544,8 +544,8 @@ export const PetRoom: FC<PetRoomProps> = ({
             className={cn(
               'w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full text-[#2E2E3A] placeholder-[#9E9EA8] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
               activeNight
-                ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-white'
-                : 'bg-white border-[#EAE3D5]'
+                ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-[#FAF6EE]'
+                : 'bg-[#FAF7F2] border-[#EAE3D5] focus:bg-[#FFFDF9]'
             )}
           />
           <button
@@ -577,7 +577,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             'rounded-3xl p-4 shadow-xs space-y-3 transition-colors duration-700 ease-out border',
             activeNight
               ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-white border-[#ECE6DB]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
           )}
         >
           <div className="flex justify-between items-center text-xs font-bold text-[#4A4A5A]">

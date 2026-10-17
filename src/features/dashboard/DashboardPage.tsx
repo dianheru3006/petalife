@@ -54,7 +54,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
             'rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-colors duration-700 ease-out border',
             isNightMode
               ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-white border-[#ECE6DB]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
           )}
         >
           <div>
@@ -106,7 +106,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
                       'text-[11px] font-bold text-[#D97736] px-2 py-0.5 rounded-full border transition-colors duration-700',
                       isNightMode
                         ? 'bg-[#F7F2E8] border-[#DDD2C2]'
-                        : 'bg-white border-[#EAE6DF]'
+                        : 'bg-[#FAF7F2] border-[#EAE6DF]'
                     )}
                   >
                     +{goal.xpReward} XP
@@ -139,7 +139,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
             'rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-colors duration-700 ease-out border',
             isNightMode
               ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-white border-[#ECE6DB]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
           )}
         >
           <div>
@@ -199,7 +199,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
                           'text-[10px] text-[#6B6B7E] px-1.5 py-0.5 rounded-md border transition-colors duration-700',
                           isNightMode
                             ? 'bg-[#F7F2E8] border-[#DDD2C2]'
-                            : 'bg-white border-[#EAE6DF]'
+                            : 'bg-[#FAF7F2] border-[#EAE6DF]'
                         )}
                       >
                         #{t}

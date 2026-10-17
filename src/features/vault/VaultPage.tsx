@@ -1,7 +1,7 @@
 import type { FC, FormEvent } from 'react';
 import { useState } from 'react';
 import type { SavedLink, PlatformType, LinkStatus } from '../../lib/types';
-import { detectPlatform, isValidUrl } from '../../lib/utils';
+import { detectPlatform, isValidUrl, cn } from '../../lib/utils';
 import { normalizeUrl } from '../../lib/utils/urlUtils';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -13,6 +13,7 @@ export interface VaultPageProps {
   onUpdateLink?: (id: string, updates: Partial<SavedLink>) => void;
   onDeleteLink: (id: string) => void;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
+  isNightMode?: boolean;
 }
 
 export const VaultPage: FC<VaultPageProps> = ({
@@ -21,6 +22,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   onUpdateLink,
   onDeleteLink,
   onUpdateStatus,
+  isNightMode = false,
 }) => {
   const [urlInput, setUrlInput] = useState('');
   const [customTitle, setCustomTitle] = useState('');
@@ -174,7 +176,14 @@ export const VaultPage: FC<VaultPageProps> = ({
   return (
     <div className="space-y-4 max-w-md mx-auto">
       {/* Top Banner & Quick Add Card */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#ECE6DB] shadow-xs">
+      <div
+        className={cn(
+          'rounded-3xl p-4 sm:p-5 shadow-xs border transition-colors duration-700',
+          isNightMode
+            ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+            : 'bg-[#FAF7F2] border-[#ECE6DB]'
+        )}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">
@@ -219,10 +228,14 @@ export const VaultPage: FC<VaultPageProps> = ({
                   if (urlError) setUrlError(null);
                 }}
                 placeholder="e.g. https://www.tiktok.com/@creator/video/123... or youtube.com/shorts/..."
-                className={`w-full text-xs sm:text-sm px-4 py-3 rounded-2xl border bg-[#FAF7F2] text-[#2E2E3A] focus:outline-none focus:ring-2 transition-all ${
+                className={`w-full text-xs sm:text-sm px-4 py-3 rounded-2xl border ${
+                  isNightMode ? 'bg-[#F2EBE0]' : 'bg-[#FAF7F2]'
+                } text-[#2E2E3A] focus:outline-none focus:ring-2 transition-all ${
                   urlError
                     ? 'border-[#E57399] focus:ring-[#E57399]/30 bg-[#FDF0F4]'
-                    : 'border-[#EAE6DF] focus:ring-[#FED7C5] focus:bg-white'
+                    : isNightMode
+                      ? 'border-[#E2D8C9] focus:ring-[#FED7C5] focus:bg-[#FAF6EE]'
+                      : 'border-[#EAE6DF] focus:ring-[#FED7C5] focus:bg-[#FFFDF9]'
                 }`}
               />
               {urlError && (
@@ -241,7 +254,11 @@ export const VaultPage: FC<VaultPageProps> = ({
                 value={customTitle}
                 onChange={e => setCustomTitle(e.target.value)}
                 placeholder="e.g. 5 Rules for Clean Python Code"
-                className="w-full text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-[#EAE6DF] bg-[#FAF7F2] text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] focus:bg-white transition-all"
+                className={`w-full text-xs sm:text-sm px-4 py-2.5 rounded-2xl border ${
+                  isNightMode
+                    ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
+                    : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
+                } text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all`}
               />
             </div>
 
@@ -254,7 +271,11 @@ export const VaultPage: FC<VaultPageProps> = ({
                 onChange={e => setCustomNotes(e.target.value)}
                 placeholder="What is the key lesson or recipe ingredient in this clip?"
                 rows={2}
-                className="w-full text-xs sm:text-sm p-3 rounded-2xl border border-[#EAE6DF] bg-[#FAF7F2] text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] focus:bg-white resize-none"
+                className={`w-full text-xs sm:text-sm p-3 rounded-2xl border ${
+                  isNightMode
+                    ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
+                    : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
+                } text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] resize-none`}
               />
             </div>
 
@@ -288,7 +309,12 @@ export const VaultPage: FC<VaultPageProps> = ({
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search by title, notes, platform, or #tag..."
-            className="w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border border-[#ECE6DB] bg-white text-[#2E2E3A] placeholder-[#8E8E9E] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] shadow-xs transition-all"
+            className={cn(
+              'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#8E8E9E] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] shadow-xs transition-colors duration-700',
+              isNightMode
+                ? 'bg-[#F2EBE0] border-[#E2D8C9]'
+                : 'bg-[#FAF7F2] border-[#ECE6DB]'
+            )}
           />
           {searchQuery && (
             <button
@@ -307,7 +333,9 @@ export const VaultPage: FC<VaultPageProps> = ({
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'all'
                 ? 'bg-[#2E2E3A] text-white border-[#2E2E3A] shadow-xs'
-                : 'bg-white text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#FAF7F2]'
+                : isNightMode
+                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             All Materials ({links.length})
@@ -317,7 +345,9 @@ export const VaultPage: FC<VaultPageProps> = ({
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'to_review'
                 ? 'bg-[#FFEFE8] text-[#D97736] border-[#FED7C5] shadow-xs'
-                : 'bg-white text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#FAF7F2]'
+                : isNightMode
+                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             ⏳ To Review ({toReviewCount})
@@ -327,7 +357,9 @@ export const VaultPage: FC<VaultPageProps> = ({
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'in_progress'
                 ? 'bg-[#F0EDF9] text-[#7161BF] border-[#DCD6F3] shadow-xs'
-                : 'bg-white text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#FAF7F2]'
+                : isNightMode
+                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             📖 Studying ({inProgressCount})
@@ -337,7 +369,9 @@ export const VaultPage: FC<VaultPageProps> = ({
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'completed'
                 ? 'bg-[#EAF6EE] text-[#36955E] border-[#CCEBD6] shadow-xs'
-                : 'bg-white text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#FAF7F2]'
+                : isNightMode
+                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             ✅ Mastered ({completedCount})
@@ -353,7 +387,9 @@ export const VaultPage: FC<VaultPageProps> = ({
               className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all cursor-pointer whitespace-nowrap ${
                 selectedCategory === cat
                   ? 'bg-[#FED7C5] text-[#7A3613] border-[#F4A261]/40 font-bold shadow-xs'
-                  : 'bg-white text-[#5B5B6D] border-[#ECE6DB] hover:bg-[#FAF7F2]'
+                  : isNightMode
+                    ? 'bg-[#F2EBE0] text-[#5B5B6D] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                    : 'bg-[#FAF7F2] text-[#5B5B6D] border-[#ECE6DB] hover:bg-[#F3EDE2]'
               }`}
             >
               {cat}
@@ -364,7 +400,14 @@ export const VaultPage: FC<VaultPageProps> = ({
 
       {/* Links Grid */}
       {filteredLinks.length === 0 ? (
-        <div className="bg-white rounded-3xl p-10 border border-[#ECE6DB] text-center space-y-2">
+        <div
+          className={cn(
+            'rounded-3xl p-10 border text-center space-y-2 transition-colors duration-700',
+            isNightMode
+              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
+          )}
+        >
           <div className="text-3xl">🔍</div>
           <h4 className="font-extrabold text-sm text-[#2E2E3A]">No saved materials found</h4>
           <p className="text-xs text-[#828292] max-w-sm mx-auto">
@@ -372,14 +415,19 @@ export const VaultPage: FC<VaultPageProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-3.5">
           {filteredLinks.map(link => {
             const isEditing = editingLinkId === link.id;
 
             return (
               <div
                 key={link.id}
-                className="bg-white rounded-3xl p-5 border border-[#ECE6DB] hover:border-[#DCD6F3] shadow-xs hover:shadow-sm transition-all flex flex-col justify-between"
+                className={cn(
+                  'rounded-3xl p-4 sm:p-5 border shadow-xs hover:shadow-sm transition-colors duration-700 flex flex-col justify-between',
+                  isNightMode
+                    ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:border-[#DCD6F3]'
+                    : 'bg-[#FAF7F2] border-[#ECE6DB] hover:border-[#DCD6F3]'
+                )}
               >
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2.5">

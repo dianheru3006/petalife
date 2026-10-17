@@ -22,19 +22,12 @@ export const AppLayout: FC<AppLayoutProps> = ({
   return (
     <div
       className={cn(
-        'min-h-screen w-full flex justify-center text-[#2E2E3A] transition-colors duration-700 ease-out',
-        isNightMode ? 'bg-[#E0D5C5]' : 'bg-[#F2ECE1]'
+        'min-h-screen w-full text-[#2E2E3A] transition-colors duration-700 ease-out',
+        isNightMode ? 'bg-[#EBE2D6]' : 'bg-[#FDFBF7]'
       )}
     >
-      {/* Mobile-First Mini App Frame: Edge-to-edge on mobile, centered phone canvas on desktop */}
-      <div
-        className={cn(
-          'w-full max-w-md min-h-screen flex flex-col relative transition-colors duration-700 ease-out sm:shadow-2xl sm:border-x',
-          isNightMode
-            ? 'bg-[#EBE2D6] sm:border-[#DDD2C2]'
-            : 'bg-[#FDFBF7] sm:border-[#EAE3D5]'
-        )}
-      >
+      {/* Mobile-First Mini App Container: Seamless continuous background, thumb-friendly centered layout */}
+      <div className="w-full max-w-md min-h-screen mx-auto flex flex-col relative">
         {/* Top Header - hidden on home tab since Terrarium has its own cozy title */}
         {currentTab !== 'home' && (
           <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />

@@ -3,12 +3,14 @@ import { useState } from 'react';
 import type { Note } from '../../lib/types';
 import { Button } from '../../components/ui/Button';
 import { FileText, Plus, Search, Trash2, Check, Pencil } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export interface NotesPageProps {
   notes: Note[];
   onAddNote: (note: Note) => void;
   onUpdateNote?: (id: string, updates: Partial<Note>) => void;
   onDeleteNote: (id: string) => void;
+  isNightMode?: boolean;
 }
 
 export const NotesPage: FC<NotesPageProps> = ({
@@ -16,6 +18,7 @@ export const NotesPage: FC<NotesPageProps> = ({
   onAddNote,
   onUpdateNote,
   onDeleteNote,
+  isNightMode = false,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -91,17 +94,26 @@ export const NotesPage: FC<NotesPageProps> = ({
   );
 
   const colorCardStyles = {
-    peach: 'bg-[#FFF7F2] border-[#FED7C5] hover:border-[#F4A261]',
-    lavender: 'bg-[#FAF8FE] border-[#E8E4F8] hover:border-[#9381DA]',
-    mint: 'bg-[#F4FAF6] border-[#D7F0E3] hover:border-[#57B37C]',
-    pink: 'bg-[#FDF6F8] border-[#FCE4EC] hover:border-[#E57399]',
-    cream: 'bg-[#FFFDF9] border-[#EFE8D8] hover:border-[#D6CAB2]',
+    peach: 'bg-[#FFF5ED] border-[#FED7C5] hover:border-[#F4A261]',
+    lavender: 'bg-[#F8F5FD] border-[#E8E4F8] hover:border-[#9381DA]',
+    mint: 'bg-[#F2F9F5] border-[#D7F0E3] hover:border-[#57B37C]',
+    pink: 'bg-[#FDF4F7] border-[#FCE4EC] hover:border-[#E57399]',
+    cream: isNightMode
+      ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:border-[#D6CAB2]'
+      : 'bg-[#FAF7F2] border-[#EFE8D8] hover:border-[#D6CAB2]',
   };
 
   return (
     <div className="space-y-4 max-w-md mx-auto">
       {/* Header & Add Note Button */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#ECE6DB] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div
+        className={cn(
+          'rounded-3xl p-4 sm:p-5 border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-700',
+          isNightMode
+            ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+            : 'bg-[#FAF7F2] border-[#ECE6DB]'
+        )}
+      >
         <div>
           <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#36955E]" />
@@ -133,7 +145,15 @@ export const NotesPage: FC<NotesPageProps> = ({
 
       {/* Note Creator Form */}
       {isCreating && (
-        <form onSubmit={handleSave} className="bg-white rounded-3xl p-5 sm:p-6 border border-[#ECE6DB] shadow-sm space-y-3.5">
+        <form
+          onSubmit={handleSave}
+          className={cn(
+            'rounded-3xl p-4 sm:p-5 border shadow-sm space-y-3.5 transition-colors duration-700',
+            isNightMode
+              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
+          )}
+        >
           <h4 className="font-extrabold text-sm text-[#2E2E3A]">
             {editingNoteId ? '✏️ Edit Note' : 'Write a New Note'}
           </h4>
@@ -143,7 +163,12 @@ export const NotesPage: FC<NotesPageProps> = ({
             value={titleInput}
             onChange={e => setTitleInput(e.target.value)}
             placeholder="Note Title (e.g. Clean Architecture Rule of Thumb)"
-            className="w-full text-xs sm:text-sm px-4 py-2.5 rounded-2xl border border-[#EAE6DF] bg-[#FAF7F2] text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] focus:bg-white font-bold"
+            className={cn(
+              'w-full text-xs sm:text-sm px-4 py-2.5 rounded-2xl border text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] font-bold transition-all',
+              isNightMode
+                ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
+                : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
+            )}
             required
           />
 
@@ -152,7 +177,12 @@ export const NotesPage: FC<NotesPageProps> = ({
             onChange={e => setBodyInput(e.target.value)}
             placeholder="Write your thoughts, ingredients, or takeaways here..."
             rows={4}
-            className="w-full text-xs sm:text-sm p-4 rounded-2xl border border-[#EAE6DF] bg-[#FAF7F2] text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] focus:bg-white resize-none"
+            className={cn(
+              'w-full text-xs sm:text-sm p-4 rounded-2xl border text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] resize-none transition-all',
+              isNightMode
+                ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
+                : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
+            )}
             required
           />
 
@@ -185,7 +215,12 @@ export const NotesPage: FC<NotesPageProps> = ({
                 value={tagsInput}
                 onChange={e => setTagsInput(e.target.value)}
                 placeholder="tags, separated, by, comma"
-                className="text-xs px-3 py-1.5 rounded-xl border border-[#EAE6DF] bg-[#FAF7F2] text-[#4A4A5A]"
+                className={cn(
+                  'text-xs px-3 py-1.5 rounded-xl border text-[#4A4A5A]',
+                  isNightMode
+                    ? 'border-[#E2D8C9] bg-[#F2EBE0]'
+                    : 'border-[#EAE6DF] bg-[#FAF7F2]'
+                )}
               />
               <Button type="submit" variant="mint" size="sm">
                 <span>{editingNoteId ? 'Update Note' : 'Save Note'}</span>
@@ -203,13 +238,25 @@ export const NotesPage: FC<NotesPageProps> = ({
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search your notes by keyword or tag..."
-          className="w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border border-[#ECE6DB] bg-white text-[#2E2E3A] placeholder-[#8E8E9E] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] shadow-xs"
+          className={cn(
+            'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#8E8E9E] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] shadow-xs transition-colors duration-700',
+            isNightMode
+              ? 'bg-[#F2EBE0] border-[#E2D8C9]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
+          )}
         />
       </div>
 
       {/* Notes Grid */}
       {filteredNotes.length === 0 ? (
-        <div className="bg-white rounded-3xl p-10 border border-[#ECE6DB] text-center space-y-2">
+        <div
+          className={cn(
+            'rounded-3xl p-10 border text-center space-y-2 transition-colors duration-700',
+            isNightMode
+              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+              : 'bg-[#FAF7F2] border-[#ECE6DB]'
+          )}
+        >
           <div className="text-3xl">📝</div>
           <h4 className="font-extrabold text-sm text-[#2E2E3A]">No notes found</h4>
           <p className="text-xs text-[#828292]">
@@ -256,7 +303,7 @@ export const NotesPage: FC<NotesPageProps> = ({
                 <div className="pt-2 border-t border-black/5 flex items-center justify-between text-[11px] text-[#8E8E9E]">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {note.tags.map(t => (
-                      <span key={t} className="text-[10px] text-[#6B6B7E] bg-white/70 px-1.5 py-0.5 rounded-md border border-black/5">
+                      <span key={t} className="text-[10px] text-[#6B6B7E] bg-black/4 px-1.5 py-0.5 rounded-md border border-black/5">
                         #{t}
                       </span>
                     ))}

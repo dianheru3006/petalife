@@ -41,8 +41,8 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
       className={cn(
         'w-full flex items-center justify-between py-3 px-3.5 sm:px-4 border-b backdrop-blur-md sticky top-0 z-20 transition-colors duration-700 ease-out',
         isNightMode
-          ? 'bg-[#F3ECE1]/85 border-[#E2D8C7]'
-          : 'bg-[#FFFDF9]/80 border-[#EFEAE1]'
+          ? 'bg-[#EBE2D6]/85 border-[#DFD6C6]'
+          : 'bg-[#FDFBF7]/85 border-[#EAE3D5]'
       )}
     >
       <div className="min-w-0 flex-1 mr-2">
@@ -76,7 +76,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
             'flex items-center gap-2 border pl-1 pr-3 py-1 rounded-full shadow-xs cursor-pointer transition-colors duration-700',
             isNightMode
               ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:bg-[#F2ECE0]'
-              : 'bg-white border-[#EAE6DF] hover:bg-[#F7F3E9]'
+              : 'bg-[#FAF7F2] border-[#EAE6DF] hover:bg-[#F7F3E9]'
           )}
         >
           <div className="w-7 h-7 rounded-full bg-[#DCD6F3] text-[#7161BF] font-extrabold text-xs flex items-center justify-center">

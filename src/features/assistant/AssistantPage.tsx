@@ -3,17 +3,20 @@ import { useState } from 'react';
 import type { ChatMessage, NavigationTab } from '../../lib/types';
 import { Button } from '../../components/ui/Button';
 import { Send, Sparkles, User, ArrowRight } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export interface AssistantPageProps {
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
   onNavigate: (tab: NavigationTab) => void;
+  isNightMode?: boolean;
 }
 
 export const AssistantPage: FC<AssistantPageProps> = ({
   messages,
   onSendMessage,
   onNavigate,
+  isNightMode = false,
 }) => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -43,7 +46,14 @@ export const AssistantPage: FC<AssistantPageProps> = ({
   return (
     <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-170px)] min-h-[460px]">
       {/* Grounded AI Assistant Badge */}
-      <div className="bg-[#FFF9F2] border border-[#FED7C5] px-3.5 py-1.5 rounded-2xl text-[11px] font-semibold text-[#8C5D39] flex items-center justify-between mb-4 shadow-2xs">
+      <div
+        className={cn(
+          'border px-3.5 py-1.5 rounded-2xl text-[11px] font-semibold flex items-center justify-between mb-4 shadow-2xs transition-colors duration-700',
+          isNightMode
+            ? 'bg-[#FAF2E6] border-[#ECC8B2] text-[#8C5D39]'
+            : 'bg-[#FFF7EE] border-[#FED7C5] text-[#8C5D39]'
+        )}
+      >
         <span className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-[#F4A261]" />
           <span><b>Grounded Knowledge Assistant:</b> Responds using your personal Vault, Notes, and Mochi's real status.</span>
@@ -73,11 +83,14 @@ export const AssistantPage: FC<AssistantPageProps> = ({
               {/* Message Bubble */}
               <div className={`max-w-[85%] sm:max-w-[75%] space-y-2`}>
                 <div
-                  className={`p-4 rounded-3xl text-xs sm:text-sm leading-relaxed shadow-xs ${
+                  className={cn(
+                    'p-4 rounded-3xl text-xs sm:text-sm leading-relaxed shadow-xs border transition-colors duration-700',
                     isAssistant
-                      ? 'bg-white border border-[#EAE6DF] text-[#2E2E3A] rounded-tl-sm'
-                      : 'bg-[#F4A261] text-white rounded-tr-sm font-medium'
-                  }`}
+                      ? isNightMode
+                        ? 'bg-[#FAF6EE] border-[#DDD2C2] text-[#2E2E3A] rounded-tl-sm'
+                        : 'bg-[#FAF7F2] border-[#ECE6DB] text-[#2E2E3A] rounded-tl-sm'
+                      : 'bg-[#F4A261] border-[#E88E4B] text-white rounded-tr-sm font-medium'
+                  )}
                 >
                   {isAssistant && (
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#7161BF] uppercase tracking-wider mb-1">
@@ -109,7 +122,14 @@ export const AssistantPage: FC<AssistantPageProps> = ({
             <div className="w-8 h-8 rounded-2xl bg-[#F0EDF9] border border-[#DCD6F3] flex items-center justify-center text-sm">
               🐾
             </div>
-            <div className="bg-white border border-[#EAE6DF] px-4 py-3 rounded-2xl rounded-tl-sm shadow-xs flex items-center gap-1.5 text-xs text-[#828292]">
+            <div
+              className={cn(
+                'border px-4 py-3 rounded-2xl rounded-tl-sm shadow-xs flex items-center gap-1.5 text-xs transition-colors duration-700',
+                isNightMode
+                  ? 'bg-[#FAF6EE] border-[#DDD2C2] text-[#828292]'
+                  : 'bg-[#FAF7F2] border-[#ECE6DB] text-[#828292]'
+              )}
+            >
               <span className="animate-bounce">●</span>
               <span className="animate-bounce" style={{ animationDelay: '0.15s' }}>●</span>
               <span className="animate-bounce" style={{ animationDelay: '0.3s' }}>●</span>
@@ -128,7 +148,12 @@ export const AssistantPage: FC<AssistantPageProps> = ({
               key={i}
               type="button"
               onClick={() => handleSend(prompt)}
-              className="text-xs bg-white hover:bg-[#FAF7F2] text-[#4A4A5A] border border-[#ECE6DB] px-3 py-1.5 rounded-full whitespace-nowrap shadow-2xs transition-colors cursor-pointer font-medium"
+              className={cn(
+                'text-xs border px-3 py-1.5 rounded-full whitespace-nowrap shadow-2xs transition-colors cursor-pointer font-medium',
+                isNightMode
+                  ? 'bg-[#FAF6EE] hover:bg-[#F2ECE0] text-[#4A4A5A] border-[#DDD2C2]'
+                  : 'bg-[#FAF7F2] hover:bg-[#F3EDE2] text-[#4A4A5A] border-[#ECE6DB]'
+              )}
             >
               {prompt}
             </button>
@@ -142,7 +167,12 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           e.preventDefault();
           handleSend();
         }}
-        className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-[#ECE6DB] shadow-xs"
+        className={cn(
+          'flex items-center gap-2 p-2 rounded-2xl border shadow-xs transition-colors duration-700',
+          isNightMode
+            ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+            : 'bg-[#FAF7F2] border-[#ECE6DB]'
+        )}
       >
         <input
           type="text"
