@@ -292,15 +292,52 @@ export const PetRoom: FC<PetRoomProps> = ({
       </div>
 
       {/* 2. Terrarium / Living Diorama Card (CRISP, NO FOG GRADIENT, BORDERED) */}
-      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden border-2 border-[#E8DFCF] shadow-md bg-[#EEE1CD] select-none">
-        {/* Background 3D Room Diorama - 100% Crisp, Pure & Warm */}
+      <div className={`relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden border-2 shadow-md transition-colors duration-700 select-none ${
+        activeNight ? 'border-[#3D374D] bg-[#181624]' : 'border-[#E8DFCF] bg-[#EEE1CD]'
+      }`}>
+        {/* Background 3D Room Diorama - 100% Crisp, Pure & Warm (Room inside stays completely bright) */}
         <img
           src={roomBg}
           alt="Rumah Mochi 3D Living Room"
-          className={`absolute inset-0 w-full h-full object-cover object-center pointer-events-none transition-all duration-700 ${
-            activeNight ? 'brightness-[0.93] saturate-[0.90] contrast-[1.02]' : 'brightness-100'
-          }`}
+          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         />
+
+        {/* Night Mode Backdrop: Area OUTSIDE the hexagonal terrarium becomes slightly dark like a cozy diorama showcase */}
+        <svg
+          viewBox="0 0 768 1376"
+          preserveAspectRatio="xMidYMid slice"
+          className={`absolute inset-0 w-full h-full pointer-events-none z-10 transition-opacity duration-700 ${
+            activeNight ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-hidden="true"
+        >
+          <defs>
+            {/* Very subtle anti-alias feathering on the diorama edge */}
+            <filter id="outerDarkFeather" x="-5%" y="-5%" width="110%" height="110%">
+              <feGaussianBlur stdDeviation="2.0" />
+            </filter>
+
+            {/* Mask: Outer area is white (darkened), while the hexagonal room is black (KEPT BRIGHT) */}
+            <mask id="outerHexMask">
+              <rect width="768" height="1376" fill="white" />
+              <polygon
+                points="411,237 753,435 753,805 385,1048 14,805 14,466"
+                fill="black"
+                filter="url(#outerDarkFeather)"
+              />
+            </mask>
+          </defs>
+
+          {/* Soft deep warm slate darkening only applied OUTSIDE the hexagonal room */}
+          <rect
+            width="768"
+            height="1376"
+            fill="#181624"
+            fillOpacity="0.70"
+            mask="url(#outerHexMask)"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+        </svg>
 
         {/* Toast Notification inside Room */}
         {lastFedText && (
