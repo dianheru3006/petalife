@@ -25,7 +25,7 @@ export const BottomNav: FC<BottomNavProps> = ({
     <nav
       aria-label="Navigasi utama"
       className={cn(
-        'fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs sm:max-w-sm z-40 backdrop-blur-md rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between select-none transition-colors duration-700 ease-out border',
+        'fixed bottom-[calc(0.75rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs sm:max-w-sm z-40 backdrop-blur-md rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between select-none transition-colors duration-700 ease-out border',
         isNightMode
           ? 'bg-[#FAF6EE]/95 border-[#DFD6C6]'
           : 'bg-[#FAF7F2]/95 border-[#EAE3D5]'

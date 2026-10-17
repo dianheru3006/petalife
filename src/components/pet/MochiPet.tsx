@@ -203,7 +203,7 @@ export const MochiPet: FC<MochiPetProps> = ({
         onMouseLeave={() => setIsHovered(false)}
         aria-label={isSleeping ? "Mochi sedang tidur lelap" : "Elus Mochi"}
         className={cn(
-          'relative w-22 h-22 sm:w-26 sm:h-26 cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-transform duration-200 active:scale-95',
+          'relative w-28 h-28 sm:w-32 sm:h-32 cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-transform duration-200 active:scale-95',
           getAnimationClass()
         )}
         title={isSleeping ? "Ssst... Mochi sedang tidur lelap 🌙💤" : "Ketuk Mochi untuk mengelus!"}

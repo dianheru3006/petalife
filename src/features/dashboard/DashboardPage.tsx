@@ -4,6 +4,7 @@ import { PetRoom } from '../../components/pet/PetRoom';
 import { Badge } from '../../components/ui/Badge';
 import { CheckCircle2, Circle, ArrowRight, Bookmark, Trophy, Lightbulb } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface DashboardPageProps {
   pet: Pet;
@@ -12,7 +13,7 @@ export interface DashboardPageProps {
   onFeedPet: () => void;
   onToggleGoal: (id: string) => void;
   onNavigate: (tab: NavigationTab) => void;
-  onAddLink?: (newLink: SavedLink) => Promise<void>;
+  onAddLink?: (newLink: SavedLink) => Promise<LinkRewardResult | void>;
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;

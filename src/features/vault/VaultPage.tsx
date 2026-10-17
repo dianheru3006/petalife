@@ -6,10 +6,11 @@ import { normalizeUrl } from '../../lib/utils/urlUtils';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Search, Plus, ExternalLink, Trash2, Bookmark, Pencil, Check } from 'lucide-react';
+import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface VaultPageProps {
   links: SavedLink[];
-  onAddLink: (link: SavedLink) => Promise<void>;
+  onAddLink: (link: SavedLink) => Promise<LinkRewardResult | void>;
   onUpdateLink?: (id: string, updates: Partial<SavedLink>) => void;
   onDeleteLink: (id: string) => void;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
@@ -115,12 +116,17 @@ export const VaultPage: FC<VaultPageProps> = ({
 
     setIsSavingLink(true);
     try {
-      await onAddLink(newLink);
+      const rewardRes = await onAddLink(newLink);
+      const isAwarded = rewardRes ? rewardRes.awarded : false;
       setUrlInput('');
       setCustomTitle('');
       setCustomNotes('');
       setIsAddingOpen(false);
-      setSuccessToast(`🎉 Saved to Vault: "${title}"`);
+      setSuccessToast(
+        isAwarded
+          ? `🎉 Saved to Vault: "${title}" (+10 XP) [${rewardRes?.countToday ?? 1}/3 today]`
+          : `🎉 Saved to Vault: "${title}" (Daily 3-reward cap reached)`
+      );
       setTimeout(() => setSuccessToast(null), 3000);
     } catch {
       setUrlError('Could not save this link locally. Check storage and try again.');

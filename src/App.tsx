@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
 import { feedPet, awardXp, calculateTimeDecay } from './features/pet/engine/petEngine';
@@ -6,7 +6,7 @@ import { loadStoredPet, saveStoredPet } from './features/pet/engine/petStorage';
 import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksRepository';
 import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
 import { initializeDatabase } from './lib/db/seed';
-import { recordRewardClaim } from './lib/db/rewardLedgerRepository';
+import { recordRewardClaim, claimDailyLinkReward, type LinkRewardResult } from './lib/db/rewardLedgerRepository';
 import { queryAssistant } from './features/assistant/engine/assistantEngine';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
@@ -32,6 +32,34 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isNightMode, setIsNightMode] = useState<boolean>(false);
+
+  // Re-check and rollover daily habits when date crosses midnight without manual reload
+  const activeDateRef = useRef<string>(getTodayDateString());
+  useEffect(() => {
+    const checkMidnightRollover = () => {
+      const currentDate = getTodayDateString();
+      if (currentDate !== activeDateRef.current) {
+        activeDateRef.current = currentDate;
+        setDailyGoals(loadStoredDailyGoals());
+      }
+    };
+
+    const interval = setInterval(checkMidnightRollover, 15000);
+    const handleVisibilityOrFocus = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        checkMidnightRollover();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, []);
 
   useEffect(() => {
     const syncTabFromHash = () => setCurrentTab(tabFromHash());
@@ -70,6 +98,13 @@ export function App() {
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          // Signal Telegram WebApp that data and UI are completely loaded
+          try {
+            (window as unknown as { Telegram?: { WebApp?: { ready?: () => void } } })
+              .Telegram?.WebApp?.ready?.();
+          } catch {
+            // Ignored in standard browser
+          }
         }
       }
     }
@@ -139,20 +174,20 @@ export function App() {
   };
 
   // 3. Vault Actions with IndexedDB Persistence
-  const handleAddLink = async (newLink: SavedLink) => {
+  const handleAddLink = async (newLink: SavedLink): Promise<LinkRewardResult> => {
     try {
       const created = await createLink(newLink);
       setSavedLinks(prev => [created, ...prev]);
 
-      // Daily limit on link save XP rewards (idempotent reward ledger entry)
+      // Daily limit on link save XP rewards (enforcing max 3 rewarded links per local date)
       const todayKey = getTodayDateString();
-      const linkLedgerKey = `link_save:${todayKey}:${created.id}`;
-      const isNewClaim = await recordRewardClaim(linkLedgerKey, 'link_save', created.id, 10);
-      if (isNewClaim) {
-        setPet(prev => awardXp(prev, 10).pet);
+      const rewardResult = await claimDailyLinkReward(created.id, todayKey, 3);
+      if (rewardResult.awarded) {
+        setPet(prev => awardXp(prev, rewardResult.xpAwarded).pet);
       }
 
       await fulfillDailyGoal('goal-1');
+      return rewardResult;
     } catch (err) {
       console.error('[App] Failed to save link to repository:', err);
       throw err;

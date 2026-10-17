@@ -8,8 +8,10 @@ export function registerServiceWorker(): void {
     // Only register in production or when explicitly enabled to prevent interfering with Vite HMR
     if (import.meta.env.PROD) {
       window.addEventListener('load', () => {
+        // Resolve sw.js relative to current base path to support subdirectories (e.g. /petalife/)
+        const swUrl = new URL('sw.js', window.location.href).pathname;
         navigator.serviceWorker
-          .register('/sw.js')
+          .register(swUrl, { scope: './' })
           .then((registration) => {
             console.log('[Petalife PWA] Service Worker registered:', registration.scope);
           })

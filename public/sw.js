@@ -67,7 +67,10 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => {
           const cached = await caches.match(request);
           if (cached) return cached;
-          return caches.match('/index.html');
+          const indexUrl = new URL('index.html', self.registration.scope).pathname;
+          const fallback = (await caches.match(indexUrl)) || (await caches.match(self.registration.scope)) || (await caches.match('./index.html'));
+          if (fallback) return fallback;
+          return caches.match('./');
         })
     );
     return;

@@ -26,13 +26,14 @@ import { SNACK_VARIANTS } from './snackData';
 import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
+import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
   pet: Pet;
   onFeed: () => void;
   onNavigate: (tab: NavigationTab) => void;
   savedLinks?: SavedLink[];
-  onAddLink?: (newLink: SavedLink) => Promise<void>;
+  onAddLink?: (newLink: SavedLink) => Promise<LinkRewardResult | void>;
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;
@@ -309,20 +310,36 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     setIsSavingLink(true);
     try {
-      await onAddLink(newLink);
-      setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+10 XP)`);
+      const rewardRes = await onAddLink(newLink);
+      const isAwarded = rewardRes ? rewardRes.awarded : false;
+      const countToday = rewardRes ? rewardRes.countToday : 0;
+
+      if (isAwarded) {
+        setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+10 XP) [${countToday}/3 hari ini]`);
+      } else {
+        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Batas 3 reward/hari tercapai)');
+      }
       setQuickUrl('');
 
       // Trigger Mochi's dedicated studying & note-taking mode!
       setForcedAction({ id: Date.now(), action: 'studying' });
 
-      let studySpeech = `Materi baru dari ${domain}! Mochi pelajari dan catat di buku ya! 📖✨ (+10 XP)`;
+      let studySpeech = isAwarded
+        ? `Materi baru dari ${domain}! Mochi pelajari dan catat di buku ya! 📖✨ (+10 XP)`
+        : `Materi baru dari ${domain}! Mochi simpan dan rapikan di Vault ya! 📚✨`;
+
       if (activeNight) {
-        studySpeech = 'Hoaamm... Mochi catat materinya ya walau udah malam 🌙📓✏️ (+10 XP)';
+        studySpeech = isAwarded
+          ? 'Hoaamm... Mochi catat materinya ya walau udah malam 🌙📓✏️ (+10 XP)'
+          : 'Hoaamm... Mochi simpan materinya di rak buku ya 🌙📚';
       } else if (platform === 'youtube') {
-        studySpeech = 'Wah, video YouTube baru! Mochi catat poin-poin pentingnya dulu ya! 📝✨ (+10 XP)';
+        studySpeech = isAwarded
+          ? 'Wah, video YouTube baru! Mochi catat poin-poin pentingnya dulu ya! 📝✨ (+10 XP)'
+          : 'Wah, video YouTube baru! Mochi masukkan daftar tontonan ya! 🎬📚';
       } else if (platform === 'tiktok' || platform === 'instagram') {
-        studySpeech = 'Shorts baru! Mochi rangkum tips & ilmunya di buku catatan! 📱📓 (+10 XP)';
+        studySpeech = isAwarded
+          ? 'Shorts baru! Mochi rangkum tips & ilmunya di buku catatan! 📱📓 (+10 XP)'
+          : 'Shorts baru! Mochi simpan referensinya ke Vault! 📱✨';
       }
       triggerSpeech(studySpeech, 4500);
 

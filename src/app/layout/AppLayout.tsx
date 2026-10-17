@@ -33,8 +33,8 @@ export const AppLayout: FC<AppLayoutProps> = ({
           <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />
         )}
 
-        {/* Page Content: Mobile-optimized spacing with generous pb-28 clearance for BottomNav */}
-        <main className="flex-1 p-3.5 sm:p-4 pb-28 overflow-x-hidden w-full">
+        {/* Page Content: Mobile-optimized spacing with generous clearance for BottomNav and Telegram safe area */}
+        <main className="flex-1 p-3.5 sm:p-4 pb-[calc(7rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] overflow-x-hidden w-full">
           {children}
         </main>
 

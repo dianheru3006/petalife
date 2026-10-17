@@ -668,6 +668,12 @@
   .anim-mochi-eating,
   .anim-mochi-sleeping,
   .anim-mochi-studying,
+  .anim-mochi-hop,
+  .anim-mochi-wiggle,
+  .anim-mochi-spin,
+  .anim-mochi-wink,
+  .anim-mochi-dance,
+  .anim-natural-blink,
   .anim-pencil-scribble,
   .anim-glasses-shine,
   .anim-float-note,
@@ -676,6 +682,7 @@
   .anim-gentle-sway,
   .anim-float-bubble,
   .animate-bounce,
+  .animate-pulse,
   .anim-tv-fish,
   .anim-tv-fish-tail,
   .anim-tv-bubble-1,
@@ -697,6 +704,7 @@
   .anim-tv-petal-3,
   .anim-tv-crt-static {
     animation: none !important;
+    transition: none !important;
   }
 }
 

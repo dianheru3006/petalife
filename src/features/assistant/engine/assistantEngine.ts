@@ -156,35 +156,51 @@ export async function queryAssistant(
     pet: Pet;
   }
 ): Promise<AssistantResponse> {
-  const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) || '/api/petalife/chat';
+  const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
+  // If hosted on GitHub Pages without a configured remote bot URL, skip relative /api call to prevent 404s
+  const isGitHubPages = typeof window !== 'undefined' && window.location?.hostname?.endsWith('github.io');
+  const apiUrl = envUrl || (!isGitHubPages ? '/api/petalife/chat' : null);
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
+  if (apiUrl) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
 
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: userQuery,
-        context: {
-          pet: context.pet,
-          links: context.links.slice(0, 5),
-          notes: context.notes.slice(0, 5),
-        },
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
+      const initData = typeof window !== 'undefined'
+        ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
+        : '';
 
-    if (res.ok) {
-      const data = (await res.json()) as AssistantResponse;
-      if (data && data.replyText) {
-        return data;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (initData) {
+        headers['X-Telegram-Init-Data'] = initData;
       }
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: userQuery,
+          context: {
+            pet: context.pet,
+            links: context.links.slice(0, 5),
+            notes: context.notes.slice(0, 5),
+          },
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const data = (await res.json()) as AssistantResponse;
+        if (data && data.replyText) {
+          return data;
+        }
+      }
+    } catch {
+      // Graceful offline fallback to local grounded engine
     }
-  } catch {
-    // Graceful offline fallback to local grounded engine
   }
 
   return processAssistantMessage(userQuery, context);

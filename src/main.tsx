@@ -27,7 +27,6 @@ try {
   }).Telegram?.WebApp;
 
   if (tg) {
-    tg.ready?.();
     tg.expand?.();
     tg.setHeaderColor?.('#FAF7F2');
     tg.setBackgroundColor?.('#FAF7F2');
