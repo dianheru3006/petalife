@@ -12,7 +12,6 @@ export interface BottomNavProps {
 export const BottomNav: FC<BottomNavProps> = ({
   currentTab,
   onSelectTab,
-  isNightMode = false,
 }) => {
   const tabs: { id: NavigationTab; label: string; icon: ReactNode }[] = [
     { id: 'home', label: 'Beranda', icon: <Home className="w-4 h-4" /> },
@@ -21,17 +20,8 @@ export const BottomNav: FC<BottomNavProps> = ({
     { id: 'assistant', label: 'Asisten', icon: <Bot className="w-4 h-4" /> },
   ];
 
-  const isNight = isNightMode && currentTab === 'home';
-
   return (
-    <nav
-      className={cn(
-        'md:hidden fixed bottom-3 left-4 right-4 max-w-xs sm:max-w-sm mx-auto z-40 backdrop-blur-md rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between select-none transition-colors duration-700',
-        isNight
-          ? 'bg-[#222434]/90 border border-[#34374D] text-[#FAF7F2]'
-          : 'bg-white/92 border border-[#EAE3D5] text-[#2E2E3A]'
-      )}
-    >
+    <nav className="md:hidden fixed bottom-3 left-4 right-4 max-w-xs sm:max-w-sm mx-auto z-40 bg-white/92 backdrop-blur-md rounded-full border border-[#EAE3D5] shadow-lg px-2 py-1.5 flex items-center justify-between select-none">
       {tabs.map(tab => {
         const isActive = currentTab === tab.id;
         return (
@@ -41,11 +31,7 @@ export const BottomNav: FC<BottomNavProps> = ({
             className={cn(
               'transition-all duration-200 cursor-pointer flex items-center gap-1.5',
               isActive
-                ? isNight
-                  ? 'bg-[#32364C] text-[#F4A261] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
-                  : 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
-                : isNight
-                ? 'p-2 text-[#8F8A9E] hover:text-[#FAF7F2] rounded-full'
+                ? 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
                 : 'p-2 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#FAF7F2] rounded-full'
             )}
           >

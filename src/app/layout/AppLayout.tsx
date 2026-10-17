@@ -20,15 +20,7 @@ export const AppLayout: FC<AppLayoutProps> = ({
   isNightMode = false,
 }) => {
   return (
-    <div
-      className={`flex min-h-screen transition-colors duration-700 ease-in-out ${
-        currentTab === 'home'
-          ? isNightMode
-            ? 'bg-[#181926] text-[#FAF7F2]'
-            : 'bg-[#EEE1CD] text-[#2E2E3A]'
-          : 'bg-[#FDFBF7] text-[#2E2E3A]'
-      }`}
-    >
+    <div className="flex min-h-screen bg-[#FDFBF7] text-[#2E2E3A]">
       {/* Desktop Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -38,13 +30,13 @@ export const AppLayout: FC<AppLayoutProps> = ({
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header - hidden on home tab to allow full-bleed borderless room as in reference */}
+        {/* Top Header - hidden on home tab since Terrarium has its own cozy title */}
         {currentTab !== 'home' && (
           <Header currentTab={currentTab} pet={pet} />
         )}
 
-        {/* Page Content: full-bleed on mobile for home tab */}
-        <main className={`flex-1 ${currentTab === 'home' ? 'p-0 sm:py-6 sm:px-4' : 'p-4 sm:p-8'} pb-24 md:pb-8 overflow-x-hidden`}>
+        {/* Page Content */}
+        <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-8 overflow-x-hidden">
           {children}
         </main>
       </div>
