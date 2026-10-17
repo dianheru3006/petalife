@@ -9,6 +9,12 @@ describe('Clock Utils & Isometric Projection', () => {
     expect(pos.y).toBe(402.5); // 422.5 - 20
   });
 
+  it('uses default center CX=271.5 and CY=425.0', () => {
+    const pos = projectIsometric(15, 0);
+    expect(pos.x).toBe(271.5);
+    expect(pos.y).toBe(410.0); // 425.0 - 15
+  });
+
   it('correctly projects 6 o clock (downward) onto the wall', () => {
     // 180 deg = 6 o'clock
     const pos = projectIsometric(20, 180, 271.5, 422.5);
