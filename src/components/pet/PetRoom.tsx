@@ -12,6 +12,9 @@ import {
   Shirt,
   Info,
   Music,
+  BookmarkPlus,
+  X,
+  ArrowRight,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -38,7 +41,7 @@ export interface PetRoomProps {
 export const PetRoom: FC<PetRoomProps> = ({
   pet,
   onFeed,
-  onNavigate: _onNavigate,
+  onNavigate,
   savedLinks = [],
   onAddLink,
   notesCount: _notesCount,
@@ -88,6 +91,18 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
   const [isSavingLink, setIsSavingLink] = useState(false);
+  const [isLinkSheetOpen, setIsLinkSheetOpen] = useState(false);
+  const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
+  const linkInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isLinkSheetOpen) {
+      const focusTimer = setTimeout(() => {
+        linkInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(focusTimer);
+    }
+  }, [isLinkSheetOpen]);
 
   // Live Date & Indonesian Greeting
   const [greeting, setGreeting] = useState<string>('Selamat malam');
@@ -321,25 +336,30 @@ export const PetRoom: FC<PetRoomProps> = ({
       }
       setQuickUrl('');
 
+      // Auto-close sheet after successful save so user sees confirmation
+      if (isLinkSheetOpen) {
+        setTimeout(() => setIsLinkSheetOpen(false), 1200);
+      }
+
       // Trigger Mochi's dedicated studying & note-taking mode!
       setForcedAction({ id: Date.now(), action: 'studying' });
 
       let studySpeech = isAwarded
-        ? `Materi baru dari ${domain}! Mochi pelajari dan catat di buku ya! 📖✨ (+10 XP)`
-        : `Materi baru dari ${domain}! Mochi simpan dan rapikan di Vault ya! 📚✨`;
+        ? `Materi baru dari ${domain}! Tersimpan rapi di Vault untuk kita pelajari bareng! 📚✨ (+10 XP)`
+        : `Materi baru dari ${domain}! Tersimpan rapi di Vault untuk kita pelajari bareng! 📚✨`;
 
       if (activeNight) {
         studySpeech = isAwarded
-          ? 'Hoaamm... Mochi catat materinya ya walau udah malam 🌙📓✏️ (+10 XP)'
-          : 'Hoaamm... Mochi simpan materinya di rak buku ya 🌙📚';
+          ? 'Hoaamm... Mochi simpan di rak buku ya, walau sudah malam 🌙📚 (+10 XP)'
+          : 'Hoaamm... Mochi simpan di rak buku ya 🌙📚';
       } else if (platform === 'youtube') {
         studySpeech = isAwarded
-          ? 'Wah, video YouTube baru! Mochi catat poin-poin pentingnya dulu ya! 📝✨ (+10 XP)'
-          : 'Wah, video YouTube baru! Mochi masukkan daftar tontonan ya! 🎬📚';
+          ? 'Video YouTube baru tersimpan di Vault! Siap kita tonton dan pelajari bareng! 🎬📚 (+10 XP)'
+          : 'Video YouTube baru tersimpan di Vault! Siap kita pelajari bareng! 🎬📚';
       } else if (platform === 'tiktok' || platform === 'instagram') {
         studySpeech = isAwarded
-          ? 'Shorts baru! Mochi rangkum tips & ilmunya di buku catatan! 📱📓 (+10 XP)'
-          : 'Shorts baru! Mochi simpan referensinya ke Vault! 📱✨';
+          ? 'Tersimpan rapi di Vault untuk kita pelajari bareng! 📱📚 (+10 XP)'
+          : 'Tersimpan rapi di Vault untuk referensi belajar kita! 📱✨';
       }
       triggerSpeech(studySpeech, 4500);
 
@@ -364,21 +384,21 @@ export const PetRoom: FC<PetRoomProps> = ({
       {/* 1. Header: Greeting & Streak Pill */}
       <div className="flex items-center justify-between px-2 pt-1 pb-1 select-none gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] sm:text-xs text-[#8A857A] font-medium leading-none truncate">
+          <p className="text-[11px] sm:text-xs text-[#4E4E5E] font-medium leading-none truncate">
             {greeting},
           </p>
-          <h1 className="text-lg sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-0.5 truncate">
+          <h1 className="text-lg sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-0.5 whitespace-nowrap truncate">
             Rumah Mochi
           </h1>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          {/* Minimalist EXP Pill */}
+          {/* Minimalist EXP Pill: ✨ Lv.{pet.level} · {pet.exp}/{pet.expToNextLevel} */}
           <button
             type="button"
             onClick={() => triggerSpeech(`Mochi Level ${pet.level}! Butuh ${pet.expToNextLevel - pet.exp} XP lagi untuk naik level berikutnya ✨`, 3500)}
             className={cn(
-              'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95 transition-colors duration-700 border',
+              'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95 transition-colors duration-700 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] text-[#483696] hover:bg-[#F2ECE0]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] text-[#483696] hover:bg-[#F2ECE0]'
@@ -388,8 +408,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           >
             <Sparkles className="w-3.5 h-3.5 text-[#9E410E]" />
             <span className="font-extrabold text-[#2E2E3A]">Lv.{pet.level}</span>
-            <span className="text-[#9E410E] font-extrabold">{pet.exp}/{pet.expToNextLevel}</span>
-            <span className="text-[10px] text-[#4A4A5A] font-semibold">XP</span>
+            <span className="text-[#9E410E] font-extrabold">· {pet.exp}/{pet.expToNextLevel}</span>
           </button>
 
           {/* Subtle streak pill */}
@@ -397,7 +416,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             type="button"
             onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#9E410E] shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95 transition-colors duration-700 border',
+              'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold text-[#9E410E] shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95 transition-colors duration-700 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:bg-[#F2ECE0]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] hover:bg-[#F2ECE0]'
@@ -447,6 +466,53 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
         </svg>
 
+        {/* Floating Action Rail on Right Edge of Diorama (WCAG 2.2 AA compliant >= 44x44px hit bounds) */}
+        <div className="absolute top-3.5 right-3 z-30 flex flex-col gap-2 select-none">
+          {/* Quick Capture Sheet Trigger (Primary Learning Action visible immediately on 360x640px) */}
+          <button
+            type="button"
+            onClick={() => setIsLinkSheetOpen(true)}
+            className="w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+            title="Simpan Link Cepat ke Vault"
+            aria-label="Simpan link belajar ke Vault"
+          >
+            <BookmarkPlus className="w-5 h-5" />
+          </button>
+
+          {/* Night / Day Sleep Mode Toggle */}
+          <button
+            type="button"
+            onClick={handleToggleNight}
+            className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]"
+            title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
+            aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
+          >
+            {activeNight ? <Moon className="w-5 h-5 text-[#483696]" /> : <Sun className="w-5 h-5 text-[#9E410E]" />}
+          </button>
+
+          {/* Dance Action */}
+          <button
+            type="button"
+            onClick={handleDanceClick}
+            className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]"
+            title="Ajak Mochi Menari 🎵"
+            aria-label="Ajak Mochi menari"
+          >
+            <Music className="w-5 h-5" />
+          </button>
+
+          {/* Wardrobe Modal Sheet Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsWardrobeOpen(true)}
+            className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
+            title="Buka Lemari Kostum Mochi"
+            aria-label="Buka lemari kostum Mochi"
+          >
+            <Shirt className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* Toast Notification inside Room */}
         {lastFedText && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#57B37C] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-md animate-bounce">
@@ -491,10 +557,10 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        {/* 3. Status Dock Bar (Inside the Terrarium Border, Clean White Frosted Glass, No Percentage Text) */}
-        <div className="absolute bottom-3 left-2.5 right-2.5 sm:left-3 sm:right-3 z-30 bg-white/92 backdrop-blur-md rounded-2xl border border-white/80 shadow-xs px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between select-none text-[#2E2E3A]">
-          {/* Left: Circular Progress Rings & Life Stage */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
+        {/* 3. Status Dock Bar (Inside the Terrarium Border, Clean White Frosted Glass, Spacious Status & Pet Identity) */}
+        <div className="absolute bottom-3 left-2.5 right-2.5 sm:left-3 sm:right-3 z-30 bg-white/92 backdrop-blur-md rounded-2xl border border-white/80 shadow-xs px-3 py-2 flex items-center justify-between select-none text-[#2E2E3A]">
+          {/* Left: Circular Progress Rings & Life Stage Badge */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <CircularMeter
               value={pet.hunger}
               color="#D97736"
@@ -513,60 +579,30 @@ export const PetRoom: FC<PetRoomProps> = ({
               iconType="energy"
               label="Energi / Segar"
             />
-            <span className="text-[10px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full border sm:ml-0.5 text-[#8A857A] bg-[#FAF7F2] border-[#ECE5DA]">
+            <span className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border text-[#3E3E4E] bg-[#EFE9DF] border-[#DCD2C2]">
               {getStageName(pet.level)}
             </span>
           </div>
 
-          {/* Center: Pet Name & Info */}
+          {/* Right: Pet Name & Info */}
           <button
             type="button"
-            className="flex min-w-0 items-center gap-1 font-black text-xs sm:text-sm text-[#2E2E3A] cursor-pointer hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] rounded-md transition-opacity"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm text-[#2E2E3A] cursor-pointer hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-colors"
             onClick={() => handlePetTap()}
             title="Ketuk untuk berinteraksi dengan Mochi"
+            aria-label={`Status ${pet.name}, ketuk untuk interaksi`}
           >
-            <span className="truncate">{pet.name}</span>
-            <Info className="w-3.5 h-3.5 text-[#8A857A]" />
+            <span>{pet.name}</span>
+            <Info className="w-3.5 h-3.5 text-[#4E4E5E]" />
           </button>
-
-          {/* Right: Dance, Dress-up & Night Mode Actions */}
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            <button
-              type="button"
-              onClick={handleDanceClick}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAF7F2] border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#E57399] hover:text-[#D97736] hover:bg-[#FFF5F7] cursor-pointer transition-all active:scale-95"
-              title="Ajak Mochi Menari 🎵"
-              aria-label="Ajak Mochi menari"
-            >
-              <Music className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAF7F2] border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#2E2E3A] cursor-pointer transition-colors active:scale-95"
-              title="Koleksi / Baju Mochi"
-              aria-label="Koleksi baju Mochi"
-            >
-              <Shirt className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleToggleNight}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FAF7F2] border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#483696] cursor-pointer transition-colors active:scale-95"
-              title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
-              aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
-            >
-              {activeNight ? <Moon className="w-3.5 h-3.5 text-[#483696]" /> : <Sun className="w-3.5 h-3.5 text-[#9E410E]" />}
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* 4. Quick Link Capture Pill: "+ Tempel link di sini... 📋" */}
+      {/* 4. Quick Link Capture Pill: "+ Tempel link di sini... 📋" (44x44px touch targets) */}
       <div className="pt-0.5">
         {quickSuccess && (
           <div role="status" className="mb-2 p-2 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-1.5 animate-fade-in">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#1E6B3B]" />
+            <CheckCircle2 className="w-4 h-4 text-[#1E6B3B] shrink-0" />
             <span>{quickSuccess}</span>
           </div>
         )}
@@ -580,11 +616,11 @@ export const PetRoom: FC<PetRoomProps> = ({
           <button
             type="submit"
             disabled={isSavingLink}
-            className="absolute left-3.5 text-[#4A4A5A] hover:text-[#2E2E3A] cursor-pointer transition-colors"
+            className="absolute left-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#BA5218] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] active:scale-95"
             title="Simpan Tautan"
-            aria-label={isSavingLink ? 'Menyimpan tautan' : 'Simpan tautan'}
+            aria-label={isSavingLink ? 'Menyimpan tautan' : 'Simpan tautan ke Vault'}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
           </button>
           <input
             type="text"
@@ -601,7 +637,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             }}
             placeholder="Tempel link di sini..."
             className={cn(
-              'w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full text-[#2E2E3A] placeholder-[#5A5A6E] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
+              'w-full text-xs sm:text-sm pl-12 pr-12 py-3 rounded-full text-[#2E2E3A] placeholder-[#5A5A6E] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-[#FAF6EE]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] focus:bg-[#FFFDF9]'
@@ -620,14 +656,238 @@ export const PetRoom: FC<PetRoomProps> = ({
                 // Clipboard read blocked by permissions
               }
             }}
-            className="absolute right-3.5 text-[#4A4A5A] hover:text-[#9E410E] cursor-pointer transition-colors"
+            className="absolute right-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
             title="Tempel dari Clipboard"
             aria-label="Tempel tautan dari clipboard"
           >
-            <Clipboard className="w-4 h-4" />
+            <Clipboard className="w-5 h-5" />
           </button>
         </form>
       </div>
+
+      {/* 5. Quiet Contextual Companion Strip (Connects Home to Vault & Solves Tall Screen Void) */}
+      <div className="p-3 rounded-2xl bg-[#FFF8F5] border border-[#FED7C5] flex items-center justify-between gap-3 text-xs shadow-xs select-none">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-[#2E2E3A] leading-snug">
+            {savedLinks.length > 0 ? (
+              <>Ada <strong className="font-bold text-[#BA5218]">{savedLinks.length} materi</strong> di Vault. Mau pelajari 1 hari ini?</>
+            ) : (
+              <>Belum ada materi tersimpan. Simpan video atau link belajar favoritmu!</>
+            )}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onNavigate('vault')}
+          className="shrink-0 h-10 px-3 rounded-xl bg-[#FFEFE8] hover:bg-[#FED7C5] text-[#9E410E] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
+          aria-label="Buka halaman Vault"
+        >
+          <span>Buka Vault</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Modal Sheet: Quick Link Capture (Direct access on short screens) */}
+      {isLinkSheetOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="link-sheet-title"
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsLinkSheetOpen(false);
+          }}
+        >
+          <div className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#FFEFE8] flex items-center justify-center text-[#BA5218]">
+                  <BookmarkPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 id="link-sheet-title" className="text-base font-black text-[#2E2E3A]">
+                    Simpan Materi Belajar
+                  </h2>
+                  <p className="text-xs text-[#4E4E5E]">
+                    Simpan video YouTube, TikTok, atau artikel ke Vault
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLinkSheetOpen(false)}
+                className="w-11 h-11 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                aria-label="Tutup form simpan materi"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Notifications inside sheet */}
+            {quickSuccess && (
+              <div role="status" className="p-2.5 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#1E6B3B] shrink-0" />
+                <span>{quickSuccess}</span>
+              </div>
+            )}
+            {quickError && (
+              <div role="alert" className="p-2.5 rounded-xl bg-[#FDF0F4] border border-[#FED7C5] text-xs font-semibold text-[#A82B53]">
+                ⚠️ {quickError}
+              </div>
+            )}
+
+            {/* Input Form */}
+            <form onSubmit={handleQuickAddLink} className="space-y-3">
+              <div className="relative flex items-center">
+                <input
+                  ref={linkInputRef}
+                  type="text"
+                  inputMode="url"
+                  autoComplete="url"
+                  aria-label="URL materi untuk disimpan"
+                  value={quickUrl}
+                  onChange={(e) => {
+                    setQuickUrl(e.target.value);
+                    if (quickError) setQuickError(null);
+                  }}
+                  placeholder="Tempel tautan (youtube.com, tiktok.com, web)..."
+                  className="w-full text-sm pl-4 pr-12 py-3 rounded-2xl bg-white border border-[#EAE3D5] text-[#2E2E3A] placeholder-[#8A857A] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#BA5218]"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) setQuickUrl(text);
+                    } catch {
+                      // blocked
+                    }
+                  }}
+                  className="absolute right-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#9E410E]"
+                  title="Tempel dari clipboard"
+                  aria-label="Tempel tautan dari clipboard"
+                >
+                  <Clipboard className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={isSavingLink}
+                  className="flex-1 h-12 bg-[#BA5218] hover:bg-[#A34310] disabled:opacity-50 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
+                >
+                  <BookmarkPlus className="w-4 h-4" />
+                  <span>{isSavingLink ? 'Menyimpan...' : 'Simpan ke Vault (+10 XP)'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sheet: Lemari Kostum Mochi */}
+      {isWardrobeOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wardrobe-sheet-title"
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsWardrobeOpen(false);
+          }}
+        >
+          <div className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#FFF0F5] flex items-center justify-center text-[#E57399]">
+                  <Shirt className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 id="wardrobe-sheet-title" className="text-base font-black text-[#2E2E3A]">
+                    Lemari Kostum Mochi 🌸
+                  </h2>
+                  <p className="text-xs text-[#4E4E5E]">
+                    Aksesoris Mochi menyesuaikan aktivitas belajarmu
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWardrobeOpen(false)}
+                className="w-11 h-11 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#E57399]"
+                aria-label="Tutup lemari kostum"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Active Gear */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#4E4E5E]">
+                Aksesoris Aktif Saat Ini
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-2xl bg-white border border-[#EAE3D5] flex items-center gap-2.5 shadow-xs">
+                  <span className="text-2xl">👓</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#2E2E3A]">Kacamata Baca</p>
+                    <p className="text-[10px] text-[#4E4E5E] leading-tight">Dipakai saat belajar</p>
+                  </div>
+                </div>
+                <div className="p-3 rounded-2xl bg-white border border-[#EAE3D5] flex items-center gap-2.5 shadow-xs">
+                  <span className="text-2xl">🌙</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#2E2E3A]">Topi Tidur</p>
+                    <p className="text-[10px] text-[#4E4E5E] leading-tight">Dipakai saat malam</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Unlockable Costumes */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#4E4E5E]">
+                Koleksi Mendatang (Segera Hadir)
+              </h3>
+              <div className="space-y-1.5">
+                <div className="p-2.5 rounded-xl bg-[#FAF0E6]/60 border border-dashed border-[#DCD2C2] flex items-center justify-between text-xs text-[#4A4A5A]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌸</span>
+                    <span className="font-semibold text-[#2E2E3A]">Pita Sakura</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFE9DF] text-[#3E3E4E]">Buka di Level 5</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#FAF0E6]/60 border border-dashed border-[#DCD2C2] flex items-center justify-between text-xs text-[#4A4A5A]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">👨‍🍳</span>
+                    <span className="font-semibold text-[#2E2E3A]">Topi Koki Mochi</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFE9DF] text-[#3E3E4E]">Buka di Level 10</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#FAF0E6]/60 border border-dashed border-[#DCD2C2] flex items-center justify-between text-xs text-[#4A4A5A]">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎒</span>
+                    <span className="font-semibold text-[#2E2E3A]">Ransel Petualang</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFE9DF] text-[#3E3E4E]">Streak 7 Hari</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsWardrobeOpen(false)}
+              className="w-full h-11 rounded-2xl bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#2E2E3A] font-bold text-xs transition-colors cursor-pointer"
+            >
+              Tutup Lemari
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
