@@ -362,17 +362,17 @@ export const PetRoom: FC<PetRoomProps> = ({
   return (
     <div className="w-full max-w-lg mx-auto space-y-3">
       {/* 1. Header: Greeting & Streak Pill */}
-      <div className="flex items-center justify-between px-2 pt-1 pb-1 select-none">
-        <div>
-          <p className="text-xs text-[#8A857A] font-medium leading-none">
+      <div className="flex items-center justify-between px-2 pt-1 pb-1 select-none gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] sm:text-xs text-[#8A857A] font-medium leading-none truncate">
             {greeting},
           </p>
-          <h1 className="text-xl sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-1">
+          <h1 className="text-lg sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-0.5 truncate">
             Rumah Mochi
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {/* Minimalist EXP Pill */}
           <button
             type="button"

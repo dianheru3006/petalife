@@ -46,8 +46,8 @@ export default defineConfig({
     },
   },
   plugins: [
-    react(),
     tailwindcss(),
+    react(),
     injectServiceWorkerAssetsPlugin(),
   ],
 })
