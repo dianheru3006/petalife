@@ -293,7 +293,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       {/* 2. Terrarium / Living Diorama Card (CRISP, NO FOG GRADIENT, BORDERED) */}
       <div className={`relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden border-2 shadow-md transition-colors duration-700 select-none ${
-        activeNight ? 'border-[#3D374D] bg-[#181624]' : 'border-[#E8DFCF] bg-[#EEE1CD]'
+        activeNight ? 'border-[#D9CFBF] bg-[#E5DAC9]' : 'border-[#E8DFCF] bg-[#EEE1CD]'
       }`}>
         {/* Background 3D Room Diorama - 100% Crisp, Pure & Warm (Room inside stays completely bright) */}
         <img
@@ -302,7 +302,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         />
 
-        {/* Night Mode Backdrop: Area OUTSIDE the hexagonal terrarium becomes slightly dark like a cozy diorama showcase */}
+        {/* Night Mode Backdrop: Area OUTSIDE the hexagonal terrarium becomes slightly warm-toned/subtly dim */}
         <svg
           viewBox="0 0 768 1376"
           preserveAspectRatio="xMidYMid slice"
@@ -328,12 +328,12 @@ export const PetRoom: FC<PetRoomProps> = ({
             </mask>
           </defs>
 
-          {/* Soft deep warm slate darkening only applied OUTSIDE the hexagonal room */}
+          {/* Gentle, subtle warm dusk dimming (only 22% opacity) applied strictly OUTSIDE the hexagonal room */}
           <rect
             width="768"
             height="1376"
-            fill="#181624"
-            fillOpacity="0.70"
+            fill="#2D283E"
+            fillOpacity="0.22"
             mask="url(#outerHexMask)"
             style={{ mixBlendMode: 'multiply' }}
           />
