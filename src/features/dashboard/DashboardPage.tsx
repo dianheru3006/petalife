@@ -40,7 +40,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
       />
 
       {/* 2. Grid Section: Daily Goals & Quick Knowledge Vault */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 px-4 sm:px-2">
         {/* Daily Goals Card */}
         <div className="bg-white rounded-3xl p-5 border border-[#ECE6DB] shadow-xs flex flex-col justify-between">
           <div>

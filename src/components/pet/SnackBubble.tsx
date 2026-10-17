@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { Utensils, Heart, Sprout, RefreshCw } from 'lucide-react';
+import { Utensils, Heart, Sprout } from 'lucide-react';
 import type { SnackVariant } from './snackData';
 
 export interface CircularMeterProps {
@@ -133,23 +133,6 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
           <div className="relative z-10 transition-transform duration-300 group-hover:scale-110">
             <Icon />
           </div>
-        </div>
-
-        {/* Small Switch/Cycle Button on Hover/Tap */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onCycleNext();
-          }}
-          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white/95 border border-[#EAE3D5] text-[#7A7A8A] hover:text-[#D97736] shadow-xs flex items-center justify-center text-[10px] opacity-80 hover:opacity-100 hover:scale-110 active:scale-95 transition-all cursor-pointer z-20"
-          title="Ganti varian makanan lain"
-        >
-          <RefreshCw className="w-2.5 h-2.5" />
-        </button>
-
-        {/* Floating Snack Name Badge */}
-        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-full border border-[#EAE3D5] shadow-xs text-[10px] font-bold text-[#5A5243] whitespace-nowrap opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <span>{snack.shortName}</span>
         </div>
       </div>
 

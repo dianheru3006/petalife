@@ -1,9 +1,8 @@
 import type { FC, FormEvent } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Pet, NavigationTab, SavedLink } from '../../lib/types';
 import { MochiPet } from './MochiPet';
 import { ProgressBar } from '../ui/ProgressBar';
-import { Button } from '../ui/Button';
 import {
   Sparkles,
   Bot,
@@ -12,8 +11,12 @@ import {
   CheckCircle2,
   Moon,
   Sun,
-  Lightbulb,
   Plus,
+  Bell,
+  PartyPopper,
+  Clipboard,
+  Shirt,
+  Info,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -47,9 +50,11 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [snackIndex, setSnackIndex] = useState(0);
   const currentSnack = SNACK_VARIANTS[snackIndex];
 
-  const [speech, setSpeech] = useState<string>(
-    isFull ? 'Perut Mochi kenyang dan hatiku senang! ✨' : contextualStatus.speechText
-  );
+  // Speech Bubble State: Hidden by default; only appears on direct interaction or occasional whisper
+  const [speech, setSpeech] = useState<string>('Kenyang dan senang ✨');
+  const [showSpeech, setShowSpeech] = useState<boolean>(false);
+  const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [lastFedText, setLastFedText] = useState<string | null>(null);
   const [lightingMode, setLightingMode] = useState<'warm' | 'day' | 'night'>('warm');
 
@@ -59,18 +64,12 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
 
   // Live Date & Indonesian Greeting
-  const [dateStr, setDateStr] = useState<string>('');
-  const [greeting, setGreeting] = useState<string>('Selamat siang');
+  const [greeting, setGreeting] = useState<string>('Selamat malam');
 
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
       const hours = now.getHours();
-
-      // Month name abbreviation in Indonesian/English
-      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
-      setDateStr(`${months[now.getMonth()]} ${now.getDate()}`);
-
       if (hours < 11) setGreeting('Selamat pagi');
       else if (hours < 15) setGreeting('Selamat siang');
       else if (hours < 18) setGreeting('Selamat sore');
@@ -81,6 +80,36 @@ export const PetRoom: FC<PetRoomProps> = ({
     const interval = setInterval(updateDateTime, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Helper to trigger Mochi's speech bubble and auto-hide after duration
+  const triggerSpeech = (text: string, durationMs = 3800) => {
+    setSpeech(text);
+    setShowSpeech(true);
+    if (speechTimerRef.current) {
+      clearTimeout(speechTimerRef.current);
+    }
+    speechTimerRef.current = setTimeout(() => {
+      setShowSpeech(false);
+    }, durationMs);
+  };
+
+  // Occasional gentle whisper: Mochi speaks briefly every 45-60 seconds, then hides again
+  useEffect(() => {
+    const whisperInterval = setInterval(() => {
+      if (!isFeeding) {
+        const whispers = [
+          'Kenyang dan senang ✨',
+          'Rumah Mochi hangat dan nyaman 🌸',
+          'Ada materi seru yang mau dipelajari? 🎬',
+          'Mochi senang bersama Dian! 💖',
+        ];
+        const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
+        triggerSpeech(randomWhisper, 3200);
+      }
+    }, 45000);
+
+    return () => clearInterval(whisperInterval);
+  }, [isFeeding]);
 
   // Idle gentle food alternation ("kadang onigiri, kadang varian makanan lain")
   useEffect(() => {
@@ -95,15 +124,15 @@ export const PetRoom: FC<PetRoomProps> = ({
     setSnackIndex(nextIdx);
     const nextSnack = SNACK_VARIANTS[nextIdx];
     if (isFull) {
-      setSpeech(`Perut Mochi kenyang! Nanti kita coba ${nextSnack.name} ya! ✨`);
+      triggerSpeech(`Perut Mochi kenyang! Nanti kita coba ${nextSnack.name} ya! ✨`, 3500);
     } else {
-      setSpeech(`Mochi juga mau coba ${nextSnack.name}! 😋✨`);
+      triggerSpeech(`Mochi mau coba ${nextSnack.name}! 😋✨`, 3500);
     }
   };
 
   const handleFeedClick = () => {
     if (isFull) {
-      setSpeech('Perut Mochi sudah kenyang dan hatiku senang! ✨');
+      triggerSpeech('Perut Mochi sudah kenyang dan hatiku senang! ✨', 3500);
       return;
     }
     if (isFeeding) {
@@ -111,7 +140,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     onFeed();
-    setSpeech(currentSnack.feedSpeech);
+    triggerSpeech(currentSnack.feedSpeech, 4000);
     setLastFedText(`+25 XP • ${currentSnack.shortName}!`);
 
     // Transition to another delicious snack variant after feeding!
@@ -121,13 +150,12 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     setTimeout(() => {
       setLastFedText(null);
-      setSpeech('Mau simpan atau tonton video apa hari ini? 🎬');
     }, 2800);
   };
 
   const handlePetTap = () => {
     if (isFull) {
-      setSpeech('Perut Mochi kenyang dan hatiku senang! ✨');
+      triggerSpeech('Perut Mochi kenyang dan hatiku senang! ✨', 3500);
       return;
     }
     const cuteReplies = [
@@ -138,7 +166,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       `Streak belajarmu ${pet.streakDays} hari berturut-turut! 🔥`,
       contextualStatus.speechText,
     ];
-    setSpeech(cuteReplies[Math.floor(Math.random() * cuteReplies.length)]);
+    triggerSpeech(cuteReplies[Math.floor(Math.random() * cuteReplies.length)], 3800);
   };
 
   const handleQuickAddLink = (e?: FormEvent) => {
@@ -180,7 +208,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       onAddLink(newLink);
       setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+10 XP)`);
       setQuickUrl('');
-      setSpeech('Wah, ada tautan baru yang tersimpan di Vault! 🎬');
+      triggerSpeech('Wah, ada tautan baru yang tersimpan di Vault! 🎬', 3500);
       setTimeout(() => setQuickSuccess(null), 3000);
     }
   };
@@ -194,144 +222,154 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-4">
-      {/* 3D Isometric Room Canvas */}
-      <div className="relative w-full rounded-3xl overflow-hidden border border-[#E8DFC8] shadow-md bg-[#FAF6EE]">
-        {/* Background 3D Room Diorama */}
-        <div className="relative w-full aspect-[9/13] sm:aspect-[4/3] max-h-[620px] select-none">
-          <img
-            src={roomBg}
-            alt="Rumah Mochi 3D Living Room"
-            className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
-          />
-
-          {/* Dynamic Ambient Lighting Overlay */}
-          <div
-            className={`absolute inset-0 transition-all duration-700 pointer-events-none ${
-              lightingMode === 'warm'
-                ? 'bg-amber-400/10 mix-blend-color-burn'
-                : lightingMode === 'night'
-                ? 'bg-[#1a1b35]/40 mix-blend-multiply'
-                : 'bg-transparent'
-            }`}
-          />
-
-          {/* Top Room Navigation Bar */}
-          <div className="absolute top-3.5 left-4 right-4 z-20 flex items-center justify-between">
-            {/* Greeting & Room Title */}
-            <div className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-[#EAE3D5] shadow-xs flex items-center gap-2">
-              <span className="text-sm">🎉</span>
-              <div>
-                <p className="text-[10px] text-[#7A7A8A] font-medium leading-none">{greeting},</p>
-                <h3 className="text-xs sm:text-sm font-extrabold text-[#2E2E3A] leading-tight">Rumah Mochi</h3>
-              </div>
-            </div>
-
-            {/* Controls: Lighting Toggle & Streak/Level */}
-            <div className="flex items-center gap-2">
-              {/* Lighting Switch */}
-              <button
-                onClick={() => {
-                  setLightingMode(prev => prev === 'warm' ? 'night' : prev === 'night' ? 'day' : 'warm');
-                }}
-                className="w-8 h-8 rounded-2xl bg-white/90 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-xs hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-                title={`Ubah pencahayaan (Mode: ${lightingMode})`}
-              >
-                {lightingMode === 'warm' ? <Lightbulb className="w-4 h-4 text-[#F4A261]" /> : lightingMode === 'night' ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
-              </button>
-
-              {/* Level & Streak Pill */}
-              <div className="bg-[#FFEFE8]/95 backdrop-blur-md border border-[#FED7C5] px-2.5 py-1 rounded-2xl flex items-center gap-1.5 text-xs font-bold text-[#D97736] shadow-xs">
-                <span>{dateStr || 'OKT 17'}</span>
-                <span>•</span>
-                <span>⭐ Lv. {pet.level}</span>
-                <span>•</span>
-                <span>🔥 {pet.streakDays}d</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Toast Notification inside Room */}
-          {lastFedText && (
-            <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-[#57B37C] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-md animate-bounce">
-              {lastFedText}
-            </div>
-          )}
-
-          {/* ONLY ONE Single Speech Bubble directly above Mochi */}
-          <div className="absolute top-[41%] sm:top-[42%] left-[49%] -translate-x-1/2 z-30 pointer-events-none transition-all duration-300">
-            <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-[#EAE3D5] text-xs font-semibold text-[#3A3340] flex items-center gap-1.5 whitespace-nowrap animate-fade-in">
-              <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
-            </div>
-          </div>
-
-          {/* The Center Mat & Proportional 3D Mochi */}
-          <div className="absolute top-[48%] sm:top-[49%] left-[49%] -translate-x-1/2 z-20 flex flex-col items-center">
-            {/* 3D Clay Mochi Character (Scaled to fit comfortably inside the rug) */}
-            <MochiPet pet={pet} onPetClick={handlePetTap} showBubble={false} />
-          </div>
-
-          {/* Floating Dream Soap Bubble pointing directly down to Hunger Meter */}
-          <div className="absolute bottom-[56px] sm:bottom-[60px] left-3 sm:left-4 z-25">
-            <SnackBubble
-              snack={currentSnack}
-              onFeed={handleFeedClick}
-              onCycleNext={handleCycleNextSnack}
-              isFull={isFull}
-              isFeeding={isFeeding}
-            />
-          </div>
-
-          {/* Bottom Status Row Overlay inside the Room Frame */}
-          <div className="absolute bottom-3 left-4 right-4 z-20 bg-white/90 backdrop-blur-md rounded-2xl px-3 sm:px-4 py-2 border border-[#EAE3D5] shadow-xs flex items-center justify-between text-xs">
-            {/* Status Badges: Circular Progress Rings matching reference screenshot */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <CircularMeter
-                value={pet.hunger}
-                color="#D97736"
-                iconType="hunger"
-                label="Lapar / Makanan"
-              />
-              <CircularMeter
-                value={pet.mood}
-                color="#E57399"
-                iconType="mood"
-                label="Senang / Afeksi"
-              />
-              <CircularMeter
-                value={pet.energy}
-                color="#57B37C"
-                iconType="energy"
-                label="Energi / Segar"
-              />
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#FAF6EE] text-[#7161BF] border border-[#DCD6F3] text-[11px] font-semibold">
-                {getStageName(pet.level)}
-              </span>
-            </div>
-
-            {/* Name & Quick Suapi Action */}
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-[#2E2E3A]">{pet.name} ⓘ</span>
-              <button
-                onClick={handleFeedClick}
-                disabled={isFull || isFeeding}
-                className={`text-[11px] font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                  isFull
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#FED7C5] hover:bg-[#F4A261] text-[#7A3613] hover:text-white shadow-xs'
-                }`}
-                title={isFull ? 'Mochi sudah kenyang' : `Suapi ${currentSnack.name} (+25 XP)`}
-              >
-                <span>{isFeeding ? 'Makan...' : isFull ? 'Kenyang' : `${currentSnack.emoji} Suapi`}</span>
-              </button>
-            </div>
-          </div>
+    <div className="w-full max-w-lg mx-auto space-y-3">
+      {/* 1. Top Header directly on page (matching reference screenshot) */}
+      <div className="flex items-center justify-between px-4 sm:px-2 pt-2 pb-1">
+        <div>
+          <p className="text-xs text-[#7A7A8A] font-medium leading-none">{greeting},</p>
+          <h1 className="text-xl sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-1">Rumah Mochi</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Streak Celebration Popper */}
+          <button
+            onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
+            className="w-9 h-9 rounded-full bg-white/80 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#D97736] hover:bg-[#FFEFE8] transition-all cursor-pointer active:scale-95"
+            title={`Streak: ${pet.streakDays} hari`}
+          >
+            <PartyPopper className="w-4 h-4" />
+          </button>
+          {/* Notification Bell */}
+          <button
+            onClick={() => triggerSpeech('Semua catatan & target harian aman! 🌸', 3200)}
+            className="w-9 h-9 rounded-full bg-white/80 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#5A5A6A] hover:bg-[#FAF7F2] transition-all cursor-pointer active:scale-95"
+            title="Notifikasi"
+          >
+            <Bell className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Quick Link Capture Bar (Like in reference screenshot: "+ Tempel link di sini...") */}
-      <div className="bg-white rounded-3xl p-3 sm:p-4 border border-[#ECE6DB] shadow-xs">
+      {/* 2. 3D Isometric Room Canvas (BORDERLESS & FULL PAGE as in reference screenshot) */}
+      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden">
+        {/* Background 3D Room Diorama */}
+        <img
+          src={roomBg}
+          alt="Rumah Mochi 3D Living Room"
+          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+        />
+
+        {/* Dynamic Ambient Lighting Overlay */}
+        <div
+          className={`absolute inset-0 transition-all duration-700 pointer-events-none ${
+            lightingMode === 'warm'
+              ? 'bg-amber-400/10 mix-blend-color-burn'
+              : lightingMode === 'night'
+              ? 'bg-[#1a1b35]/40 mix-blend-multiply'
+              : 'bg-transparent'
+          }`}
+        />
+
+        {/* Toast Notification inside Room */}
+        {lastFedText && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#57B37C] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-md animate-bounce">
+            {lastFedText}
+          </div>
+        )}
+
+        {/* Speech Bubble directly above Mochi (Only appears on direct interaction, then auto-hides) */}
+        <div
+          className={`absolute top-[40%] sm:top-[41%] left-[49%] -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 ease-out transform ${
+            showSpeech
+              ? 'opacity-100 scale-100 translate-y-0'
+              : 'opacity-0 scale-90 translate-y-2 pointer-events-none'
+          }`}
+        >
+          <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] flex items-center gap-1.5 whitespace-nowrap">
+            <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
+          </div>
+        </div>
+
+        {/* The Center Mat & Proportional 3D Mochi */}
+        <div className="absolute top-[48%] sm:top-[49%] left-[49%] -translate-x-1/2 z-20 flex flex-col items-center">
+          <MochiPet pet={pet} onPetClick={handlePetTap} showBubble={false} />
+        </div>
+
+        {/* Floating Dream Soap Bubble pointing directly down to Hunger Meter (NO FOOD NAME LABEL) */}
+        <div className="absolute bottom-3 left-2 sm:left-4 z-25">
+          <SnackBubble
+            snack={currentSnack}
+            onFeed={handleFeedClick}
+            onCycleNext={handleCycleNextSnack}
+            isFull={isFull}
+            isFeeding={isFeeding}
+          />
+        </div>
+
+        {/* Soft floor fade into the page background */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/30 to-transparent pointer-events-none" />
+      </div>
+
+      {/* 3. Open Status Row (Borderless, sitting directly on the canvas matching reference) */}
+      <div className="flex items-center justify-between px-4 sm:px-2 py-1 select-none">
+        {/* Left: Circular Progress Rings & Life Stage */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <CircularMeter
+            value={pet.hunger}
+            color="#D97736"
+            iconType="hunger"
+            label="Lapar / Makanan"
+          />
+          <CircularMeter
+            value={pet.mood}
+            color="#E57399"
+            iconType="mood"
+            label="Senang / Afeksi"
+          />
+          <CircularMeter
+            value={pet.energy}
+            color="#57B37C"
+            iconType="energy"
+            label="Energi / Segar"
+          />
+          <span className="text-xs font-semibold text-[#8A857A]">
+            {getStageName(pet.level)}
+          </span>
+        </div>
+
+        {/* Center: Pet Name & Info */}
+        <div
+          className="flex items-center gap-1 font-black text-sm text-[#2E2E3A] cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handlePetTap}
+          title="Ketuk untuk berinteraksi dengan Mochi"
+        >
+          <span>{pet.name}</span>
+          <Info className="w-3.5 h-3.5 text-[#8A857A]" />
+        </div>
+
+        {/* Right: Dress-up & Lighting Mode Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
+            className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#2E2E3A] cursor-pointer transition-colors active:scale-95"
+            title="Koleksi / Baju Mochi"
+          >
+            <Shirt className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              setLightingMode(prev => prev === 'warm' ? 'night' : prev === 'night' ? 'day' : 'warm');
+            }}
+            className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
+            title={`Pencahayaan (${lightingMode})`}
+          >
+            {lightingMode === 'night' ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
+          </button>
+        </div>
+      </div>
+
+      {/* 4. Quick Link Capture Pill matching screenshot: "+ Tempel link di sini... 📋" */}
+      <div className="px-4 sm:px-2 pt-1">
         {quickSuccess && (
           <div className="mb-2 p-2 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#36955E] flex items-center gap-1.5 animate-fade-in">
             <CheckCircle2 className="w-3.5 h-3.5 text-[#57B37C]" />
@@ -344,84 +382,89 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleQuickAddLink} className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={quickUrl}
-              onChange={e => {
-                setQuickUrl(e.target.value);
-                if (quickError) setQuickError(null);
-              }}
-              placeholder="+ Tempel tautan video di sini (YouTube, TikTok, Reels, blog)..."
-              className="w-full text-xs sm:text-sm pl-4 pr-10 py-2.5 sm:py-3 rounded-2xl bg-[#FAF7F2] border border-[#EAE6DF] text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] focus:bg-white transition-all"
-            />
-            {quickUrl && (
-              <button
-                type="button"
-                onClick={() => setQuickUrl('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          <Button
+        <form onSubmit={handleQuickAddLink} className="relative flex items-center">
+          <button
             type="submit"
-            variant="peach"
-            size="sm"
-            className="py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-2xl font-bold flex items-center gap-1.5 cursor-pointer flex-shrink-0"
+            className="absolute left-3.5 text-[#7A7A8A] hover:text-[#2E2E3A] cursor-pointer transition-colors"
+            title="Simpan Tautan"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Simpan</span>
-          </Button>
+          </button>
+          <input
+            type="text"
+            value={quickUrl}
+            onChange={e => {
+              setQuickUrl(e.target.value);
+              if (quickError) setQuickError(null);
+            }}
+            placeholder="Tempel link di sini..."
+            className="w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full bg-white border border-[#EAE3D5] text-[#2E2E3A] placeholder-[#9E9EA8] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all"
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                  setQuickUrl(text);
+                }
+              } catch {
+                // Clipboard read blocked by permissions
+              }
+            }}
+            className="absolute right-3.5 text-[#7A7A8A] hover:text-[#D97736] cursor-pointer transition-colors"
+            title="Tempel dari Clipboard"
+          >
+            <Clipboard className="w-4 h-4" />
+          </button>
         </form>
       </div>
 
-      {/* Pet Meters & XP Progress Overview */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#ECE6DB] shadow-xs space-y-3">
-        <div className="flex justify-between items-center text-xs font-bold text-[#4A4A5A]">
-          <span className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#F4A261]" />
-            <span>Pertumbuhan Mochi (Level {pet.level} → {pet.level + 1})</span>
-          </span>
-          <span className="text-[#D97736] font-extrabold">{pet.exp} / {pet.expToNextLevel} XP</span>
-        </div>
-        <ProgressBar
-          value={pet.exp}
-          max={pet.expToNextLevel}
-          color="orange"
-          size="md"
-        />
+      {/* 5. Pet XP Growth & Quick Nav Access Bar */}
+      <div className="px-4 sm:px-2 pt-2">
+        <div className="bg-white rounded-3xl p-4 border border-[#ECE6DB] shadow-xs space-y-3">
+          <div className="flex justify-between items-center text-xs font-bold text-[#4A4A5A]">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#F4A261]" />
+              <span>Pertumbuhan Mochi (Level {pet.level} → {pet.level + 1})</span>
+            </span>
+            <span className="text-[#D97736] font-extrabold">{pet.exp} / {pet.expToNextLevel} XP</span>
+          </div>
+          <ProgressBar
+            value={pet.exp}
+            max={pet.expToNextLevel}
+            color="orange"
+            size="md"
+          />
 
-        {/* Quick Action Buttons */}
-        <div className="pt-2 border-t border-[#F2ECE1] flex items-center justify-between text-xs text-[#6B6B7E]">
-          <span className="font-semibold text-[#4A4A5A]">Akses Cepat:</span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onNavigate('vault')}
-              className="flex items-center gap-1 hover:text-[#D97736] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
-            >
-              <BookmarkPlus className="w-3.5 h-3.5" />
-              <span>Vault ({savedLinks.length})</span>
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => onNavigate('assistant')}
-              className="flex items-center gap-1 hover:text-[#7161BF] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
-            >
-              <Bot className="w-3.5 h-3.5" />
-              <span>AI Asisten</span>
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => onNavigate('notes')}
-              className="flex items-center gap-1 hover:text-[#36955E] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Catatan ({notesCount})</span>
-            </button>
+          {/* Quick Shortcuts */}
+          <div className="pt-2 border-t border-[#F2ECE1] flex items-center justify-between text-xs text-[#6B6B7E]">
+            <span className="font-semibold text-[#4A4A5A]">Akses Cepat:</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onNavigate('vault')}
+                className="flex items-center gap-1 hover:text-[#D97736] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+              >
+                <BookmarkPlus className="w-3.5 h-3.5" />
+                <span>Vault ({savedLinks.length})</span>
+              </button>
+              <span>•</span>
+              <button
+                onClick={() => onNavigate('assistant')}
+                className="flex items-center gap-1 hover:text-[#7161BF] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>AI Asisten</span>
+              </button>
+              <span>•</span>
+              <button
+                onClick={() => onNavigate('notes')}
+                className="flex items-center gap-1 hover:text-[#36955E] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Catatan ({notesCount})</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

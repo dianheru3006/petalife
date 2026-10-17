@@ -28,11 +28,13 @@ export const AppLayout: FC<AppLayoutProps> = ({
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <Header currentTab={currentTab} pet={pet} />
+        {/* Top Header - hidden on home tab to allow full-bleed borderless room as in reference */}
+        {currentTab !== 'home' && (
+          <Header currentTab={currentTab} pet={pet} />
+        )}
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-8 pb-24 md:pb-8 overflow-x-hidden">
+        {/* Page Content: full-bleed on mobile for home tab */}
+        <main className={`flex-1 ${currentTab === 'home' ? 'p-0 sm:py-6 sm:px-4' : 'p-4 sm:p-8'} pb-24 md:pb-8 overflow-x-hidden`}>
           {children}
         </main>
       </div>

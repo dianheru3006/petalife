@@ -10,14 +10,14 @@ export interface BottomNavProps {
 
 export const BottomNav: FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
   const tabs: { id: NavigationTab; label: string; icon: ReactNode }[] = [
-    { id: 'home', label: 'Pet', icon: <Home className="w-5 h-5" /> },
-    { id: 'vault', label: 'Vault', icon: <Bookmark className="w-5 h-5" /> },
-    { id: 'notes', label: 'Notes', icon: <FileText className="w-5 h-5" /> },
-    { id: 'assistant', label: 'AI', icon: <Bot className="w-5 h-5" /> },
+    { id: 'home', label: 'Beranda', icon: <Home className="w-4 h-4" /> },
+    { id: 'vault', label: 'Vault', icon: <Bookmark className="w-4 h-4" /> },
+    { id: 'notes', label: 'Notes', icon: <FileText className="w-4 h-4" /> },
+    { id: 'assistant', label: 'Asisten', icon: <Bot className="w-4 h-4" /> },
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#ECE6DB] px-3 py-2 flex justify-around items-center shadow-lg select-none">
+    <nav className="md:hidden fixed bottom-3 left-4 right-4 max-w-xs sm:max-w-sm mx-auto z-40 bg-white/92 backdrop-blur-md rounded-full shadow-lg border border-[#EAE3D5] px-2 py-1.5 flex items-center justify-between select-none">
       {tabs.map(tab => {
         const isActive = currentTab === tab.id;
         return (
@@ -25,19 +25,14 @@ export const BottomNav: FC<BottomNavProps> = ({ currentTab, onSelectTab }) => {
             key={tab.id}
             onClick={() => onSelectTab(tab.id)}
             className={cn(
-              'flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all duration-200 cursor-pointer',
+              'transition-all duration-200 cursor-pointer flex items-center gap-1.5',
               isActive
-                ? 'text-[#D97736] scale-105 font-bold'
-                : 'text-[#828292] hover:text-[#4A4A5A]'
+                ? 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs'
+                : 'p-2 text-[#7A7A8A] hover:text-[#2E2E3A] hover:bg-[#FAF7F2] rounded-full'
             )}
           >
-            <div className={cn(
-              'p-1 rounded-xl transition-colors',
-              isActive ? 'bg-[#FFEFE8]' : 'bg-transparent'
-            )}>
-              {tab.icon}
-            </div>
-            <span className="text-[10px] mt-0.5 tracking-tight">{tab.label}</span>
+            {tab.icon}
+            {isActive && <span>{tab.label}</span>}
           </button>
         );
       })}
