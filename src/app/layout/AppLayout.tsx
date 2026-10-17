@@ -18,7 +18,7 @@ export const AppLayout: FC<AppLayoutProps> = ({
   children,
 }) => {
   return (
-    <div className="flex min-h-screen bg-[#FDFBF7] text-[#2E2E3A]">
+    <div className={`flex min-h-screen ${currentTab === 'home' ? 'bg-[#EEE1CD]' : 'bg-[#FDFBF7]'} text-[#2E2E3A]`}>
       {/* Desktop Sidebar */}
       <Sidebar
         currentTab={currentTab}

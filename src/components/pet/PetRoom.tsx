@@ -54,7 +54,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [lastFedText, setLastFedText] = useState<string | null>(null);
-  const [lightingMode, setLightingMode] = useState<'warm' | 'day' | 'night'>('warm');
+  const [isNightMode, setIsNightMode] = useState<boolean>(false);
 
   // Quick Link Capture State
   const [quickUrl, setQuickUrl] = useState('');
@@ -236,28 +236,17 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Subtle streak pill */}
           <div
             onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/80 border border-[#EAE3D5] text-xs font-bold text-[#D97736] shadow-xs cursor-pointer hover:bg-white transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 border border-[#EAE3D5] text-xs font-bold text-[#D97736] shadow-xs cursor-pointer hover:bg-white transition-all active:scale-95"
             title={`Streak: ${pet.streakDays} hari`}
           >
             <span>🔥</span>
             <span>{pet.streakDays}d</span>
           </div>
-
-          {/* Clean lighting toggle */}
-          <button
-            onClick={() => {
-              setLightingMode(prev => prev === 'warm' ? 'night' : prev === 'night' ? 'day' : 'warm');
-            }}
-            className="w-8 h-8 rounded-full bg-white/80 border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] hover:bg-white cursor-pointer transition-all active:scale-95"
-            title={`Mode pencahayaan (${lightingMode})`}
-          >
-            {lightingMode === 'night' ? <Moon className="w-3.5 h-3.5 text-[#7161BF]" /> : <Sun className="w-3.5 h-3.5 text-[#F4A261]" />}
-          </button>
         </div>
       </div>
 
-      {/* 2. 3D Isometric Room Canvas (BORDERLESS, with soft feathered gradients top & bottom) */}
-      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden bg-[#EEE1CE]">
+      {/* 2. 3D Isometric Room Canvas (BORDERLESS, exact matching #EEE1CD with seamless feathered transitions) */}
+      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[580px] select-none overflow-hidden bg-[#EEE1CD]">
         {/* Background 3D Room Diorama */}
         <img
           src={roomBg}
@@ -265,22 +254,16 @@ export const PetRoom: FC<PetRoomProps> = ({
           className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
         />
 
-        {/* TOP SOFT FEATHERED GRADIENT (Melts the top of the room into the background with zero harsh line) */}
-        <div className="absolute top-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-b from-[#FAF5EB] via-[#FAF5EB]/50 to-transparent pointer-events-none z-10" />
+        {/* TOP SOFT FEATHERED GRADIENT (Matches #EEE1CD exactly, melting seamlessly into the header) */}
+        <div className="absolute top-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-b from-[#EEE1CD] via-[#EEE1CD]/60 to-transparent pointer-events-none z-10" />
 
-        {/* BOTTOM SOFT FEATHERED GRADIENT (Melts the room floor into the status bar background) */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-t from-[#FAF5EB] via-[#FAF5EB]/50 to-transparent pointer-events-none z-10" />
+        {/* BOTTOM SOFT FEATHERED GRADIENT (Matches #EEE1CD exactly, melting seamlessly into the status row) */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-20 bg-gradient-to-t from-[#EEE1CD] via-[#EEE1CD]/60 to-transparent pointer-events-none z-10" />
 
-        {/* Dynamic Ambient Lighting Overlay */}
-        <div
-          className={`absolute inset-0 transition-all duration-700 pointer-events-none ${
-            lightingMode === 'warm'
-              ? 'bg-amber-400/10 mix-blend-color-burn'
-              : lightingMode === 'night'
-              ? 'bg-[#1a1b35]/40 mix-blend-multiply'
-              : 'bg-transparent'
-          }`}
-        />
+        {/* Night Mode Ambient Overlay (Warm lighting mode completely removed as requested) */}
+        {isNightMode && (
+          <div className="absolute inset-0 transition-opacity duration-700 bg-[#1a1b35]/35 mix-blend-multiply pointer-events-none z-10" />
+        )}
 
         {/* Toast Notification inside Room */}
         {lastFedText && (
@@ -318,9 +301,6 @@ export const PetRoom: FC<PetRoomProps> = ({
             isFeeding={isFeeding}
           />
         </div>
-
-        {/* Soft floor fade into the page background */}
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/30 to-transparent pointer-events-none" />
       </div>
 
       {/* 3. Open Status Row (Borderless, sitting directly on the canvas matching reference) */}
@@ -360,7 +340,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           <Info className="w-3.5 h-3.5 text-[#8A857A]" />
         </div>
 
-        {/* Right: Dress-up & Lighting Mode Actions */}
+        {/* Right: Dress-up & Night Mode Actions */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => triggerSpeech('Baju Mochi sudah imut dan pas! 🌸', 3000)}
@@ -371,12 +351,12 @@ export const PetRoom: FC<PetRoomProps> = ({
           </button>
           <button
             onClick={() => {
-              setLightingMode(prev => prev === 'warm' ? 'night' : prev === 'night' ? 'day' : 'warm');
+              setIsNightMode(prev => !prev);
             }}
             className="w-8 h-8 rounded-full bg-white border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#6B6B7E] hover:text-[#7161BF] cursor-pointer transition-colors active:scale-95"
-            title={`Pencahayaan (${lightingMode})`}
+            title={isNightMode ? 'Kembali ke mode siang' : 'Mode malam (redupkan lampu)'}
           >
-            {lightingMode === 'night' ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
+            {isNightMode ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
           </button>
         </div>
       </div>
