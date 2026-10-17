@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --cream-bg: #FDFBF7;
+    --cream-card: #FFFFFF;
+    --cream-card-subtle: #F9F6F0;
+    --peach-accent: #FED7C5;
+    --peach-dark: #F4A261;
+    --lavender-accent: #E8E4F8;
+    --lavender-dark: #8C7FD9;
+    --mint-accent: #D7F0E3;
+    --mint-dark: #4EAA77;
+    --softpink-accent: #FCE4EC;
+    --softpink-dark: #E57399;
+    --charcoal-main: #2E2E3A;
+    --charcoal-muted: #6B6B7E;
+    --charcoal-border: #EAE6DF;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--cream-bg);
+    color: var(--charcoal-main);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Nunito', 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Custom Delightful Micro-Animations */
+@keyframes mochi-breathe {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.02, 0.98);
+  }
+}
+
+@keyframes mochi-chew {
+  0%, 100% {
+    transform: scale(1, 1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.08, 0.94) rotate(-3deg);
+  }
+  75% {
+    transform: scale(0.96, 1.04) rotate(3deg);
+  }
+}
+
+@keyframes float-heart {
+  0% {
+    opacity: 0;
+    transform: translateY(0px) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(1);
+  }
+}
+
+@keyframes gentle-sway {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+.anim-mochi-idle {
+  animation: mochi-breathe 3.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.anim-mochi-eating {
+  animation: mochi-chew 0.5s ease-in-out 3;
+  transform-origin: bottom center;
+}
+
+.anim-float-heart {
+  animation: float-heart 1.2s ease-out forwards;
+}
+
+.anim-gentle-sway {
+  animation: gentle-sway 4s ease-in-out infinite;
+}
+
+/* Respect Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .anim-mochi-idle,
+  .anim-mochi-eating,
+  .anim-float-heart,
+  .anim-gentle-sway {
+    animation: none !important;
+  }
+}

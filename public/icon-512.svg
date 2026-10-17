@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="mochiBg512" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FFFDF9"/>
+      <stop offset="100%" stop-color="#FFEFE8"/>
+    </radialGradient>
+    <linearGradient id="sproutGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A8D5BA"/>
+      <stop offset="100%" stop-color="#66BB6A"/>
+    </linearGradient>
+    <filter id="cozyGlow512" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#E27344" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Background Cozy Circle -->
+  <circle cx="256" cy="256" r="236" fill="url(#mochiBg512)" stroke="#FED7C5" stroke-width="14" filter="url(#cozyGlow512)"/>
+
+  <!-- Sprout Stem & Leaves -->
+  <path d="M256 160 C256 100 224 70 186 85 C176 117 218 139 250 144" fill="url(#sproutGrad512)"/>
+  <path d="M256 160 C262 112 300 80 336 96 C342 128 300 144 262 150" fill="url(#sproutGrad512)"/>
+  <circle cx="256" cy="150" r="12" fill="#66BB6A"/>
+
+  <!-- Mochi Body -->
+  <ellipse cx="256" cy="290" rx="160" ry="128" fill="#FFFFFF" stroke="#EAE4DC" stroke-width="10"/>
+
+  <!-- Eyes -->
+  <ellipse cx="204" cy="268" rx="16" ry="21" fill="#2E2E3A"/>
+  <circle cx="197" cy="260" r="6.5" fill="#FFFFFF"/>
+
+  <ellipse cx="308" cy="268" rx="16" ry="21" fill="#2E2E3A"/>
+  <circle cx="301" cy="260" r="6.5" fill="#FFFFFF"/>
+
+  <!-- Cheeks -->
+  <ellipse cx="166" cy="300" rx="23" ry="14" fill="#F4A261" opacity="0.55"/>
+  <ellipse cx="346" cy="300" rx="23" ry="14" fill="#F4A261" opacity="0.55"/>
+
+  <!-- Smile -->
+  <path d="M234 300 Q256 326 278 300" fill="none" stroke="#2E2E3A" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Little paws -->
+  <circle cx="256" cy="374" r="14" fill="#FFE3D6"/>
+  <circle cx="222" cy="364" r="11" fill="#FFE3D6"/>
+  <circle cx="290" cy="364" r="11" fill="#FFE3D6"/>
+</svg>
