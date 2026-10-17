@@ -289,7 +289,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           }`}
         />
 
-        {/* Ambient Room Night Filter: ONLY on the 3D isometric hexagonal room */}
+        {/* Ambient Room Night Filter: ONLY on the 3D isometric hexagonal room, with floor lamp remaining bright */}
         <svg
           viewBox="0 0 768 1376"
           preserveAspectRatio="xMidYMid slice"
@@ -299,33 +299,71 @@ export const PetRoom: FC<PetRoomProps> = ({
           aria-hidden="true"
         >
           <defs>
-            {/* Soft edge blur to naturally hug the isometric walls & base */}
+            {/* Soft edge blur for hexagonal room mask */}
             <filter id="hexRoomBlur" x="-10%" y="-10%" width="120%" height="120%">
               <feGaussianBlur stdDeviation="3.5" />
             </filter>
-            {/* Cozy floor lamp ambient warm glow */}
-            <radialGradient id="lampGlowGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#FFE099" stopOpacity="0.45" />
-              <stop offset="45%" stopColor="#FFCC66" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#FFAA33" stopOpacity="0" />
+            {/* Soft cutout blur for the lamp so it transitions smoothly into the dark room */}
+            <filter id="lampCutoutBlur" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="5.0" />
+            </filter>
+
+            {/* Mask: Hexagonal room is white (darkened), while lamp shade is black (CUT OUT / NOT darkened) */}
+            <mask id="hexNightMask">
+              <rect width="768" height="1376" fill="black" />
+              <polygon
+                points="414,237 755,455 755,805 385,1045 15,805 15,455"
+                fill="white"
+                filter="url(#hexRoomBlur)"
+              />
+              {/* Cut out the floor lamp shade from the dark mask so the lamp stays luminous and bright */}
+              <ellipse
+                cx="534"
+                cy="388"
+                rx="42"
+                ry="50"
+                fill="black"
+                filter="url(#lampCutoutBlur)"
+              />
+            </mask>
+
+            {/* Cozy radiant ambient glow casting down from the lampshade onto the armchair */}
+            <radialGradient id="lampAmbientGlow" cx="50%" cy="40%" r="50%">
+              <stop offset="0%" stopColor="#FFF2B2" stopOpacity="0.85" />
+              <stop offset="35%" stopColor="#FFD166" stopOpacity="0.55" />
+              <stop offset="65%" stopColor="#FF9F1C" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#FF8800" stopOpacity="0" />
             </radialGradient>
           </defs>
 
-          {/* Hexagonal Room Darkening Polygon */}
-          <polygon
-            points="414,237 755,455 755,805 385,1045 15,805 15,455"
+          {/* 1. Hexagonal Room Darkening Layer (Masked to avoid dimming the lamp) */}
+          <rect
+            width="768"
+            height="1376"
             fill="#14172E"
-            fillOpacity="0.48"
-            filter="url(#hexRoomBlur)"
+            fillOpacity="0.50"
+            mask="url(#hexNightMask)"
             style={{ mixBlendMode: 'multiply' }}
           />
 
-          {/* Cozy bedside/armchair floor lamp glow */}
-          <circle
-            cx="533"
-            cy="555"
-            r="135"
-            fill="url(#lampGlowGradient)"
+          {/* 2. Radiant warm ambient light cast over the lampshade, armchair, and corkboard */}
+          <ellipse
+            cx="534"
+            cy="420"
+            rx="180"
+            ry="160"
+            fill="url(#lampAmbientGlow)"
+            style={{ mixBlendMode: 'screen' }}
+          />
+
+          {/* 3. Luminous Lamp Shade Core (ensures the lamp itself stays bright and gleaming) */}
+          <ellipse
+            cx="534"
+            cy="388"
+            rx="32"
+            ry="38"
+            fill="#FFF8D6"
+            fillOpacity="0.75"
             style={{ mixBlendMode: 'screen' }}
           />
         </svg>
