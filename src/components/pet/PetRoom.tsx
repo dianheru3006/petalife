@@ -321,7 +321,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             <mask id="outerHexMask">
               <rect width="768" height="1376" fill="white" />
               <polygon
-                points="411,237 753,435 753,805 385,1048 14,805 14,466"
+                points="414,228 767,432 767,895 385,1085 0,895 0,432"
                 fill="black"
                 filter="url(#outerDarkFeather)"
               />
