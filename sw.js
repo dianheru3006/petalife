@@ -15,7 +15,7 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/index-BDGQFIZ6.css","./assets/index-CMCzZ93r.js","./assets/room-bg-B7tupBkv.jpg"];
+const BUILD_ASSETS = ["./assets/index-BDGQFIZ6.css","./assets/index-CxYJPXa8.js","./assets/room-bg-B7tupBkv.jpg"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
 
@@ -49,6 +49,19 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+
+  // Completely bypass Service Worker on localhost or for Vite dev paths to prevent breaking Vite HMR
+  if (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.pathname.includes('/node_modules/') ||
+    url.pathname.includes('/@vite/') ||
+    url.pathname.includes('/@fs/') ||
+    url.pathname.includes('/src/') ||
+    url.search.includes('v=')
+  ) {
+    return;
+  }
 
   // Ignore cross-origin non-GET or browser extension schemes
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
