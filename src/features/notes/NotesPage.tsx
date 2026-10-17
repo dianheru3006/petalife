@@ -119,7 +119,7 @@ export const NotesPage: FC<NotesPageProps> = ({
             <FileText className="w-5 h-5 text-[#36955E]" />
             <span>Personal Study & Reflection Notes</span>
           </h3>
-          <p className="text-xs sm:text-sm text-[#828292]">
+          <p className="text-xs sm:text-sm text-[#4A4A5A]">
             Jot down key points, ideas, and recipe tweaks to keep with you.
           </p>
         </div>
@@ -137,7 +137,7 @@ export const NotesPage: FC<NotesPageProps> = ({
 
       {/* Save Notification */}
       {saveToast && (
-        <div className="p-3 rounded-2xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#36955E] flex items-center gap-2">
+        <div className="p-3 rounded-2xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-2">
           <Check className="w-4 h-4" />
           <span>{saveToast}</span>
         </div>
@@ -189,7 +189,7 @@ export const NotesPage: FC<NotesPageProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
             {/* Color picker */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#828292] font-semibold">Card Tint:</span>
+              <span className="text-xs text-[#4A4A5A] font-semibold">Card Tint:</span>
               <div className="flex items-center gap-1.5">
                 {(['peach', 'lavender', 'mint', 'pink', 'cream'] as const).map(color => (
                   <button
@@ -216,7 +216,7 @@ export const NotesPage: FC<NotesPageProps> = ({
                 onChange={e => setTagsInput(e.target.value)}
                 placeholder="tags, separated, by, comma"
                 className={cn(
-                  'text-xs px-3 py-1.5 rounded-xl border text-[#4A4A5A]',
+                  'text-xs px-3 py-1.5 rounded-xl border text-[#4A4A5A] placeholder-[#5A5A6E]',
                   isNightMode
                     ? 'border-[#E2D8C9] bg-[#F2EBE0]'
                     : 'border-[#EAE6DF] bg-[#FAF7F2]'
@@ -232,14 +232,14 @@ export const NotesPage: FC<NotesPageProps> = ({
 
       {/* Search Input */}
       <div className="relative">
-        <Search className="w-4 h-4 text-[#8E8E9E] absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-[#5A5A6E] absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search your notes by keyword or tag..."
           className={cn(
-            'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#8E8E9E] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] shadow-xs transition-colors duration-700',
+            'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#5A5A6E] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] shadow-xs transition-colors duration-700',
             isNightMode
               ? 'bg-[#F2EBE0] border-[#E2D8C9]'
               : 'bg-[#FAF7F2] border-[#ECE6DB]'
@@ -259,7 +259,7 @@ export const NotesPage: FC<NotesPageProps> = ({
         >
           <div className="text-3xl">📝</div>
           <h4 className="font-extrabold text-sm text-[#2E2E3A]">No notes found</h4>
-          <p className="text-xs text-[#828292]">
+          <p className="text-xs text-[#4A4A5A]">
             Write down your first thought or summary using the button above!
           </p>
         </div>
@@ -280,15 +280,17 @@ export const NotesPage: FC<NotesPageProps> = ({
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleStartEdit(note)}
-                        className="text-[#8E8E9E] hover:text-[#36955E] p-1 rounded transition-colors cursor-pointer"
+                        className="text-[#5A5A6E] hover:text-[#1E6B3B] p-1 rounded transition-colors cursor-pointer"
                         title="Edit Note"
+                        aria-label={`Edit ${note.title}`}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => onDeleteNote(note.id)}
-                        className="text-[#8E8E9E] hover:text-[#C44A72] p-1 rounded transition-colors cursor-pointer"
+                        className="text-[#5A5A6E] hover:text-[#A82B53] p-1 rounded transition-colors cursor-pointer"
                         title="Delete Note"
+                        aria-label={`Delete ${note.title}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -300,10 +302,10 @@ export const NotesPage: FC<NotesPageProps> = ({
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-black/5 flex items-center justify-between text-[11px] text-[#8E8E9E]">
+                <div className="pt-2 border-t border-black/5 flex items-center justify-between text-[11px] text-[#4A4A5A]">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {note.tags.map(t => (
-                      <span key={t} className="text-[10px] text-[#6B6B7E] bg-black/4 px-1.5 py-0.5 rounded-md border border-black/5">
+                      <span key={t} className="text-[10px] text-[#3A3A4A] bg-black/4 px-1.5 py-0.5 rounded-md border border-black/5 font-medium">
                         #{t}
                       </span>
                     ))}

@@ -197,10 +197,10 @@ export const VaultPage: FC<VaultPageProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-[#D97736]" />
+              <Bookmark className="w-5 h-5 text-[#9E410E]" />
               <span>Capture & Study Material Vault</span>
             </h3>
-            <p className="text-xs sm:text-sm text-[#828292]">
+            <p className="text-xs sm:text-sm text-[#4A4A5A]">
               Save links from YouTube, TikTok, Reels, or blogs to build your visual learning vault.
             </p>
           </div>
@@ -313,14 +313,14 @@ export const VaultPage: FC<VaultPageProps> = ({
       <div className="space-y-3">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="w-4 h-4 text-[#8E8E9E] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#5A5A6E] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search by title, notes, platform, or #tag..."
             className={cn(
-              'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#8E8E9E] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] shadow-xs transition-colors duration-700',
+              'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#5A5A6E] focus:outline-none focus:ring-2 focus:ring-[#BA5218] shadow-xs transition-colors duration-700',
               isNightMode
                 ? 'bg-[#F2EBE0] border-[#E2D8C9]'
                 : 'bg-[#FAF7F2] border-[#ECE6DB]'
@@ -329,7 +329,8 @@ export const VaultPage: FC<VaultPageProps> = ({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8E8E9E] hover:text-[#2E2E3A] px-1.5 py-0.5 rounded cursor-pointer"
+              aria-label="Hapus pencarian"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#5A5A6E] hover:text-[#2E2E3A] px-1.5 py-0.5 rounded cursor-pointer"
             >
               ✕
             </button>
@@ -344,8 +345,8 @@ export const VaultPage: FC<VaultPageProps> = ({
               selectedStatusFilter === 'all'
                 ? 'bg-[#2E2E3A] text-white border-[#2E2E3A] shadow-xs'
                 : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
+                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             All Materials ({links.length})
@@ -354,10 +355,10 @@ export const VaultPage: FC<VaultPageProps> = ({
             onClick={() => setSelectedStatusFilter('to_review')}
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'to_review'
-                ? 'bg-[#FFEFE8] text-[#D97736] border-[#FED7C5] shadow-xs'
+                ? 'bg-[#FFEFE8] text-[#9E410E] border-[#FED7C5] shadow-xs'
                 : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
+                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             ⏳ To Review ({toReviewCount})
@@ -366,10 +367,10 @@ export const VaultPage: FC<VaultPageProps> = ({
             onClick={() => setSelectedStatusFilter('in_progress')}
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'in_progress'
-                ? 'bg-[#F0EDF9] text-[#7161BF] border-[#DCD6F3] shadow-xs'
+                ? 'bg-[#EDE8FA] text-[#483696] border-[#C8BDEB] shadow-xs'
                 : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
+                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             📖 Studying ({inProgressCount})
@@ -378,10 +379,10 @@ export const VaultPage: FC<VaultPageProps> = ({
             onClick={() => setSelectedStatusFilter('completed')}
             className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
               selectedStatusFilter === 'completed'
-                ? 'bg-[#EAF6EE] text-[#36955E] border-[#CCEBD6] shadow-xs'
+                ? 'bg-[#EAF6EE] text-[#1E6B3B] border-[#CCEBD6] shadow-xs'
                 : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#6B6B7E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#6B6B7E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
+                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
             }`}
           >
             ✅ Mastered ({completedCount})
@@ -398,8 +399,8 @@ export const VaultPage: FC<VaultPageProps> = ({
                 selectedCategory === cat
                   ? 'bg-[#FED7C5] text-[#7A3613] border-[#F4A261]/40 font-bold shadow-xs'
                   : isNightMode
-                    ? 'bg-[#F2EBE0] text-[#5B5B6D] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                    : 'bg-[#FAF7F2] text-[#5B5B6D] border-[#ECE6DB] hover:bg-[#F3EDE2]'
+                    ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
+                    : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
               }`}
             >
               {cat}
@@ -442,7 +443,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2.5">
                     {getPlatformBadge(link.platform, link.domain)}
-                    <span className="text-[11px] text-[#8E8E9E]">{link.dateAdded}</span>
+                    <span className="text-[11px] text-[#525266] font-medium">{link.dateAdded}</span>
                   </div>
 
                   {isEditing ? (
@@ -478,7 +479,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                       </h4>
 
                       {(link.summary || link.notes) && (
-                        <p className="text-xs text-[#6B6B7E] mb-3 bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EFE8DD] leading-relaxed">
+                        <p className="text-xs text-[#3E3E4E] mb-3 bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EFE8DD] leading-relaxed">
                           💡 <b>Takeaway:</b> {link.notes || link.summary}
                         </p>
                       )}
@@ -490,7 +491,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                     {link.tags.map(t => (
                       <span
                         key={t}
-                        className="text-[10px] text-[#6B6B7E] bg-[#F7F3E9] px-2 py-0.5 rounded-md border border-[#EAE3D5] font-medium"
+                        className="text-[10px] text-[#3E3E4E] bg-[#F7F3E9] px-2 py-0.5 rounded-md border border-[#EAE3D5] font-semibold"
                       >
                         #{t}
                       </span>
@@ -502,8 +503,12 @@ export const VaultPage: FC<VaultPageProps> = ({
                 <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-xs">
                   {/* Status Selector */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-[#828292] font-semibold">Status:</span>
+                    <label htmlFor={`vault-status-select-${link.id}`} className="text-[10px] text-[#3E3E4E] font-bold">
+                      Status:
+                    </label>
                     <select
+                      id={`vault-status-select-${link.id}`}
+                      aria-label={`Ubah status pembelajaran untuk ${link.title}`}
                       value={link.status}
                       onChange={e => {
                         const newStatus = e.target.value as LinkStatus;
@@ -513,7 +518,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                           setTimeout(() => setSuccessToast(null), 3500);
                         }
                       }}
-                      className="text-xs font-bold bg-[#FAF7F2] border border-[#EAE6DF] rounded-lg px-2 py-1 text-[#4A4A5A] cursor-pointer focus:outline-none"
+                      className="text-xs font-bold bg-[#FAF7F2] border border-[#EAE6DF] rounded-lg px-2 py-1 text-[#2E2E3A] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#BA5218]"
                     >
                       <option value="to_review">⏳ To Review</option>
                       <option value="in_progress">📖 Studying</option>
@@ -525,7 +530,8 @@ export const VaultPage: FC<VaultPageProps> = ({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleStartEdit(link)}
-                      className="p-1.5 text-[#8E8E9E] hover:text-[#D97736] hover:bg-[#FFEFE8] rounded-lg transition-colors cursor-pointer"
+                      aria-label={`Edit ${link.title}`}
+                      className="p-1.5 text-[#5A5A6E] hover:text-[#9E410E] hover:bg-[#FFEFE8] rounded-lg transition-colors cursor-pointer"
                       title="Edit Material"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -534,14 +540,16 @@ export const VaultPage: FC<VaultPageProps> = ({
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 text-[#7161BF] hover:bg-[#F0EDF9] rounded-lg transition-colors cursor-pointer"
+                      aria-label={`Buka link sumber ${link.title}`}
+                      className="p-1.5 text-[#483696] hover:bg-[#EDE8FA] rounded-lg transition-colors cursor-pointer"
                       title="Open Source Link"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
                     <button
                       onClick={() => onDeleteLink(link.id)}
-                      className="p-1.5 text-[#C44A72] hover:bg-[#FDF0F4] rounded-lg transition-colors cursor-pointer"
+                      aria-label={`Hapus ${link.title}`}
+                      className="p-1.5 text-[#A82B53] hover:bg-[#FDF0F4] rounded-lg transition-colors cursor-pointer"
                       title="Delete Link"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -15,10 +15,10 @@ export const Badge: FC<BadgeProps> = ({
 }) => {
   const variantStyles = {
     default: 'bg-[#F4EFE6] text-[#4A4A5A] border-[#E5DEC9]',
-    peach: 'bg-[#FFEFE8] text-[#D97736] border-[#FED7C5]',
-    lavender: 'bg-[#F0EDF9] text-[#7161BF] border-[#DCD6F3]',
-    mint: 'bg-[#EAF6EE] text-[#36955E] border-[#CCEBD6]',
-    pink: 'bg-[#FDF0F4] text-[#C44A72] border-[#FAD0DC]',
+    peach: 'bg-[#FFEFE8] text-[#9E410E] border-[#FED7C5]',
+    lavender: 'bg-[#F0EDF9] text-[#483696] border-[#DCD6F3]',
+    mint: 'bg-[#EAF6EE] text-[#1E6B3B] border-[#CCEBD6]',
+    pink: 'bg-[#FDF0F4] text-[#A82B53] border-[#FAD0DC]',
     cream: 'bg-[#FFFDF9] text-[#5A554A] border-[#EFE8D8]',
   };
 

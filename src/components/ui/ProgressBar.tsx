@@ -46,7 +46,7 @@ export const ProgressBar: FC<ProgressBarProps> = ({
             {icon && <span>{icon}</span>}
             <span>{label}</span>
           </span>
-          <span className="text-[#6B6B7E] font-medium">{valueDisplay || `${Math.round(percentage)}%`}</span>
+          <span className="text-[#4A4A5A] font-semibold">{valueDisplay || `${Math.round(percentage)}%`}</span>
         </div>
       )}
       <div className={cn('w-full bg-[#EFECE6] rounded-full overflow-hidden p-0.5', heightStyles[size])}>

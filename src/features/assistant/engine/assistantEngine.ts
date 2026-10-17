@@ -1,4 +1,5 @@
 import type { SavedLink, Note, Pet, NavigationTab } from '../../../lib/types';
+import { getUserDisplayName } from '../../../lib/utils';
 
 export interface AssistantResponse {
   replyText: string;
@@ -187,6 +188,9 @@ export async function queryAssistant(
             pet: context.pet,
             links: context.links.slice(0, 5),
             notes: context.notes.slice(0, 5),
+            user: {
+              name: getUserDisplayName(),
+            },
           },
         }),
         signal: controller.signal,

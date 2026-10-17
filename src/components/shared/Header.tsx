@@ -50,7 +50,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
         <h2 className="text-base sm:text-lg font-extrabold text-[#2E2E3A] truncate tracking-tight">
           {current.title}
         </h2>
-        <p className="text-[11px] sm:text-xs text-[#828292] truncate mt-0.5">
+        <p className="text-[11px] sm:text-xs text-[#4E4E5E] truncate mt-0.5">
           {current.subtitle}
         </p>
       </div>
@@ -58,14 +58,14 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
       <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
         {/* Offline Badge */}
         {!isOnline && (
-          <div className="bg-[#EBF7EE] border border-[#C6EBD0] px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1 text-[11px] font-bold text-[#2E7D32]">
+          <div className="bg-[#EBF7EE] border border-[#C6EBD0] px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1 text-[11px] font-bold text-[#1B5E20]">
             <span>🌿</span>
             <span className="hidden sm:inline">Offline Mode</span>
           </div>
         )}
 
         {/* Streak Pill */}
-        <div className="bg-[#FFEFE8] border border-[#FED7C5] px-2.5 sm:px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold text-[#D97736]">
+        <div className="bg-[#FFEFE8] border border-[#FED7C5] px-2.5 sm:px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold text-[#9E410E]">
           <span>🔥</span>
           <span className="hidden sm:inline">{pet.streakDays} Day Streak</span>
           <span className="sm:hidden">{pet.streakDays}d</span>
@@ -80,7 +80,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
               : 'bg-[#FAF7F2] border-[#EAE6DF] hover:bg-[#F7F3E9]'
           )}
         >
-          <div className="w-7 h-7 rounded-full bg-[#DCD6F3] text-[#7161BF] font-extrabold text-xs flex items-center justify-center">
+          <div className="w-7 h-7 rounded-full bg-[#DCD6F3] text-[#483696] font-extrabold text-xs flex items-center justify-center">
             {userName.charAt(0).toUpperCase()}
           </div>
           <span className="text-xs font-bold text-[#4A4A5A] hidden sm:inline">{userName}</span>

@@ -20,7 +20,7 @@ export const Button: FC<ButtonProps> = ({
     primary: 'bg-[#FED7C5] hover:bg-[#FDC4AC] text-[#7A3613] shadow-sm hover:shadow active:bg-[#FCAE8F]',
     secondary: 'bg-[#F0EDF9] hover:bg-[#E3DCF5] text-[#55469C] shadow-sm',
     mint: 'bg-[#D7F0E3] hover:bg-[#C2E8D2] text-[#246A42] shadow-sm',
-    peach: 'bg-[#F4A261] hover:bg-[#E78F49] text-white shadow-md shadow-[#F4A261]/20',
+    peach: 'bg-[#BA5218] hover:bg-[#A3430F] text-white shadow-md shadow-[#BA5218]/20',
     outline: 'border border-[#EAE6DF] hover:bg-[#F3EDE2] text-[#4A4A5A] bg-[#FAF7F2]',
     ghost: 'hover:bg-[#F4EFE6] text-[#4A4A5A]',
   };
