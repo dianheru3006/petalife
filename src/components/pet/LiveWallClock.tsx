@@ -7,7 +7,7 @@ interface LiveWallClockProps {
 }
 
 const CX = 271.5;
-const CY = 425.0;
+const CY = 433.0;
 
 export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
   const [angles, setAngles] = useState(() => getClockAngles());
@@ -109,7 +109,7 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
 
       {/* 6. Interactive Click Target over the Clock Dial */}
       <polygon
-        points="226,424.5 271,367.5 316,417.5 271,484.5"
+        points="226,432.5 271,375.5 316,425.5 271,492.5"
         fill="transparent"
         className="cursor-pointer pointer-events-auto outline-hidden"
         onClick={handleClick}
