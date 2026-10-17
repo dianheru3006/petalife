@@ -55,17 +55,14 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
 
-  // Live Clock & Indonesian Greeting
-  const [timeStr, setTimeStr] = useState<string>('');
+  // Live Date & Indonesian Greeting
   const [dateStr, setDateStr] = useState<string>('');
-  const [greeting, setGreeting] = useState<string>('Selamat pagi');
+  const [greeting, setGreeting] = useState<string>('Selamat siang');
 
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
       const hours = now.getHours();
-      const mins = now.getMinutes().toString().padStart(2, '0');
-      setTimeStr(`${hours}:${mins}`);
 
       // Month name abbreviation in Indonesian/English
       const months = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
@@ -84,7 +81,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
   const handleFeedClick = () => {
     if (isFull) {
-      setSpeech('Mochi sudah kenyang dan senang! Yuk belajar bareng! 🌸');
+      setSpeech('Perut Mochi sudah kenyang dan senang! 🌸');
       return;
     }
     if (isFeeding) {
@@ -107,9 +104,9 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
     const cuteReplies = [
       'Hehehe, geli! 🌸',
-      'Yaaay! Semangat belajar hari ini! ✨',
+      'Yaaay! Semangat belajar bareng kamu! ✨',
       'Mochi siap menemani Dian! 🍵',
-      'Ada resep atau video seru yang kamu simpan? 🍳',
+      'Ada resep atau video baru yang seru? 🍳',
       `Streak belajarmu ${pet.streakDays} hari berturut-turut! 🔥`,
       contextualStatus.speechText,
     ];
@@ -171,11 +168,11 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-4">
+    <div className="w-full max-w-xl mx-auto space-y-4">
       {/* 3D Isometric Room Canvas */}
       <div className="relative w-full rounded-3xl overflow-hidden border border-[#E8DFC8] shadow-md bg-[#FAF6EE]">
         {/* Background 3D Room Diorama */}
-        <div className="relative w-full aspect-[9/13] sm:aspect-[4/3] max-h-[640px] select-none">
+        <div className="relative w-full aspect-[9/13] sm:aspect-[4/3] max-h-[620px] select-none">
           <img
             src={roomBg}
             alt="Rumah Mochi 3D Living Room"
@@ -196,7 +193,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Top Room Navigation Bar */}
           <div className="absolute top-3.5 left-4 right-4 z-20 flex items-center justify-between">
             {/* Greeting & Room Title */}
-            <div className="bg-white/85 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-[#EAE3D5] shadow-xs flex items-center gap-2">
+            <div className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-[#EAE3D5] shadow-xs flex items-center gap-2">
               <span className="text-sm">🎉</span>
               <div>
                 <p className="text-[10px] text-[#7A7A8A] font-medium leading-none">{greeting},</p>
@@ -211,7 +208,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 onClick={() => {
                   setLightingMode(prev => prev === 'warm' ? 'night' : prev === 'night' ? 'day' : 'warm');
                 }}
-                className="w-8 h-8 rounded-2xl bg-white/85 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-xs hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                className="w-8 h-8 rounded-2xl bg-white/90 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-xs hover:scale-105 active:scale-95 transition-transform cursor-pointer"
                 title={`Ubah pencahayaan (Mode: ${lightingMode})`}
               >
                 {lightingMode === 'warm' ? <Lightbulb className="w-4 h-4 text-[#F4A261]" /> : lightingMode === 'night' ? <Moon className="w-4 h-4 text-[#7161BF]" /> : <Sun className="w-4 h-4 text-[#F4A261]" />}
@@ -219,6 +216,8 @@ export const PetRoom: FC<PetRoomProps> = ({
 
               {/* Level & Streak Pill */}
               <div className="bg-[#FFEFE8]/95 backdrop-blur-md border border-[#FED7C5] px-2.5 py-1 rounded-2xl flex items-center gap-1.5 text-xs font-bold text-[#D97736] shadow-xs">
+                <span>{dateStr || 'OKT 17'}</span>
+                <span>•</span>
                 <span>⭐ Lv. {pet.level}</span>
                 <span>•</span>
                 <span>🔥 {pet.streakDays}d</span>
@@ -226,43 +225,37 @@ export const PetRoom: FC<PetRoomProps> = ({
             </div>
           </div>
 
-          {/* Interactive Wall Hotspots */}
-          {/* 1. Bookshelf Hotspot (Left Wall) */}
+          {/* Interactive Wall Hotspots (Clean, well-spaced) */}
+          {/* 1. Bookshelf Tag (Left Wall) */}
           <button
             onClick={() => onNavigate('notes')}
-            className="absolute top-[28%] left-[6%] sm:left-[8%] z-15 bg-white/90 backdrop-blur-sm border border-[#E0D7C4] text-[10px] sm:text-xs font-bold text-[#4A4A5A] px-2 py-1 rounded-xl shadow-xs hover:scale-105 hover:bg-[#F0EDF9] transition-all flex items-center gap-1 cursor-pointer"
+            className="absolute top-[32%] left-[8%] sm:left-[10%] z-15 bg-white/90 backdrop-blur-sm border border-[#E0D7C4] text-[10px] sm:text-xs font-bold text-[#4A4A5A] px-2.5 py-1 rounded-xl shadow-xs hover:scale-105 hover:bg-[#F0EDF9] transition-all flex items-center gap-1 cursor-pointer"
             title="Buka Catatan Belajar"
           >
             <BookOpen className="w-3 h-3 text-[#7161BF]" />
-            <span className="hidden sm:inline">Notes</span>
-            <span>({notesCount})</span>
+            <span>Notes ({notesCount})</span>
           </button>
 
-          {/* 2. Corkboard Hotspot (Center-Right Wall) */}
+          {/* 2. Corkboard Pinned Note (Center-Right Wall) */}
           <button
             onClick={() => onNavigate('vault')}
-            className="absolute top-[22%] right-[24%] sm:right-[26%] z-15 bg-white/90 backdrop-blur-sm border border-[#E0D7C4] text-[10px] sm:text-xs font-bold text-[#4A4A5A] px-2 py-1 rounded-xl shadow-xs hover:scale-105 hover:bg-[#FFEFE8] transition-all flex items-center gap-1 cursor-pointer"
+            className="absolute top-[26%] right-[22%] sm:right-[24%] z-15 bg-white/90 backdrop-blur-sm border border-[#E0D7C4] text-[10px] sm:text-xs font-bold text-[#4A4A5A] px-2.5 py-1 rounded-xl shadow-xs hover:scale-105 hover:bg-[#FFEFE8] transition-all flex items-center gap-1 cursor-pointer"
             title="Lihat Pustaka Vault"
           >
             <Pin className="w-3 h-3 text-[#D97736]" />
             <span>{savedLinks.length} Disimpan</span>
           </button>
 
-          {/* 3. Television Hotspot (Center Console) */}
+          {/* 3. Television Screen Badge (Center Console) */}
           <div
             onClick={() => onNavigate('vault')}
-            className="absolute top-[38%] left-[34%] sm:left-[36%] z-15 max-w-[140px] sm:max-w-[180px] bg-white/90 backdrop-blur-md border border-[#DCD6F3] rounded-xl px-2 py-1 shadow-xs hover:scale-105 transition-all cursor-pointer truncate"
+            className="absolute top-[41%] left-[36%] sm:left-[38%] z-15 max-w-[130px] sm:max-w-[160px] bg-white/90 backdrop-blur-md border border-[#DCD6F3] rounded-xl px-2 py-0.5 shadow-xs hover:scale-105 transition-all cursor-pointer truncate"
             title="Buka Video Terbaru di Vault"
           >
             <div className="flex items-center gap-1 text-[9px] sm:text-[10px] font-bold text-[#7161BF]">
               <Tv className="w-2.5 h-2.5 flex-shrink-0" />
               <span className="truncate">{latestSavedLink ? latestSavedLink.title : 'Play Video'}</span>
             </div>
-          </div>
-
-          {/* 4. Live Clock & Calendar Display Hotspot */}
-          <div className="absolute top-[18%] left-[30%] sm:left-[32%] z-15 text-[10px] font-bold text-[#5B5B6D] bg-white/80 backdrop-blur-xs px-1.5 py-0.5 rounded-md border border-[#E8DFC8]">
-            {dateStr || 'OKT 17'} • {timeStr || '12:00'}
           </div>
 
           {/* Toast Notification inside Room */}
@@ -272,29 +265,29 @@ export const PetRoom: FC<PetRoomProps> = ({
             </div>
           )}
 
-          {/* The Center Mat & Interactive Mochi */}
-          <div className="absolute bottom-[28%] sm:bottom-[26%] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-            {/* Dynamic Speech Bubble */}
-            <div className="mb-2 transition-all duration-300">
-              <div className="bg-white/95 backdrop-blur-md px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-2xl shadow-sm border border-[#EAE6DF] text-xs sm:text-sm font-semibold text-[#4A4A5A] flex items-center gap-1.5 whitespace-nowrap">
-                <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white rotate-45 border-r border-b border-[#EAE6DF]" />
-              </div>
+          {/* ONLY ONE Single Speech Bubble directly above Mochi */}
+          <div className="absolute top-[41%] sm:top-[42%] left-[49%] -translate-x-1/2 z-30 pointer-events-none transition-all duration-300">
+            <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-sm border border-[#EAE3D5] text-xs font-semibold text-[#3A3340] flex items-center gap-1.5 whitespace-nowrap animate-fade-in">
+              <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
             </div>
-
-            {/* Mochi Pet Character */}
-            <MochiPet pet={pet} onPetClick={handlePetTap} speechText="" />
           </div>
 
-          {/* Floating Snack Bubble (Like in reference screenshot!) */}
-          <div className="absolute bottom-[28%] left-[22%] sm:left-[26%] z-25 anim-float-bubble">
+          {/* The Center Mat & Proportional 3D Mochi */}
+          <div className="absolute top-[48%] sm:top-[49%] left-[49%] -translate-x-1/2 z-20 flex flex-col items-center">
+            {/* 3D Clay Mochi Character (Scaled to fit comfortably inside the rug) */}
+            <MochiPet pet={pet} onPetClick={handlePetTap} showBubble={false} />
+          </div>
+
+          {/* Floating Snack Bubble (Clean placement to the lower-left of the rug) */}
+          <div className="absolute top-[58%] sm:top-[57%] left-[27%] sm:left-[30%] z-25 anim-float-bubble">
             <button
               onClick={handleFeedClick}
               disabled={isFull || isFeeding}
-              className={`group relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl backdrop-blur-md shadow-md border transition-all cursor-pointer ${
+              className={`group relative w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl backdrop-blur-md shadow-md border transition-all cursor-pointer ${
                 isFull
                   ? 'bg-white/60 border-gray-300 opacity-60 cursor-not-allowed'
-                  : 'bg-white/80 border-[#FED7C5] hover:scale-110 active:scale-95 shadow-[#F4A261]/20'
+                  : 'bg-white/85 border-[#FED7C5] hover:scale-110 active:scale-95 shadow-[#F4A261]/25'
               }`}
               title={isFull ? 'Mochi sudah kenyang!' : 'Beri Mochi camilan onigiri (+25 XP)'}
             >
@@ -303,7 +296,7 @@ export const PetRoom: FC<PetRoomProps> = ({
               <span className="relative z-10 transition-transform group-hover:scale-110">🍙</span>
 
               {/* Little Hint Badge */}
-              <span className="absolute -bottom-1.5 bg-[#D97736] text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-xs">
+              <span className="absolute -bottom-1 bg-[#D97736] text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-xs">
                 +25
               </span>
             </button>

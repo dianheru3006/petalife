@@ -81,6 +81,29 @@
   transform-origin: bottom center;
 }
 
+@keyframes mochi-hop {
+  0% {
+    transform: scale(1, 1) translateY(0);
+  }
+  20% {
+    transform: scale(1.12, 0.88) translateY(2px);
+  }
+  45% {
+    transform: scale(0.92, 1.08) translateY(-14px);
+  }
+  70% {
+    transform: scale(1.04, 0.96) translateY(0);
+  }
+  100% {
+    transform: scale(1, 1) translateY(0);
+  }
+}
+
+.anim-mochi-hop {
+  animation: mochi-hop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom center;
+}
+
 .anim-mochi-eating {
   animation: mochi-chew 0.5s ease-in-out 3;
   transform-origin: bottom center;
