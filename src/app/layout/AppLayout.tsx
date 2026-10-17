@@ -3,6 +3,7 @@ import type { NavigationTab, Pet } from '../../lib/types';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { Header } from '../../components/shared/Header';
+import { cn } from '../../lib/utils';
 
 export interface AppLayoutProps {
   currentTab: NavigationTab;
@@ -20,19 +21,25 @@ export const AppLayout: FC<AppLayoutProps> = ({
   isNightMode = false,
 }) => {
   return (
-    <div className="flex min-h-screen bg-[#FDFBF7] text-[#2E2E3A]">
+    <div
+      className={cn(
+        'flex min-h-screen text-[#2E2E3A] transition-colors duration-700 ease-out',
+        isNightMode ? 'bg-[#EBE2D6]' : 'bg-[#FDFBF7]'
+      )}
+    >
       {/* Desktop Sidebar */}
       <Sidebar
         currentTab={currentTab}
         onSelectTab={onSelectTab}
         petLevel={pet.level}
+        isNightMode={isNightMode}
       />
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header - hidden on home tab since Terrarium has its own cozy title */}
         {currentTab !== 'home' && (
-          <Header currentTab={currentTab} pet={pet} />
+          <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />
         )}
 
         {/* Page Content */}

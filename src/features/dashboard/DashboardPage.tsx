@@ -3,6 +3,7 @@ import type { Pet, SavedLink, DailyGoal, NavigationTab } from '../../lib/types';
 import { PetRoom } from '../../components/pet/PetRoom';
 import { Badge } from '../../components/ui/Badge';
 import { CheckCircle2, Circle, ArrowRight, Bookmark, Trophy, Lightbulb } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 export interface DashboardPageProps {
   pet: Pet;
@@ -48,7 +49,14 @@ export const DashboardPage: FC<DashboardPageProps> = ({
       {/* 2. Grid Section: Daily Goals & Quick Knowledge Vault */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-1 sm:px-0">
         {/* Daily Goals Card */}
-        <div className="bg-white rounded-3xl p-5 border border-[#ECE6DB] shadow-xs flex flex-col justify-between">
+        <div
+          className={cn(
+            'rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-colors duration-700 ease-out border',
+            isNightMode
+              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+              : 'bg-white border-[#ECE6DB]'
+          )}
+        >
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -74,11 +82,14 @@ export const DashboardPage: FC<DashboardPageProps> = ({
                   key={goal.id}
                   onClick={() => onToggleGoal(goal.id)}
                   aria-pressed={goal.isCompleted}
-                  className={`w-full flex items-center justify-between text-left p-2.5 rounded-2xl border cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] ${
+                  className={cn(
+                    'w-full flex items-center justify-between text-left p-2.5 rounded-2xl border cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-colors duration-700',
                     goal.isCompleted
-                      ? 'bg-[#EAF6EE]/50 border-[#CCEBD6] text-[#36955E]'
-                      : 'bg-[#FAF7F2] border-[#EFE8DD] text-[#4A4A5A] hover:bg-[#F5F0E6]'
-                  }`}
+                      ? 'bg-[#EAF6EE]/60 border-[#CCEBD6] text-[#36955E]'
+                      : isNightMode
+                        ? 'bg-[#F2EBE0] border-[#E2D8C9] text-[#4A4A5A] hover:bg-[#ECE4D8]'
+                        : 'bg-[#FAF7F2] border-[#EFE8DD] text-[#4A4A5A] hover:bg-[#F5F0E6]'
+                  )}
                 >
                   <div className="flex items-center gap-2.5 text-xs font-semibold">
                     {goal.isCompleted ? (
@@ -90,7 +101,14 @@ export const DashboardPage: FC<DashboardPageProps> = ({
                       {goal.label}
                     </span>
                   </div>
-                  <span className="text-[11px] font-bold text-[#D97736] bg-white px-2 py-0.5 rounded-full border border-[#EAE6DF]">
+                  <span
+                    className={cn(
+                      'text-[11px] font-bold text-[#D97736] px-2 py-0.5 rounded-full border transition-colors duration-700',
+                      isNightMode
+                        ? 'bg-[#F7F2E8] border-[#DDD2C2]'
+                        : 'bg-white border-[#EAE6DF]'
+                    )}
+                  >
                     +{goal.xpReward} XP
                   </span>
                 </button>
@@ -98,7 +116,12 @@ export const DashboardPage: FC<DashboardPageProps> = ({
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-[#F2ECE1] text-[11px] text-[#828292] flex items-center justify-between">
+          <div
+            className={cn(
+              'mt-4 pt-3 border-t text-[11px] text-[#828292] flex items-center justify-between transition-colors duration-700',
+              isNightMode ? 'border-[#EAE1D0]' : 'border-[#F2ECE1]'
+            )}
+          >
             <span>Resets daily at 00:00</span>
             <button
               onClick={() => onNavigate('vault')}
@@ -111,7 +134,14 @@ export const DashboardPage: FC<DashboardPageProps> = ({
         </div>
 
         {/* Recently Saved in Vault Card */}
-        <div className="bg-white rounded-3xl p-5 border border-[#ECE6DB] shadow-xs flex flex-col justify-between">
+        <div
+          className={cn(
+            'rounded-3xl p-5 shadow-xs flex flex-col justify-between transition-colors duration-700 ease-out border',
+            isNightMode
+              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+              : 'bg-white border-[#ECE6DB]'
+          )}
+        >
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -147,7 +177,12 @@ export const DashboardPage: FC<DashboardPageProps> = ({
               {savedLinks.slice(0, 2).map(link => (
                 <div
                   key={link.id}
-                  className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DD] hover:border-[#DCD6F3] transition-colors"
+                  className={cn(
+                    'p-3 rounded-2xl border transition-colors duration-700',
+                    isNightMode
+                      ? 'bg-[#F2EBE0] border-[#E2D8C9] hover:border-[#DCD6F3]'
+                      : 'bg-[#FAF7F2] border-[#EFE8DD] hover:border-[#DCD6F3]'
+                  )}
                 >
                   <div className="flex items-center justify-between text-[11px] mb-1">
                     <span className="font-bold text-[#7161BF]">{link.domain}</span>
@@ -158,7 +193,15 @@ export const DashboardPage: FC<DashboardPageProps> = ({
                   </h4>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {link.tags.slice(0, 2).map(t => (
-                      <span key={t} className="text-[10px] text-[#6B6B7E] bg-white px-1.5 py-0.5 rounded-md border border-[#EAE6DF]">
+                      <span
+                        key={t}
+                        className={cn(
+                          'text-[10px] text-[#6B6B7E] px-1.5 py-0.5 rounded-md border transition-colors duration-700',
+                          isNightMode
+                            ? 'bg-[#F7F2E8] border-[#DDD2C2]'
+                            : 'bg-white border-[#EAE6DF]'
+                        )}
+                      >
                         #{t}
                       </span>
                     ))}
@@ -169,7 +212,14 @@ export const DashboardPage: FC<DashboardPageProps> = ({
           </div>
 
           {/* Wholesome Tip Card */}
-          <div className="mt-4 p-3 rounded-2xl bg-[#FFF9F2] border border-[#FED7C5] flex items-start gap-2.5">
+          <div
+            className={cn(
+              'mt-4 p-3 rounded-2xl border flex items-start gap-2.5 transition-colors duration-700',
+              isNightMode
+                ? 'bg-[#F5ECE0] border-[#ECC8B2]'
+                : 'bg-[#FFF9F2] border-[#FED7C5]'
+            )}
+          >
             <Lightbulb className="w-4 h-4 text-[#D97736] flex-shrink-0 mt-0.5" />
             <p className="text-[11px] text-[#6B5A4A] leading-relaxed">
               <b>Mochi's Tip:</b> Don't let your bookmarks pile up! Reviewing just one short video a day keeps your memory sharp.

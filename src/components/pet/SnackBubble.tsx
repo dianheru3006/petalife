@@ -54,7 +54,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
             cx="16"
             cy="16"
             r={radius}
-            stroke={isNightMode ? '#34374D' : '#EAE2D5'}
+            stroke={isNightMode ? '#E2D9CC' : '#EAE2D5'}
             strokeWidth="2.8"
             fill="none"
           />
@@ -78,7 +78,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
         </div>
       </div>
       {showPercentage && (
-        <span className={`text-[11px] font-bold ${isNightMode ? 'text-[#DDD9E5]' : 'text-[#4A4A5A]'}`}>
+        <span className="text-[11px] font-bold text-[#4A4A5A]">
           {value}%
         </span>
       )}

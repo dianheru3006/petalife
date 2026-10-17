@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import type { FC } from 'react';
+import { cn } from '../../lib/utils';
 import type { NavigationTab, Pet } from '../../lib/types';
 
 export interface HeaderProps {
   currentTab: NavigationTab;
   pet: Pet;
+  isNightMode?: boolean;
 }
 
-export const Header: FC<HeaderProps> = ({ currentTab, pet }) => {
+export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }) => {
   const [isOnline, setIsOnline] = useState<boolean>(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -35,7 +37,14 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet }) => {
   const current = titles[currentTab] || titles.home;
 
   return (
-    <header className="w-full flex items-center justify-between py-4 px-4 sm:px-8 border-b border-[#EFEAE1] bg-[#FFFDF9]/80 backdrop-blur-xs sticky top-0 z-20">
+    <header
+      className={cn(
+        'w-full flex items-center justify-between py-4 px-4 sm:px-8 border-b backdrop-blur-xs sticky top-0 z-20 transition-colors duration-700 ease-out',
+        isNightMode
+          ? 'bg-[#F3ECE1]/85 border-[#E2D8C7]'
+          : 'bg-[#FFFDF9]/80 border-[#EFEAE1]'
+      )}
+    >
       <div className="min-w-0">
         <h2 className="text-lg sm:text-xl font-extrabold text-[#2E2E3A] truncate tracking-tight">
           {current.title}
@@ -62,7 +71,14 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet }) => {
         </div>
 
         {/* User Avatar Chip */}
-        <div className="flex items-center gap-2 bg-white border border-[#EAE6DF] pl-1 pr-3 py-1 rounded-full shadow-xs cursor-pointer hover:bg-[#F7F3E9] transition-colors">
+        <div
+          className={cn(
+            'flex items-center gap-2 border pl-1 pr-3 py-1 rounded-full shadow-xs cursor-pointer transition-colors duration-700',
+            isNightMode
+              ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:bg-[#F2ECE0]'
+              : 'bg-white border-[#EAE6DF] hover:bg-[#F7F3E9]'
+          )}
+        >
           <div className="w-7 h-7 rounded-full bg-[#DCD6F3] text-[#7161BF] font-extrabold text-xs flex items-center justify-center">
             D
           </div>

@@ -7,6 +7,7 @@ export interface SidebarProps {
   currentTab: NavigationTab;
   onSelectTab: (tab: NavigationTab) => void;
   petLevel: number;
+  isNightMode?: boolean;
 }
 
 interface NavItem {
@@ -16,7 +17,12 @@ interface NavItem {
   badge?: string;
 }
 
-export const Sidebar: FC<SidebarProps> = ({ currentTab, onSelectTab, petLevel }) => {
+export const Sidebar: FC<SidebarProps> = ({
+  currentTab,
+  onSelectTab,
+  petLevel,
+  isNightMode = false,
+}) => {
   const navItems: NavItem[] = [
     { id: 'home', label: 'Pet Room', icon: <Home className="w-5 h-5" /> },
     { id: 'vault', label: 'Content Vault', icon: <Bookmark className="w-5 h-5" />, badge: '4' },
@@ -25,7 +31,14 @@ export const Sidebar: FC<SidebarProps> = ({ currentTab, onSelectTab, petLevel })
   ];
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 bg-[#FFFDF9] border-r border-[#EFEAE1] p-5 select-none z-30">
+    <aside
+      className={cn(
+        'hidden lg:flex flex-col w-64 h-screen sticky top-0 p-5 select-none z-30 transition-colors duration-700 ease-out',
+        isNightMode
+          ? 'bg-[#F3ECE1] border-r border-[#E2D8C7]'
+          : 'bg-[#FFFDF9] border-r border-[#EFEAE1]'
+      )}
+    >
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-2 mb-8">
         <div className="w-10 h-10 rounded-2xl bg-[#FED7C5] border border-[#F4A261]/30 flex items-center justify-center text-xl shadow-xs">
@@ -52,7 +65,9 @@ export const Sidebar: FC<SidebarProps> = ({ currentTab, onSelectTab, petLevel })
                 'w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 cursor-pointer text-left',
                 isActive
                   ? 'bg-[#FED7C5]/40 text-[#7A3613] font-bold shadow-xs border border-[#FED7C5]'
-                  : 'text-[#5B5B6D] hover:bg-[#F7F3E9] hover:text-[#2E2E3A]'
+                  : isNightMode
+                    ? 'text-[#5B5B6D] hover:bg-[#EAE1D3] hover:text-[#2E2E3A]'
+                    : 'text-[#5B5B6D] hover:bg-[#F7F3E9] hover:text-[#2E2E3A]'
               )}
             >
               <div className="flex items-center gap-3">
@@ -77,9 +92,23 @@ export const Sidebar: FC<SidebarProps> = ({ currentTab, onSelectTab, petLevel })
       </nav>
 
       {/* Pet Mini Card Widget at Bottom */}
-      <div className="bg-[#FAF6EE] border border-[#EAE3D5] rounded-2xl p-3.5 mt-auto">
+      <div
+        className={cn(
+          'rounded-2xl p-3.5 mt-auto transition-colors duration-700 ease-out border',
+          isNightMode
+            ? 'bg-[#EBE2D3] border-[#DDD3C2]'
+            : 'bg-[#FAF6EE] border-[#EAE3D5]'
+        )}
+      >
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-white border border-[#EAE6DF] flex items-center justify-center text-lg shadow-xs">
+          <div
+            className={cn(
+              'w-9 h-9 rounded-xl border flex items-center justify-center text-lg shadow-xs transition-colors duration-700',
+              isNightMode
+                ? 'bg-[#F7F2E8] border-[#DFD6C6]'
+                : 'bg-white border-[#EAE6DF]'
+            )}
+          >
             ✨
           </div>
           <div className="flex-1 min-w-0">

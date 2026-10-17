@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
-import { detectPlatform } from '../../lib/utils';
+import { detectPlatform, cn } from '../../lib/utils';
 import roomBg from '../../assets/room-bg.jpg';
 import { SnackBubble, CircularMeter } from './SnackBubble';
 import { SNACK_VARIANTS } from './snackData';
@@ -285,7 +285,12 @@ export const PetRoom: FC<PetRoomProps> = ({
           <button
             type="button"
             onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#EAE3D5] text-xs font-bold text-[#D97736] shadow-xs cursor-pointer hover:bg-[#FAF7F2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95"
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#D97736] shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95 transition-colors duration-700 border',
+              activeNight
+                ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:bg-[#F2ECE0]'
+                : 'bg-white border-[#EAE3D5] hover:bg-[#FAF7F2]'
+            )}
             title={`Streak: ${pet.streakDays} hari`}
           >
             <span>🔥</span>
@@ -295,7 +300,14 @@ export const PetRoom: FC<PetRoomProps> = ({
       </div>
 
       {/* 2. Terrarium / Living Diorama Card (CRISP, NO FOG GRADIENT, BORDERED) */}
-      <div className="relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden border-2 border-[#E8DFCF] shadow-md bg-[#EEE1CD] select-none">
+      <div
+        className={cn(
+          'relative w-full aspect-[9/12] sm:aspect-[4/3] max-h-[560px] rounded-[32px] overflow-hidden select-none transition-all duration-700 ease-out border-2',
+          activeNight
+            ? 'border-[#DDD2C2] bg-[#E5D8C3] shadow-[0_16px_48px_rgba(100,80,60,0.12)]'
+            : 'border-[#E8DFCF] bg-[#EEE1CD] shadow-md'
+        )}
+      >
         {/* Background 3D Room Diorama - 100% Crisp, Pure & Warm */}
         <img
           src={roomBg}
@@ -463,7 +475,12 @@ export const PetRoom: FC<PetRoomProps> = ({
               if (quickError) setQuickError(null);
             }}
             placeholder="Tempel link di sini..."
-            className="w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full bg-white border border-[#EAE3D5] text-[#2E2E3A] placeholder-[#9E9EA8] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all"
+            className={cn(
+              'w-full text-xs sm:text-sm pl-10 pr-10 py-3 rounded-full text-[#2E2E3A] placeholder-[#9E9EA8] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
+              activeNight
+                ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-white'
+                : 'bg-white border-[#EAE3D5]'
+            )}
           />
           <button
             type="button"
@@ -489,7 +506,14 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       {/* 5. Pet XP Growth & Quick Nav Access Bar */}
       <div className="pt-1">
-        <div className="bg-white rounded-3xl p-4 border border-[#ECE6DB] shadow-xs space-y-3">
+        <div
+          className={cn(
+            'rounded-3xl p-4 shadow-xs space-y-3 transition-colors duration-700 ease-out border',
+            activeNight
+              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
+              : 'bg-white border-[#ECE6DB]'
+          )}
+        >
           <div className="flex justify-between items-center text-xs font-bold text-[#4A4A5A]">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#F4A261]" />
@@ -505,12 +529,20 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
 
           {/* Quick Shortcuts */}
-          <div className="pt-2 border-t border-[#F2ECE1] flex items-center justify-between text-xs text-[#6B6B7E]">
+          <div
+            className={cn(
+              'pt-2 border-t flex items-center justify-between text-xs text-[#6B6B7E] transition-colors duration-700',
+              activeNight ? 'border-[#EAE1D0]' : 'border-[#F2ECE1]'
+            )}
+          >
             <span className="font-semibold text-[#4A4A5A]">Akses Cepat:</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onNavigate('vault')}
-                className="flex items-center gap-1 hover:text-[#D97736] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+                className={cn(
+                  'flex items-center gap-1 hover:text-[#D97736] transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium',
+                  activeNight ? 'hover:bg-[#EFE8DA]' : 'hover:bg-[#FAF7F2]'
+                )}
               >
                 <BookmarkPlus className="w-3.5 h-3.5" />
                 <span>Vault ({savedLinks.length})</span>
@@ -518,7 +550,10 @@ export const PetRoom: FC<PetRoomProps> = ({
               <span>•</span>
               <button
                 onClick={() => onNavigate('assistant')}
-                className="flex items-center gap-1 hover:text-[#7161BF] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+                className={cn(
+                  'flex items-center gap-1 hover:text-[#7161BF] transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium',
+                  activeNight ? 'hover:bg-[#EFE8DA]' : 'hover:bg-[#FAF7F2]'
+                )}
               >
                 <Bot className="w-3.5 h-3.5" />
                 <span>AI Asisten</span>
@@ -526,7 +561,10 @@ export const PetRoom: FC<PetRoomProps> = ({
               <span>•</span>
               <button
                 onClick={() => onNavigate('notes')}
-                className="flex items-center gap-1 hover:text-[#36955E] transition-colors py-1 px-2 rounded-lg hover:bg-[#FAF7F2] cursor-pointer font-medium"
+                className={cn(
+                  'flex items-center gap-1 hover:text-[#36955E] transition-colors py-1 px-2 rounded-lg cursor-pointer font-medium',
+                  activeNight ? 'hover:bg-[#EFE8DA]' : 'hover:bg-[#FAF7F2]'
+                )}
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Catatan ({notesCount})</span>
