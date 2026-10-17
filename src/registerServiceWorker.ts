@@ -5,7 +5,25 @@
  */
 export function registerServiceWorker(): void {
   if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    // Only register in production or when explicitly enabled to prevent interfering with Vite HMR
+    // In development mode, aggressively unregister any existing service worker and purge caches
+    // to prevent stale production caches from hijacking Vite dev server / node_modules modules
+    if (import.meta.env.DEV) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const reg of registrations) {
+          reg.unregister();
+        }
+      });
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          for (const name of names) {
+            caches.delete(name);
+          }
+        });
+      }
+      return;
+    }
+
+    // Only register in production or when explicitly enabled
     if (import.meta.env.PROD) {
       window.addEventListener('load', () => {
         // Resolve sw.js relative to current base path to support subdirectories (e.g. /petalife/)

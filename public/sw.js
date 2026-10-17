@@ -50,6 +50,19 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
+  // Completely bypass Service Worker on localhost or for Vite dev paths to prevent breaking Vite HMR
+  if (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.pathname.includes('/node_modules/') ||
+    url.pathname.includes('/@vite/') ||
+    url.pathname.includes('/@fs/') ||
+    url.pathname.includes('/src/') ||
+    url.search.includes('v=')
+  ) {
+    return;
+  }
+
   // Ignore cross-origin non-GET or browser extension schemes
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
