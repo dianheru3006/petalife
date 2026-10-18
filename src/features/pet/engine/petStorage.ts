@@ -2,7 +2,7 @@ import type { Pet } from '../../../lib/types';
 import { calculateTimeDecay } from './petEngine';
 
 export const PET_STORAGE_KEY = 'PETALIFE_PET_STATE_V1';
-export const PET_STORAGE_VERSION = 1;
+export const PET_STORAGE_VERSION = 2;
 
 export interface StoredPetEnvelope {
   version: number;
@@ -69,7 +69,7 @@ function isValidPet(obj: unknown): obj is Pet {
 
 /**
  * Loads pet state from storage with version validation,
- * corruption fallback, and automatic time decay calculation.
+ * seamless v1 to v2 migration, corruption fallback, and time decay calculation.
  */
 export function loadStoredPet(
   defaultPet: Pet,
@@ -81,15 +81,36 @@ export function loadStoredPet(
     if (!raw) {
       const initializedPet: Pet = {
         ...defaultPet,
+        hunger: Math.max(50, defaultPet.hunger),
+        energy: Math.max(35, defaultPet.energy),
+        isSleeping: false,
+        sleepSchedule: { startHour: 23, endHour: 7 },
         lastDecayAt: now,
         lastActiveAt: now,
         lastFedAt: now,
+        version: PET_STORAGE_VERSION,
       };
       saveStoredPet(initializedPet, now, storage);
       return { pet: initializedPet, hasDecayed: false, isFirstRun: true };
     }
 
     const parsed = JSON.parse(raw) as StoredPetEnvelope;
+
+    // Migration: Upgrade legacy v1 envelope to v2 seamlessly without losing level, exp, or streak
+    if (parsed && parsed.version === 1 && isValidPet(parsed.pet)) {
+      const migratedPet: Pet = {
+        ...parsed.pet,
+        hunger: Math.max(50, parsed.pet.hunger),
+        energy: Math.max(35, parsed.pet.energy),
+        isSleeping: false,
+        sleepSchedule: { startHour: 23, endHour: 7 },
+        lastDecayAt: now,
+        lastActiveAt: now,
+        version: PET_STORAGE_VERSION,
+      };
+      saveStoredPet(migratedPet, now, storage);
+      return { pet: migratedPet, hasDecayed: false, isFirstRun: false };
+    }
 
     // Validate version and data integrity
     if (!parsed || parsed.version !== PET_STORAGE_VERSION || !isValidPet(parsed.pet)) {
@@ -99,8 +120,9 @@ export function loadStoredPet(
 
     // Apply time decay based on elapsed real-world time
     const initialHunger = parsed.pet.hunger;
+    const initialEnergy = parsed.pet.energy;
     const decayedPet = calculateTimeDecay(parsed.pet, now);
-    const hasDecayed = decayedPet.hunger < initialHunger;
+    const hasDecayed = decayedPet.hunger < initialHunger || decayedPet.energy < initialEnergy;
 
     return {
       pet: decayedPet,
@@ -122,13 +144,15 @@ export function saveStoredPet(
   storage: Storage = getStorage()
 ): boolean {
   try {
+    const isSleeping = Boolean(pet.isSleeping || pet.state === 'sleeping');
     const envelope: StoredPetEnvelope = {
       version: PET_STORAGE_VERSION,
       pet: {
         ...pet,
-        // Reset transient animation state before saving to disk
-        state: pet.state === 'feeding' ? 'idle' : pet.state,
+        isSleeping,
+        state: isSleeping ? 'sleeping' : pet.state === 'feeding' ? 'idle' : pet.state,
         lastActiveAt: now,
+        version: PET_STORAGE_VERSION,
       },
       savedAt: now,
     };

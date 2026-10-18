@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
-import { feedPet, awardXp, calculateTimeDecay } from './features/pet/engine/petEngine';
+import { feedPet, awardXp, calculateTimeDecay, togglePetSleep } from './features/pet/engine/petEngine';
 import { loadStoredPet, saveStoredPet } from './features/pet/engine/petStorage';
 import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksRepository';
 import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
 import { initializeDatabase } from './lib/db/seed';
-import { recordRewardClaim, claimDailyLinkReward, type LinkRewardResult } from './lib/db/rewardLedgerRepository';
+import {
+  recordRewardClaim,
+  claimDailyLinkReward,
+  claimDailyReviewReward,
+  claimDailyNoteReward,
+  claimLearningVarietyBonus,
+  type LinkRewardResult
+} from './lib/db/rewardLedgerRepository';
 import { queryAssistant } from './features/assistant/engine/assistantEngine';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
@@ -31,7 +38,22 @@ export function App() {
   const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(() => loadStoredDailyGoals());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [storageError, setStorageError] = useState<string | null>(null);
-  const [isNightMode, setIsNightMode] = useState<boolean>(false);
+  const [isNightMode, setIsNightMode] = useState<boolean>(() => Boolean(pet.isSleeping));
+
+  // Sync night mode when pet sleep state changes
+  useEffect(() => {
+    if (Boolean(pet.isSleeping) !== isNightMode) {
+      setIsNightMode(Boolean(pet.isSleeping));
+    }
+  }, [pet.isSleeping]);
+
+  const handleToggleNightMode = () => {
+    setPet(prev => {
+      const updated = togglePetSleep(prev);
+      setIsNightMode(Boolean(updated.isSleeping));
+      return updated;
+    });
+  };
 
   // Re-check and rollover daily habits when date crosses midnight without manual reload
   const activeDateRef = useRef<string>(getTodayDateString());
@@ -153,17 +175,21 @@ export function App() {
     });
   };
 
-  // 1. Feeding Interaction via Engine
+  // 1. Feeding Interaction via Engine (Sol Economy: +5 XP for 1st daily care, 0 XP for repeats)
   const handleFeedPet = () => {
     setPet(prev => {
-      const result = feedPet(prev);
+      const todayKey = getTodayDateString();
+      const result = feedPet(prev, Date.now(), todayKey);
       if (!result.success) {
         return prev;
       }
 
-      // Return to idle after feeding animation completes
+      // Return to idle (or sleeping if pet was sleeping) after feeding animation completes
       setTimeout(() => {
-        setPet(current => ({ ...current, state: 'idle' }));
+        setPet(current => ({
+          ...current,
+          state: current.isSleeping ? 'sleeping' : 'idle',
+        }));
       }, 1600);
 
       return result.pet;
@@ -173,17 +199,21 @@ export function App() {
     fulfillDailyGoal('goal-2');
   };
 
-  // 3. Vault Actions with IndexedDB Persistence
+  // 3. Vault Actions with IndexedDB Persistence & Sol XP Economy (5 XP per link save, max 2/day)
   const handleAddLink = async (newLink: SavedLink): Promise<LinkRewardResult> => {
     try {
       const created = await createLink(newLink);
       setSavedLinks(prev => [created, ...prev]);
 
-      // Daily limit on link save XP rewards (enforcing max 3 rewarded links per local date)
       const todayKey = getTodayDateString();
-      const rewardResult = await claimDailyLinkReward(created.id, todayKey, 3);
+      const rewardResult = await claimDailyLinkReward(created.id, todayKey, 2);
       if (rewardResult.awarded) {
         setPet(prev => awardXp(prev, rewardResult.xpAwarded).pet);
+        // Check learning variety bonus (10 XP if 2 distinct learning categories today)
+        const varietyResult = await claimLearningVarietyBonus(todayKey);
+        if (varietyResult.awarded) {
+          setPet(prev => awardXp(prev, varietyResult.xpAwarded).pet);
+        }
       }
 
       await fulfillDailyGoal('goal-1');
@@ -222,21 +252,31 @@ export function App() {
         fulfillDailyGoal('goal-3');
       }
 
-      // Phase 3C: Reward Mochi with +10 XP if user mastered the material (and not already rewarded)
+      // Sol Economy: Reward Mochi with +10 XP when material review is completed (max 2/day)
       if (status === 'completed') {
-        const isNew = await recordRewardClaim(`link_mastered:${id}`, 'link_mastered', id, 10);
-        if (isNew) {
+        const todayKey = getTodayDateString();
+        const reviewResult = await claimDailyReviewReward(id, todayKey, 2);
+        if (reviewResult.awarded) {
           setPet(prev => {
-            const awardResult = awardXp(prev, 10);
+            const awardResult = awardXp(prev, reviewResult.xpAwarded);
             return {
               ...awardResult.pet,
-              mood: Math.min(100, awardResult.pet.mood + 10),
+              mood: Math.min(100, awardResult.pet.mood + 5),
               state: 'happy',
             };
           });
           setTimeout(() => {
-            setPet(current => ({ ...current, state: 'idle' }));
+            setPet(current => ({
+              ...current,
+              state: current.isSleeping ? 'sleeping' : 'idle',
+            }));
           }, 1800);
+
+          // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
+          const varietyResult = await claimLearningVarietyBonus(todayKey);
+          if (varietyResult.awarded) {
+            setPet(prev => awardXp(prev, varietyResult.xpAwarded).pet);
+          }
         }
       }
     } catch (err) {
@@ -244,12 +284,24 @@ export function App() {
     }
   };
 
-  // 4. Notes Actions with IndexedDB Persistence
+  // 4. Notes Actions with IndexedDB Persistence & Sol XP Economy (15 XP per note, max 2/day)
   const handleAddNote = async (newNote: Note) => {
     try {
       const created = await createNote(newNote);
       setNotes(prev => [created, ...prev]);
-      setPet(prev => awardXp(prev, 15).pet);
+
+      const todayKey = getTodayDateString();
+      const noteReward = await claimDailyNoteReward(created.id, todayKey, 2);
+      if (noteReward.awarded) {
+        setPet(prev => awardXp(prev, noteReward.xpAwarded).pet);
+
+        // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
+        const varietyResult = await claimLearningVarietyBonus(todayKey);
+        if (varietyResult.awarded) {
+          setPet(prev => awardXp(prev, varietyResult.xpAwarded).pet);
+        }
+      }
+
       await fulfillDailyGoal('goal-4');
     } catch (err) {
       console.error('[App] Failed to save note to repository:', err);
@@ -381,7 +433,7 @@ export function App() {
             onAddLink={handleAddLink}
             notesCount={notes.length}
             isNightMode={isNightMode}
-            onToggleNightMode={() => setIsNightMode(prev => !prev)}
+            onToggleNightMode={handleToggleNightMode}
           />
         )}
 

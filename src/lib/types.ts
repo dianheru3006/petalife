@@ -5,14 +5,21 @@ export interface Pet {
   level: number;
   exp: number;
   expToNextLevel: number;
-  hunger: number; // 0 - 100
-  mood: number;   // 0 - 100
-  energy: number; // 0 - 100
+  hunger: number; // 0 - 100 (Satiety / Tingkat Kenyang: min 50 di Safe Haven)
+  mood: number;   // 0 - 100 (Afeksi dasar)
+  energy: number; // 0 - 100 (Energi / Stamina: min 35 di Safe Haven)
   state: 'idle' | 'feeding' | 'happy' | 'sleeping';
   streakDays: number;
   lastFedAt?: number;
   lastActiveAt?: number;
   lastDecayAt?: number;
+  isSleeping?: boolean;
+  sleepSchedule?: {
+    startHour: number; // e.g. 23 (23:00)
+    endHour: number;   // e.g. 7 (07:00)
+  };
+  lastCareDate?: string; // YYYY-MM-DD
+  version?: number;
 }
 
 export type PlatformType = 'youtube' | 'tiktok' | 'instagram' | 'web';
@@ -76,7 +83,7 @@ export interface DailyGoal {
 
 export interface RewardLedgerEntry {
   id: string; // e.g. "quiz:quiz-1", "link_mastered:link-1", "goal:2026-10-17:goal-2", "link_save:2026-10-17:link-1"
-  category: 'quiz' | 'habit' | 'link_mastered' | 'link_save';
+  category: 'quiz' | 'habit' | 'link_mastered' | 'link_save' | 'link_review' | 'note_save' | 'daily_care' | 'learning_variety';
   entityId: string;
   xpAwarded: number;
   awardedAt: number;

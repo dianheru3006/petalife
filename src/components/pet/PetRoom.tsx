@@ -17,7 +17,7 @@ import {
   ArrowRight,
   PawPrint,
 } from 'lucide-react';
-import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
+import { canFeedPet, getPetContextualStatus, getDisplayStats } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
 import { detectPlatform, cn, getUserDisplayName } from '../../lib/utils';
 import roomBg from '../../assets/room-bg.jpg';
@@ -52,6 +52,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   const isFull = !canFeedPet(pet);
   const isFeeding = pet.state === 'feeding';
   const contextualStatus = getPetContextualStatus(pet);
+  const displayStats = getDisplayStats(pet);
 
   // Dynamic Snack Variety (cycles through Onigiri, Cake, Dango, Baozi, Pancake, Cookie, Pudding, Peach)
   const [snackIndex, setSnackIndex] = useState(0);
@@ -744,19 +745,19 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Left: Circular Progress Rings & Life Stage Badge */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <CircularMeter
-              value={pet.hunger}
+              value={displayStats.hunger}
               color="#D97736"
               iconType="hunger"
               label="Lapar / Makanan"
             />
             <CircularMeter
-              value={pet.mood}
+              value={displayStats.mood}
               color="#E57399"
               iconType="mood"
               label="Senang / Afeksi"
             />
             <CircularMeter
-              value={pet.energy}
+              value={displayStats.energy}
               color="#57B37C"
               iconType="energy"
               label="Energi / Segar"

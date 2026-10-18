@@ -60,12 +60,12 @@ export interface LinkRewardResult {
 }
 
 /**
- * Atomically claims XP for saving a link, enforcing a strict cap of maxDailyClaims (default 3) per local date.
+ * Atomically claims XP for saving a link, enforcing a strict cap of maxDailyClaims (default 2, 5 XP) per local date.
  */
 export async function claimDailyLinkReward(
   linkId: string,
   todayKey: string,
-  maxDailyClaims = 3,
+  maxDailyClaims = 2,
   database: PetalifeDatabase = db
 ): Promise<LinkRewardResult> {
   const ledgerKey = `link_save:${todayKey}:${linkId}`;
@@ -89,10 +89,54 @@ export async function claimDailyLinkReward(
         return { awarded: false, xpAwarded: 0, countToday: todayCount, reason: 'daily_cap_reached' };
       }
 
-      // 3. Under cap: Record claim in transaction
+      // 3. Under cap: Record claim in transaction (Sol Economy: 5 XP)
       const entry: RewardLedgerEntry = {
         id: ledgerKey,
         category: 'link_save',
+        entityId: linkId,
+        xpAwarded: 5,
+        awardedAt: Date.now(),
+      };
+      await database.rewardLedger.add(entry);
+      return { awarded: true, xpAwarded: 5, countToday: todayCount + 1 };
+    });
+  } catch (err) {
+    console.error('[RewardLedger] Failed to claim daily link reward:', err);
+    return { awarded: false, xpAwarded: 0, countToday: 0, reason: 'storage_error' };
+  }
+}
+
+/**
+ * Atomically claims XP for completing a review on a saved material (Sol Economy: 10 XP, max 2/day).
+ */
+export async function claimDailyReviewReward(
+  linkId: string,
+  todayKey: string,
+  maxDailyClaims = 2,
+  database: PetalifeDatabase = db
+): Promise<LinkRewardResult> {
+  const ledgerKey = `link_review:${todayKey}:${linkId}`;
+  try {
+    return await database.transaction('rw', database.rewardLedger, async () => {
+      const existing = await database.rewardLedger.get(ledgerKey);
+      if (existing) {
+        const todayCount = await database.rewardLedger
+          .filter(r => r.category === 'link_review' && r.id.startsWith(`link_review:${todayKey}:`))
+          .count();
+        return { awarded: false, xpAwarded: 0, countToday: todayCount, reason: 'already_claimed' };
+      }
+
+      const todayCount = await database.rewardLedger
+        .filter(r => r.category === 'link_review' && r.id.startsWith(`link_review:${todayKey}:`))
+        .count();
+
+      if (todayCount >= maxDailyClaims) {
+        return { awarded: false, xpAwarded: 0, countToday: todayCount, reason: 'daily_cap_reached' };
+      }
+
+      const entry: RewardLedgerEntry = {
+        id: ledgerKey,
+        category: 'link_review',
         entityId: linkId,
         xpAwarded: 10,
         awardedAt: Date.now(),
@@ -101,7 +145,97 @@ export async function claimDailyLinkReward(
       return { awarded: true, xpAwarded: 10, countToday: todayCount + 1 };
     });
   } catch (err) {
-    console.error('[RewardLedger] Failed to claim daily link reward:', err);
+    console.error('[RewardLedger] Failed to claim daily review reward:', err);
+    return { awarded: false, xpAwarded: 0, countToday: 0, reason: 'storage_error' };
+  }
+}
+
+/**
+ * Atomically claims XP for creating a reflection note (Sol Economy: 15 XP, max 2/day).
+ */
+export async function claimDailyNoteReward(
+  noteId: string,
+  todayKey: string,
+  maxDailyClaims = 2,
+  database: PetalifeDatabase = db
+): Promise<LinkRewardResult> {
+  const ledgerKey = `note_save:${todayKey}:${noteId}`;
+  try {
+    return await database.transaction('rw', database.rewardLedger, async () => {
+      const existing = await database.rewardLedger.get(ledgerKey);
+      if (existing) {
+        const todayCount = await database.rewardLedger
+          .filter(r => r.category === 'note_save' && r.id.startsWith(`note_save:${todayKey}:`))
+          .count();
+        return { awarded: false, xpAwarded: 0, countToday: todayCount, reason: 'already_claimed' };
+      }
+
+      const todayCount = await database.rewardLedger
+        .filter(r => r.category === 'note_save' && r.id.startsWith(`note_save:${todayKey}:`))
+        .count();
+
+      if (todayCount >= maxDailyClaims) {
+        return { awarded: false, xpAwarded: 0, countToday: todayCount, reason: 'daily_cap_reached' };
+      }
+
+      const entry: RewardLedgerEntry = {
+        id: ledgerKey,
+        category: 'note_save',
+        entityId: noteId,
+        xpAwarded: 15,
+        awardedAt: Date.now(),
+      };
+      await database.rewardLedger.add(entry);
+      return { awarded: true, xpAwarded: 15, countToday: todayCount + 1 };
+    });
+  } catch (err) {
+    console.error('[RewardLedger] Failed to claim daily note reward:', err);
+    return { awarded: false, xpAwarded: 0, countToday: 0, reason: 'storage_error' };
+  }
+}
+
+/**
+ * Checks and awards 10 XP variety bonus if user completed at least 2 distinct learning action types today.
+ */
+export async function claimLearningVarietyBonus(
+  todayKey: string,
+  database: PetalifeDatabase = db
+): Promise<LinkRewardResult> {
+  const ledgerKey = `variety_bonus:${todayKey}`;
+  try {
+    return await database.transaction('rw', database.rewardLedger, async () => {
+      const existing = await database.rewardLedger.get(ledgerKey);
+      if (existing) {
+        return { awarded: false, xpAwarded: 0, countToday: 1, reason: 'already_claimed' };
+      }
+
+      const todayEntries = await database.rewardLedger
+        .filter(r => r.id.includes(`:${todayKey}:`))
+        .toArray();
+
+      const learningCategories = new Set(
+        todayEntries
+          .map(e => e.category)
+          .filter(cat => cat === 'link_save' || cat === 'link_review' || cat === 'note_save' || cat === 'quiz')
+      );
+
+      // If at least 2 distinct learning categories were performed today
+      if (learningCategories.size >= 2) {
+        const entry: RewardLedgerEntry = {
+          id: ledgerKey,
+          category: 'learning_variety',
+          entityId: todayKey,
+          xpAwarded: 10,
+          awardedAt: Date.now(),
+        };
+        await database.rewardLedger.add(entry);
+        return { awarded: true, xpAwarded: 10, countToday: 1 };
+      }
+
+      return { awarded: false, xpAwarded: 0, countToday: 0 };
+    });
+  } catch (err) {
+    console.error('[RewardLedger] Failed to claim learning variety bonus:', err);
     return { awarded: false, xpAwarded: 0, countToday: 0, reason: 'storage_error' };
   }
 }

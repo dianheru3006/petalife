@@ -5,6 +5,9 @@ import {
   hasRewardBeenClaimed,
   recordRewardClaim,
   claimDailyLinkReward,
+  claimDailyReviewReward,
+  claimDailyNoteReward,
+  claimLearningVarietyBonus,
   getClaimedQuizQuestionIds,
   recordQuizAttempt,
   getQuizHistory,
@@ -49,42 +52,62 @@ describe('Reward Ledger & Quiz History (Phase 3B)', () => {
     expect(claimedQuizIds.has('link-1')).toBe(false); // different category
   });
 
-  it('enforces maximum 3 link save XP rewards per day and resets on next day', async () => {
+  it('enforces maximum 2 link save XP rewards (5 XP each) per day and resets on next day', async () => {
     const today = '2026-10-17';
     const tomorrow = '2026-10-18';
 
     // 1st link today
-    const res1 = await claimDailyLinkReward('link-1', today, 3, testDb);
+    const res1 = await claimDailyLinkReward('link-1', today, 2, testDb);
     expect(res1.awarded).toBe(true);
-    expect(res1.xpAwarded).toBe(10);
+    expect(res1.xpAwarded).toBe(5);
     expect(res1.countToday).toBe(1);
 
     // Duplicate link-1 today
-    const resDup = await claimDailyLinkReward('link-1', today, 3, testDb);
+    const resDup = await claimDailyLinkReward('link-1', today, 2, testDb);
     expect(resDup.awarded).toBe(false);
     expect(resDup.reason).toBe('already_claimed');
 
-    // 2nd link today
-    const res2 = await claimDailyLinkReward('link-2', today, 3, testDb);
+    // 2nd link today (hits limit of 2)
+    const res2 = await claimDailyLinkReward('link-2', today, 2, testDb);
     expect(res2.awarded).toBe(true);
+    expect(res2.xpAwarded).toBe(5);
     expect(res2.countToday).toBe(2);
 
-    // 3rd link today (hits limit)
-    const res3 = await claimDailyLinkReward('link-3', today, 3, testDb);
-    expect(res3.awarded).toBe(true);
-    expect(res3.countToday).toBe(3);
-
-    // 4th link today (rejected by cap)
-    const res4 = await claimDailyLinkReward('link-4', today, 3, testDb);
-    expect(res4.awarded).toBe(false);
-    expect(res4.xpAwarded).toBe(0);
-    expect(res4.reason).toBe('daily_cap_reached');
-    expect(res4.countToday).toBe(3);
+    // 3rd link today (rejected by cap)
+    const res3 = await claimDailyLinkReward('link-3', today, 2, testDb);
+    expect(res3.awarded).toBe(false);
+    expect(res3.xpAwarded).toBe(0);
+    expect(res3.reason).toBe('daily_cap_reached');
+    expect(res3.countToday).toBe(2);
 
     // Tomorrow: Cap resets cleanly
-    const resTomorrow = await claimDailyLinkReward('link-5', tomorrow, 3, testDb);
+    const resTomorrow = await claimDailyLinkReward('link-4', tomorrow, 2, testDb);
     expect(resTomorrow.awarded).toBe(true);
     expect(resTomorrow.countToday).toBe(1);
+  });
+
+  it('records review and note rewards and triggers learning variety bonus', async () => {
+    const today = '2026-10-17';
+
+    // Review reward (10 XP, max 2/day)
+    const rev1 = await claimDailyReviewReward('link-1', today, 2, testDb);
+    expect(rev1.awarded).toBe(true);
+    expect(rev1.xpAwarded).toBe(10);
+
+    // Note reward (15 XP, max 2/day)
+    const note1 = await claimDailyNoteReward('note-1', today, 2, testDb);
+    expect(note1.awarded).toBe(true);
+    expect(note1.xpAwarded).toBe(15);
+
+    // Variety bonus (10 XP when >= 2 distinct learning categories present: review + note)
+    const bonus = await claimLearningVarietyBonus(today, testDb);
+    expect(bonus.awarded).toBe(true);
+    expect(bonus.xpAwarded).toBe(10);
+
+    // Attempting bonus again today is idempotent
+    const bonusDup = await claimLearningVarietyBonus(today, testDb);
+    expect(bonusDup.awarded).toBe(false);
+    expect(bonusDup.reason).toBe('already_claimed');
   });
 
   it('records and orders quiz attempt history', async () => {

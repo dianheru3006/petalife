@@ -39,9 +39,9 @@ describe('Virtual Pet Engine - pure functions', () => {
       expect(clampStat(100)).toBe(100);
     });
 
-    it('handles NaN and decimals gracefully', () => {
+    it('handles NaN and decimals gracefully while preserving float precision', () => {
       expect(clampStat(NaN)).toBe(0);
-      expect(clampStat(42.6)).toBe(43);
+      expect(clampStat(42.6)).toBe(42.6);
     });
   });
 
@@ -89,94 +89,189 @@ describe('Virtual Pet Engine - pure functions', () => {
     });
   });
 
-  describe('canFeedPet & feedPet', () => {
-    it('allows feeding when hunger is under 100', () => {
-      expect(canFeedPet({ ...mockPet, hunger: 90 })).toBe(true);
+  describe('canFeedPet & feedPet (Sol SPK)', () => {
+    it('allows feeding when hunger is <= 80', () => {
+      expect(canFeedPet({ ...mockPet, hunger: 70 })).toBe(true);
+      expect(canFeedPet({ ...mockPet, hunger: 80 })).toBe(true);
     });
 
-    it('disallows feeding when pet is completely full (hunger >= 100)', () => {
+    it('disallows feeding when pet is satiated (hunger > 80)', () => {
+      expect(canFeedPet({ ...mockPet, hunger: 81 })).toBe(false);
       expect(canFeedPet({ ...mockPet, hunger: 100 })).toBe(false);
     });
 
-    it('successfully feeds pet, raises stats, and awards 25 XP', () => {
+    it('successfully feeds pet: +20 hunger, +3 mood, 5 XP on first daily care', () => {
       const now = Date.now();
-      const result = feedPet({ ...mockPet, hunger: 50, mood: 50 }, now);
+      const todayKey = '2026-10-18';
+      const result = feedPet({ ...mockPet, hunger: 50, mood: 50, lastCareDate: '2026-10-17' }, now, todayKey);
 
       expect(result.success).toBe(true);
-      expect(result.pet.hunger).toBe(65); // 50 + 15
-      expect(result.pet.mood).toBe(60);   // 50 + 10
-      expect(result.pet.exp).toBe(25);    // 0 + 25
+      expect(result.pet.hunger).toBe(70); // 50 + 20
+      expect(result.pet.mood).toBe(53);   // 50 + 3
+      expect(result.pet.exp).toBe(5);     // 0 + 5 (first care of the day)
+      expect(result.isFirstCareToday).toBe(true);
       expect(result.pet.state).toBe('feeding');
       expect(result.pet.lastFedAt).toBe(now);
+      expect(result.pet.lastCareDate).toBe(todayKey);
     });
 
-    it('clamps hunger to 100 on feeding near maximum', () => {
-      const result = feedPet({ ...mockPet, hunger: 95 });
+    it('awards 0 XP on repeat feeding on the same date', () => {
+      const now = Date.now();
+      const todayKey = '2026-10-18';
+      const initial: Pet = {
+        ...mockPet,
+        hunger: 50,
+        mood: 50,
+        exp: 20,
+        lastCareDate: todayKey, // Already cared today
+        lastFedAt: now - 5000,
+      };
+
+      const result = feedPet(initial, now, todayKey);
       expect(result.success).toBe(true);
-      expect(result.pet.hunger).toBe(100);
+      expect(result.pet.hunger).toBe(70);
+      expect(result.pet.mood).toBe(53);
+      expect(result.pet.exp).toBe(20); // 0 XP added
+      expect(result.isFirstCareToday).toBe(false);
     });
 
-    it('rejects feeding attempt when hunger is already 100', () => {
-      const result = feedPet({ ...mockPet, hunger: 100 });
+    it('enforces 2-second cooldown on consecutive feeding calls', () => {
+      const now = Date.now();
+      const initial: Pet = {
+        ...mockPet,
+        hunger: 50,
+        lastFedAt: now - 1000, // Only 1 second ago
+      };
+
+      const result = feedPet(initial, now);
       expect(result.success).toBe(false);
-      expect(result.reason).toContain('full');
-      expect(result.pet.exp).toBe(mockPet.exp); // No XP granted
+      expect(result.reason).toContain('Tunggu sebentar');
+    });
+
+    it('clamps hunger to 100 on feeding near maximum threshold (e.g. hunger 80)', () => {
+      const result = feedPet({ ...mockPet, hunger: 80, lastFedAt: 0 });
+      expect(result.success).toBe(true);
+      expect(result.pet.hunger).toBe(100); // 80 + 20 = 100
+    });
+
+    it('rejects feeding attempt when hunger exceeds 80', () => {
+      const result = feedPet({ ...mockPet, hunger: 85 });
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('kenyang');
+      expect(result.pet.exp).toBe(mockPet.exp);
     });
   });
 
-  describe('calculateTimeDecay', () => {
-    it('decays hunger and energy based on elapsed hours', () => {
-      const startTime = 1000000;
+  describe('calculateTimeDecay & Safe Haven (Sol SPK)', () => {
+    it('decays hunger (1.25/h) and energy (2.0/h) during awake hours', () => {
+      // 12:00 PM to 4:00 PM (all awake hours)
+      const startTime = new Date('2026-10-18T12:00:00Z').getTime();
+      const fourHoursLater = startTime + 4 * 60 * 60 * 1000;
+
       const initialPet: Pet = {
         ...mockPet,
         hunger: 100,
         energy: 100,
         mood: 100,
+        isSleeping: false,
         lastDecayAt: startTime,
       };
 
-      // 4 hours elapsed (4 * 3600 * 1000 ms)
-      const fourHoursLater = startTime + 4 * 60 * 60 * 1000;
       const decayed = calculateTimeDecay(initialPet, fourHoursLater);
 
-      // Hunger loss: 4 * 5 = 20 -> 80
-      // Energy loss: 4 * 3 = 12 -> 88
-      expect(decayed.hunger).toBe(80);
-      expect(decayed.energy).toBe(88);
+      // Hunger loss: 4 * 1.25 = 5.0 -> 95
+      // Energy loss: 4 * 2.0 = 8.0 -> 92
+      expect(decayed.hunger).toBe(95);
+      expect(decayed.energy).toBe(92);
+      // Mood is not eroded permanently
+      expect(decayed.mood).toBe(100);
       expect(decayed.lastDecayAt).toBe(fourHoursLater);
     });
 
-    it('clamps decay to minimum 0 even after days of inactivity', () => {
+    it('recovers energy (10.0/h) and has slower hunger decay (0.5/h) when resting/sleeping', () => {
       const startTime = 1000000;
-      const initialPet: Pet = {
+      const fourHoursLater = startTime + 4 * 60 * 60 * 1000;
+
+      const restingPet: Pet = {
         ...mockPet,
-        hunger: 20,
-        energy: 20,
-        mood: 20,
+        hunger: 80,
+        energy: 40,
+        mood: 70,
+        isSleeping: true,
         lastDecayAt: startTime,
       };
 
-      // 100 hours later
-      const distantFuture = startTime + 100 * 60 * 60 * 1000;
-      const decayed = calculateTimeDecay(initialPet, distantFuture);
+      const decayed = calculateTimeDecay(restingPet, fourHoursLater);
 
-      expect(decayed.hunger).toBe(0);
-      expect(decayed.energy).toBe(0);
-      expect(decayed.mood).toBe(0);
+      // Hunger loss: 4 * 0.5 = 2.0 -> 78
+      // Energy gain: 4 * 10.0 = +40.0 -> 80
+      expect(decayed.hunger).toBe(78);
+      expect(decayed.energy).toBe(80);
+      expect(decayed.mood).toBe(70);
     });
 
-    it('ignores micro elapsed times under 1 minute', () => {
+    it('honors Safe Haven minimums (hunger >= 50, energy >= 35) even after days of absence', () => {
       const startTime = 1000000;
       const initialPet: Pet = {
         ...mockPet,
-        hunger: 70,
+        hunger: 60,
+        energy: 45,
+        mood: 80,
+        isSleeping: false,
         lastDecayAt: startTime,
       };
 
-      const thirtySecondsLater = startTime + 30 * 1000;
-      const decayed = calculateTimeDecay(initialPet, thirtySecondsLater);
+      // 120 hours later (5 days)
+      const distantFuture = startTime + 120 * 60 * 60 * 1000;
+      const decayed = calculateTimeDecay(initialPet, distantFuture);
 
-      expect(decayed.hunger).toBe(70);
+      // Must never drop below Safe Haven floors
+      expect(decayed.hunger).toBeGreaterThanOrEqual(50);
+      expect(decayed.energy).toBeGreaterThanOrEqual(35);
+      // Base mood preserved (no permanent death or mood zeroing)
+      expect(decayed.mood).toBe(80);
+    });
+
+    it('handles backward clock skew without corrupting stats', () => {
+      const now = 2000000;
+      const backwardNow = 1500000; // Clock moved backwards
+      const initialPet: Pet = {
+        ...mockPet,
+        hunger: 75,
+        lastDecayAt: now,
+      };
+
+      const result = calculateTimeDecay(initialPet, backwardNow);
+      expect(result.hunger).toBe(75);
+      expect(result.lastDecayAt).toBe(backwardNow);
+    });
+
+    it('produces identical display stats when processing 24h at once vs minute-by-minute', () => {
+      // Reference date: start at 12:00 (midday)
+      const start = new Date('2026-10-18T12:00:00Z').getTime();
+      const end24h = start + 24 * 60 * 60 * 1000;
+
+      const base: Pet = {
+        ...mockPet,
+        hunger: 100,
+        energy: 100,
+        mood: 100,
+        lastDecayAt: start,
+        sleepSchedule: { startHour: 23, endHour: 7 }, // 8h rest, 16h awake
+      };
+
+      // 1. Process 24 hours in a single chunk
+      const singleDecay = calculateTimeDecay(base, end24h);
+
+      // 2. Process minute-by-minute (1440 steps)
+      let stepwise = { ...base };
+      for (let m = 1; m <= 1440; m++) {
+        stepwise = calculateTimeDecay(stepwise, start + m * 60 * 1000);
+      }
+
+      // Difference between display stats must be <= 1 point
+      expect(Math.abs(Math.round(singleDecay.hunger) - Math.round(stepwise.hunger))).toBeLessThanOrEqual(1);
+      expect(Math.abs(Math.round(singleDecay.energy) - Math.round(stepwise.energy))).toBeLessThanOrEqual(1);
     });
   });
 
@@ -225,21 +320,23 @@ describe('Pet Storage Adapter - localStorage persistence', () => {
   });
 
   it('calculates decay when loading state saved hours ago', () => {
-    const savedTime = 1000000;
+    // 12:00 PM
+    const savedTime = new Date('2026-10-18T12:00:00Z').getTime();
     const petToSave: Pet = {
       ...mockPet,
       hunger: 100,
       energy: 100,
+      isSleeping: false,
       lastDecayAt: savedTime,
     };
 
     saveStoredPet(petToSave, savedTime);
 
-    // 4 hours later (4 * 5 = 20 hunger lost)
+    // 4 hours later (4 * 1.25 = 5.0 hunger lost -> 95)
     const loadTime = savedTime + 4 * 60 * 60 * 1000;
     const result = loadStoredPet(mockPet, loadTime);
 
     expect(result.hasDecayed).toBe(true);
-    expect(result.pet.hunger).toBe(80);
+    expect(result.pet.hunger).toBe(95);
   });
 });
