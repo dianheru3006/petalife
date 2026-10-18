@@ -147,7 +147,9 @@ export const PetRoom: FC<PetRoomProps> = ({
     return () => {
       clearTimeout(focusTimer);
       window.removeEventListener('keydown', handleKeyDown);
-      linkSheetTriggerRef.current?.focus();
+      requestAnimationFrame(() => {
+        linkSheetTriggerRef.current?.focus();
+      });
     };
   }, [isLinkSheetOpen]);
 
@@ -195,7 +197,9 @@ export const PetRoom: FC<PetRoomProps> = ({
     return () => {
       clearTimeout(focusTimer);
       window.removeEventListener('keydown', handleKeyDown);
-      wardrobeTriggerRef.current?.focus();
+      requestAnimationFrame(() => {
+        wardrobeTriggerRef.current?.focus();
+      });
     };
   }, [isWardrobeOpen]);
 
@@ -433,7 +437,12 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       // Auto-close sheet after successful save so user sees confirmation
       if (isLinkSheetOpen) {
-        setTimeout(() => setIsLinkSheetOpen(false), 1200);
+        setTimeout(() => {
+          setIsLinkSheetOpen(false);
+          requestAnimationFrame(() => {
+            linkSheetTriggerRef.current?.focus();
+          });
+        }, 1200);
       }
 
       // Trigger Mochi's dedicated studying & note-taking mode!
