@@ -15,6 +15,7 @@ import {
   BookmarkPlus,
   X,
   ArrowRight,
+  PawPrint,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -613,15 +614,19 @@ export const PetRoom: FC<PetRoomProps> = ({
             className={cn(
               'w-11 h-11 rounded-full shadow-md flex items-center justify-center cursor-pointer transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95',
               isFabOpen
-                ? 'bg-[#2E2E3A] text-white rotate-45 focus-visible:outline-[#2E2E3A]'
-                : 'bg-white/95 backdrop-blur-md text-[#2E2E3A] border border-[#EAE3D5] hover:bg-white focus-visible:outline-[#BA5218]'
+                ? 'bg-[#2E2E3A] text-white focus-visible:outline-[#2E2E3A]'
+                : 'bg-white/95 backdrop-blur-md text-[#BA5218] border border-[#EAE3D5] hover:bg-white hover:border-[#BA5218]/40 focus-visible:outline-[#BA5218]'
             )}
             aria-expanded={isFabOpen}
             aria-haspopup="true"
-            title={isFabOpen ? 'Tutup menu aksi' : 'Buka menu aksi Mochi'}
-            aria-label={isFabOpen ? 'Tutup menu aksi' : 'Buka menu aksi Mochi'}
+            title={isFabOpen ? 'Tutup menu aksi Mochi' : 'Buka menu aksi Mochi'}
+            aria-label={isFabOpen ? 'Tutup menu aksi Mochi' : 'Buka menu aksi Mochi'}
           >
-            <Plus className="w-5 h-5 transition-transform duration-300" />
+            {isFabOpen ? (
+              <X className="w-5 h-5 transition-transform duration-300" />
+            ) : (
+              <PawPrint className="w-5 h-5 transition-transform duration-300" />
+            )}
           </button>
 
           {/* Speed Dial Action Icons (Pure Minimalist Icons, No Labels) */}
