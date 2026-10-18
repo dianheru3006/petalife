@@ -664,8 +664,48 @@
   animation: tv-crt-static 0.28s ease-out forwards;
 }
 
+/* Delightful Physics-based Micro-Animations for FAB Speed Dial */
+@keyframes fab-bubble-bloom {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.6);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.anim-fab-item-1 {
+  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.02s;
+}
+
+.anim-fab-item-2 {
+  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.06s;
+}
+
+.anim-fab-item-3 {
+  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.10s;
+}
+
+.anim-fab-item-4 {
+  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.14s;
+}
+
 /* Respect Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
+  .anim-fab-item-1,
+  .anim-fab-item-2,
+  .anim-fab-item-3,
+  .anim-fab-item-4,
   .anim-mochi-idle,
   .anim-mochi-eating,
   .anim-mochi-sleeping,

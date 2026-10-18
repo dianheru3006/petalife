@@ -612,26 +612,28 @@ export const PetRoom: FC<PetRoomProps> = ({
             type="button"
             onClick={() => setIsFabOpen(prev => !prev)}
             className={cn(
-              'w-11 h-11 rounded-full shadow-md flex items-center justify-center cursor-pointer transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95',
+              'w-11 h-11 rounded-full shadow-md flex items-center justify-center cursor-pointer transition-all duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-90',
               isFabOpen
-                ? 'bg-[#2E2E3A] text-white focus-visible:outline-[#2E2E3A]'
-                : 'bg-white/95 backdrop-blur-md text-[#BA5218] border border-[#EAE3D5] hover:bg-white hover:border-[#BA5218]/40 focus-visible:outline-[#BA5218]'
+                ? 'bg-[#2E2E3A] text-white shadow-lg focus-visible:outline-[#2E2E3A]'
+                : 'bg-white/95 backdrop-blur-md text-[#BA5218] border border-[#EAE3D5] hover:bg-white hover:border-[#BA5218]/40 hover:shadow-lg focus-visible:outline-[#BA5218]'
             )}
             aria-expanded={isFabOpen}
             aria-haspopup="true"
             title={isFabOpen ? 'Tutup menu aksi Mochi' : 'Buka menu aksi Mochi'}
             aria-label={isFabOpen ? 'Tutup menu aksi Mochi' : 'Buka menu aksi Mochi'}
           >
-            {isFabOpen ? (
-              <X className="w-5 h-5 transition-transform duration-300" />
-            ) : (
-              <PawPrint className="w-5 h-5 transition-transform duration-300" />
-            )}
+            <div className={cn('transition-all duration-300 ease-out transform', isFabOpen ? 'rotate-90 scale-100' : 'rotate-0 scale-100')}>
+              {isFabOpen ? (
+                <X className="w-5 h-5 text-white" />
+              ) : (
+                <PawPrint className="w-5 h-5 text-[#BA5218]" />
+              )}
+            </div>
           </button>
 
-          {/* Speed Dial Action Icons (Pure Minimalist Icons, No Labels) */}
+          {/* Speed Dial Action Icons (Smooth Cascading Bloom Animation) */}
           {isFabOpen && (
-            <div className="flex flex-col items-center gap-2 pt-0.5 animate-slide-up">
+            <div className="flex flex-col items-center gap-2 pt-0.5">
               {/* 1. Quick Capture Sheet Trigger */}
               <button
                 ref={linkSheetTriggerRef}
@@ -640,7 +642,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   setIsFabOpen(false);
                   setIsLinkSheetOpen(true);
                 }}
-                className="w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+                className="anim-fab-item-1 w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
                 title="Simpan Link Cepat ke Vault"
                 aria-label="Simpan link belajar ke Vault"
               >
@@ -654,7 +656,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   handleToggleNight();
                   setIsFabOpen(false);
                 }}
-                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]"
+                className="anim-fab-item-2 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]"
                 title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
                 aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
               >
@@ -668,7 +670,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   handleDanceClick();
                   setIsFabOpen(false);
                 }}
-                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]"
+                className="anim-fab-item-3 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]"
                 title="Ajak Mochi Menari 🎵"
                 aria-label="Ajak Mochi menari"
               >
@@ -683,7 +685,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   setIsFabOpen(false);
                   setIsWardrobeOpen(true);
                 }}
-                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
+                className="anim-fab-item-4 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
                 title="Buka Lemari Kostum Mochi"
                 aria-label="Buka lemari kostum Mochi"
               >
