@@ -93,8 +93,9 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [isSavingLink, setIsSavingLink] = useState(false);
   const [isLinkSheetOpen, setIsLinkSheetOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
+  const [isFabOpen, setIsFabOpen] = useState(false);
 
-  // Accessible Modal Focus Trap & Restoration Refs
+  // Accessible Modal & FAB Focus Trap & Restoration Refs
   const linkInputRef = useRef<HTMLInputElement>(null);
   const linkModalRef = useRef<HTMLDivElement>(null);
   const linkSheetTriggerRef = useRef<HTMLButtonElement>(null);
@@ -102,6 +103,38 @@ export const PetRoom: FC<PetRoomProps> = ({
   const wardrobeModalRef = useRef<HTMLDivElement>(null);
   const wardrobeCloseBtnRef = useRef<HTMLButtonElement>(null);
   const wardrobeTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const fabTriggerRef = useRef<HTMLButtonElement>(null);
+  const fabContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close FAB Speed Dial on Escape key or outside click
+  useEffect(() => {
+    if (!isFabOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsFabOpen(false);
+        fabTriggerRef.current?.focus();
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (fabContainerRef.current && !fabContainerRef.current.contains(e.target as Node)) {
+        setIsFabOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isFabOpen]);
 
   // Focus trap, Escape key, and focus restoration for Quick Link Capture Modal
   useEffect(() => {
@@ -148,7 +181,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       clearTimeout(focusTimer);
       window.removeEventListener('keydown', handleKeyDown);
       requestAnimationFrame(() => {
-        linkSheetTriggerRef.current?.focus();
+        fabTriggerRef.current?.focus();
       });
     };
   }, [isLinkSheetOpen]);
@@ -198,7 +231,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       clearTimeout(focusTimer);
       window.removeEventListener('keydown', handleKeyDown);
       requestAnimationFrame(() => {
-        wardrobeTriggerRef.current?.focus();
+        fabTriggerRef.current?.focus();
       });
     };
   }, [isWardrobeOpen]);
@@ -440,7 +473,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         setTimeout(() => {
           setIsLinkSheetOpen(false);
           requestAnimationFrame(() => {
-            linkSheetTriggerRef.current?.focus();
+            fabTriggerRef.current?.focus();
           });
         }, 1200);
       }
@@ -570,53 +603,89 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
         </svg>
 
-        {/* Floating Action Rail on Right Edge of Diorama (WCAG 2.2 AA compliant >= 44x44px hit bounds) */}
-        <div className="absolute top-3.5 right-3 z-30 flex flex-col gap-2 select-none">
-          {/* Quick Capture Sheet Trigger (Primary Learning Action visible immediately on 360x640px) */}
+        {/* Floating Action Button (FAB) Speed Dial on Right Edge of Diorama (WCAG 2.2 AA compliant >= 44x44px hit bounds) */}
+        <div ref={fabContainerRef} className="absolute top-3.5 right-3 z-30 flex flex-col items-center gap-2 select-none">
+          {/* Main FAB Trigger Button */}
           <button
-            ref={linkSheetTriggerRef}
+            ref={fabTriggerRef}
             type="button"
-            onClick={() => setIsLinkSheetOpen(true)}
-            className="w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
-            title="Simpan Link Cepat ke Vault"
-            aria-label="Simpan link belajar ke Vault"
+            onClick={() => setIsFabOpen(prev => !prev)}
+            className={cn(
+              'w-11 h-11 rounded-full shadow-md flex items-center justify-center cursor-pointer transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95',
+              isFabOpen
+                ? 'bg-[#2E2E3A] text-white rotate-45 focus-visible:outline-[#2E2E3A]'
+                : 'bg-white/95 backdrop-blur-md text-[#2E2E3A] border border-[#EAE3D5] hover:bg-white focus-visible:outline-[#BA5218]'
+            )}
+            aria-expanded={isFabOpen}
+            aria-haspopup="true"
+            title={isFabOpen ? 'Tutup menu aksi' : 'Buka menu aksi Mochi'}
+            aria-label={isFabOpen ? 'Tutup menu aksi' : 'Buka menu aksi Mochi'}
           >
-            <BookmarkPlus className="w-5 h-5" />
+            <Plus className="w-5 h-5 transition-transform duration-300" />
           </button>
 
-          {/* Night / Day Sleep Mode Toggle */}
-          <button
-            type="button"
-            onClick={handleToggleNight}
-            className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]"
-            title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
-            aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
-          >
-            {activeNight ? <Moon className="w-5 h-5 text-[#483696]" /> : <Sun className="w-5 h-5 text-[#9E410E]" />}
-          </button>
+          {/* Speed Dial Action Icons (Pure Minimalist Icons, No Labels) */}
+          {isFabOpen && (
+            <div className="flex flex-col items-center gap-2 pt-0.5 animate-slide-up">
+              {/* 1. Quick Capture Sheet Trigger */}
+              <button
+                ref={linkSheetTriggerRef}
+                type="button"
+                onClick={() => {
+                  setIsFabOpen(false);
+                  setIsLinkSheetOpen(true);
+                }}
+                className="w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+                title="Simpan Link Cepat ke Vault"
+                aria-label="Simpan link belajar ke Vault"
+              >
+                <BookmarkPlus className="w-5 h-5" />
+              </button>
 
-          {/* Dance Action */}
-          <button
-            type="button"
-            onClick={handleDanceClick}
-            className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]"
-            title="Ajak Mochi Menari 🎵"
-            aria-label="Ajak Mochi menari"
-          >
-            <Music className="w-5 h-5" />
-          </button>
+              {/* 2. Night / Day Sleep Mode Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleNight();
+                  setIsFabOpen(false);
+                }}
+                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]"
+                title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
+                aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
+              >
+                {activeNight ? <Moon className="w-5 h-5 text-[#483696]" /> : <Sun className="w-5 h-5 text-[#9E410E]" />}
+              </button>
 
-          {/* Wardrobe Modal Sheet Trigger */}
-          <button
-            ref={wardrobeTriggerRef}
-            type="button"
-            onClick={() => setIsWardrobeOpen(true)}
-            className="w-11 h-11 rounded-full bg-white/92 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
-            title="Buka Lemari Kostum Mochi"
-            aria-label="Buka lemari kostum Mochi"
-          >
-            <Shirt className="w-5 h-5" />
-          </button>
+              {/* 3. Dance Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleDanceClick();
+                  setIsFabOpen(false);
+                }}
+                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]"
+                title="Ajak Mochi Menari 🎵"
+                aria-label="Ajak Mochi menari"
+              >
+                <Music className="w-5 h-5" />
+              </button>
+
+              {/* 4. Wardrobe Modal Sheet Trigger */}
+              <button
+                ref={wardrobeTriggerRef}
+                type="button"
+                onClick={() => {
+                  setIsFabOpen(false);
+                  setIsWardrobeOpen(true);
+                }}
+                className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
+                title="Buka Lemari Kostum Mochi"
+                aria-label="Buka lemari kostum Mochi"
+              >
+                <Shirt className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Toast Notification inside Room */}
