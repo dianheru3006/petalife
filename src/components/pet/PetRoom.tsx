@@ -96,6 +96,34 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [isLinkSheetOpen, setIsLinkSheetOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
+  const [isFabClosing, setIsFabClosing] = useState(false);
+  const fabCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const closeFab = () => {
+    if (!isFabOpen || isFabClosing) return;
+    setIsFabClosing(true);
+    if (fabCloseTimeoutRef.current) clearTimeout(fabCloseTimeoutRef.current);
+    fabCloseTimeoutRef.current = setTimeout(() => {
+      setIsFabOpen(false);
+      setIsFabClosing(false);
+    }, 280);
+  };
+
+  const handleToggleFab = () => {
+    if (isFabClosing) return;
+    if (isFabOpen) {
+      closeFab();
+    } else {
+      setIsFabOpen(true);
+      setIsFabClosing(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (fabCloseTimeoutRef.current) clearTimeout(fabCloseTimeoutRef.current);
+    };
+  }, []);
 
   // Accessible Modal & FAB Focus Trap & Restoration Refs
   const linkInputRef = useRef<HTMLInputElement>(null);
@@ -111,19 +139,19 @@ export const PetRoom: FC<PetRoomProps> = ({
 
   // Close FAB Speed Dial on Escape key or outside click
   useEffect(() => {
-    if (!isFabOpen) return;
+    if (!isFabOpen || isFabClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        setIsFabOpen(false);
+        closeFab();
         fabTriggerRef.current?.focus();
       }
     };
 
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (fabContainerRef.current && !fabContainerRef.current.contains(e.target as Node)) {
-        setIsFabOpen(false);
+        closeFab();
       }
     };
 
@@ -136,7 +164,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isFabOpen]);
+  }, [isFabOpen, isFabClosing]);
 
   // Focus trap, Escape key, and focus restoration for Quick Link Capture Modal
   useEffect(() => {
@@ -611,10 +639,10 @@ export const PetRoom: FC<PetRoomProps> = ({
           <button
             ref={fabTriggerRef}
             type="button"
-            onClick={() => setIsFabOpen(prev => !prev)}
+            onClick={handleToggleFab}
             className={cn(
               'w-11 h-11 rounded-full shadow-md flex items-center justify-center cursor-pointer transition-all duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-90',
-              isFabOpen
+              isFabOpen && !isFabClosing
                 ? 'bg-[#2E2E3A] text-white shadow-lg focus-visible:outline-[#2E2E3A]'
                 : 'bg-white/95 backdrop-blur-md text-[#BA5218] border border-[#EAE3D5] hover:bg-white hover:border-[#BA5218]/40 hover:shadow-lg focus-visible:outline-[#BA5218]'
             )}
@@ -623,8 +651,8 @@ export const PetRoom: FC<PetRoomProps> = ({
             title={isFabOpen ? 'Tutup menu aksi Mochi' : 'Buka menu aksi Mochi'}
             aria-label={isFabOpen ? 'Tutup menu aksi Mochi' : 'Buka menu aksi Mochi'}
           >
-            <div className={cn('transition-all duration-300 ease-out transform', isFabOpen ? 'rotate-90 scale-100' : 'rotate-0 scale-100')}>
-              {isFabOpen ? (
+            <div className={cn('transition-all duration-300 ease-out transform', isFabOpen && !isFabClosing ? 'rotate-90 scale-100' : 'rotate-0 scale-100')}>
+              {isFabOpen && !isFabClosing ? (
                 <X className="w-5 h-5 text-white" />
               ) : (
                 <PawPrint className="w-5 h-5 text-[#BA5218]" />
@@ -632,7 +660,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             </div>
           </button>
 
-          {/* Speed Dial Action Icons (Smooth Cascading Bloom Animation) */}
+          {/* Speed Dial Action Icons (Smooth Cascading Bloom & Collapse Animation) */}
           {isFabOpen && (
             <div className="flex flex-col items-center gap-2 pt-0.5">
               {/* 1. Quick Capture Sheet Trigger */}
@@ -640,10 +668,13 @@ export const PetRoom: FC<PetRoomProps> = ({
                 ref={linkSheetTriggerRef}
                 type="button"
                 onClick={() => {
-                  setIsFabOpen(false);
+                  closeFab();
                   setIsLinkSheetOpen(true);
                 }}
-                className="anim-fab-item-1 w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+                className={cn(
+                  isFabClosing ? 'anim-fab-exit-1' : 'anim-fab-item-1',
+                  'w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]'
+                )}
                 title="Simpan Link Cepat ke Vault"
                 aria-label="Simpan link belajar ke Vault"
               >
@@ -655,9 +686,12 @@ export const PetRoom: FC<PetRoomProps> = ({
                 type="button"
                 onClick={() => {
                   handleToggleNight();
-                  setIsFabOpen(false);
+                  closeFab();
                 }}
-                className="anim-fab-item-2 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]"
+                className={cn(
+                  isFabClosing ? 'anim-fab-exit-2' : 'anim-fab-item-2',
+                  'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]'
+                )}
                 title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
                 aria-label={activeNight ? 'Bangunkan Mochi' : 'Tidurkan Mochi'}
               >
@@ -669,9 +703,12 @@ export const PetRoom: FC<PetRoomProps> = ({
                 type="button"
                 onClick={() => {
                   handleDanceClick();
-                  setIsFabOpen(false);
+                  closeFab();
                 }}
-                className="anim-fab-item-3 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]"
+                className={cn(
+                  isFabClosing ? 'anim-fab-exit-3' : 'anim-fab-item-3',
+                  'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]'
+                )}
                 title="Ajak Mochi Menari 🎵"
                 aria-label="Ajak Mochi menari"
               >
@@ -683,10 +720,13 @@ export const PetRoom: FC<PetRoomProps> = ({
                 ref={wardrobeTriggerRef}
                 type="button"
                 onClick={() => {
-                  setIsFabOpen(false);
+                  closeFab();
                   setIsWardrobeOpen(true);
                 }}
-                className="anim-fab-item-4 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]"
+                className={cn(
+                  isFabClosing ? 'anim-fab-exit-4' : 'anim-fab-item-4',
+                  'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]'
+                )}
                 title="Buka Lemari Kostum Mochi"
                 aria-label="Buka lemari kostum Mochi"
               >

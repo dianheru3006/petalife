@@ -680,24 +680,59 @@
   }
 }
 
+@keyframes fab-bubble-collapse {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    opacity: 0.95;
+    transform: translateY(2px) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.5);
+  }
+}
+
 .anim-fab-item-1 {
-  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fab-bubble-bloom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.02s;
 }
 
 .anim-fab-item-2 {
-  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.06s;
+  animation: fab-bubble-bloom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.05s;
 }
 
 .anim-fab-item-3 {
-  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.10s;
+  animation: fab-bubble-bloom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.08s;
 }
 
 .anim-fab-item-4 {
-  animation: fab-bubble-bloom 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.14s;
+  animation: fab-bubble-bloom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.11s;
+}
+
+.anim-fab-exit-4 {
+  animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation-delay: 0s;
+}
+
+.anim-fab-exit-3 {
+  animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation-delay: 0.025s;
+}
+
+.anim-fab-exit-2 {
+  animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation-delay: 0.05s;
+}
+
+.anim-fab-exit-1 {
+  animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation-delay: 0.075s;
 }
 
 /* Silky-Smooth Modal Backdrop & Sheet Bloom Micro-Animations */
@@ -771,6 +806,10 @@
   .anim-fab-item-2,
   .anim-fab-item-3,
   .anim-fab-item-4,
+  .anim-fab-exit-1,
+  .anim-fab-exit-2,
+  .anim-fab-exit-3,
+  .anim-fab-exit-4,
   .anim-modal-backdrop,
   .anim-modal-sheet,
   .anim-toast-in,

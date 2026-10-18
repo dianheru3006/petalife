@@ -1,5 +1,5 @@
 // Petalife Service Worker (PWA & Complete Offline Precache)
-const CACHE_NAME = 'petalife-shell-v2';
+const CACHE_NAME = 'petalife-shell-v3';
 
 // 1. Static Web App Shell Assets
 const STATIC_PRECACHE = [
