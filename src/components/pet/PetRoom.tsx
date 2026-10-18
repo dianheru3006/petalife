@@ -702,15 +702,15 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        {/* Speech Bubble directly above Mochi (Only appears on direct interaction, then auto-hides) */}
+        {/* Speech Bubble directly above Mochi (Only appears on direct interaction, wraps to 2 lines when long) */}
         <div
-          className={`absolute top-[40%] sm:top-[41%] left-[49%] -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 ease-out transform ${
+          className={`absolute bottom-[52%] sm:bottom-[53%] left-[49%] -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 ease-out transform ${
             showSpeech
               ? 'opacity-100 scale-100 translate-y-0'
               : 'opacity-0 scale-90 translate-y-2 pointer-events-none'
           }`}
         >
-          <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] flex items-center gap-1.5 whitespace-nowrap">
+          <div className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] max-w-[220px] sm:max-w-[280px] text-center leading-snug break-words whitespace-normal relative">
             <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
           </div>
@@ -726,9 +726,9 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
         </div>
 
-        {/* Floating Snack Bubble pointing directly down to Hunger Meter (Resting during bedtime) */}
-        {!activeNight && (
-          <div className="absolute bottom-[66px] left-3 sm:left-4 z-25">
+        {/* Floating Snack Bubble pointing directly down to Hunger Meter (Hidden during bedtime or when Mochi is full) */}
+        {!activeNight && !isFull && (
+          <div className="absolute bottom-[66px] left-3 sm:left-4 z-25 animate-fade-in">
             <SnackBubble
               snack={currentSnack}
               onFeed={handleFeedClick}
