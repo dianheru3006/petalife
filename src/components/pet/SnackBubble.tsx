@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { Heart, Sprout } from 'lucide-react';
+import { Heart, Sprout, Utensils } from 'lucide-react';
 import type { SnackVariant } from './snackData';
 
 export interface CircularMeterProps {
@@ -13,24 +13,7 @@ export interface CircularMeterProps {
 }
 
 export const CuteForkKnifeIcon: FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    {/* Fork: 3 distinct, beautifully spaced rounded tines */}
-    <path d="M5 3.5v4.5a3 3 0 0 0 6 0V3.5" />
-    <line x1="8" y1="3.5" x2="8" y2="7.5" />
-    <line x1="8" y1="11" x2="8" y2="20.5" />
-    {/* Knife: sleek dining blade and balanced handle */}
-    <path d="M18.5 3.5v7.5h-2.5c-0.2-3 1.2-5.5 2.5-7.5z" fill="currentColor" stroke="none" />
-    <line x1="18.5" y1="11" x2="18.5" y2="20.5" />
-  </svg>
+  <Utensils className={className} />
 );
 
 export const CircularMeter: FC<CircularMeterProps> = ({
@@ -50,7 +33,7 @@ export const CircularMeter: FC<CircularMeterProps> = ({
   const renderIcon = () => {
     switch (iconType) {
       case 'hunger':
-        return <CuteForkKnifeIcon className="w-3.5 h-3.5" />;
+        return <Utensils className="w-3.5 h-3.5" />;
       case 'mood':
         return <Heart className="w-3.5 h-3.5 fill-current" />;
       case 'energy':
