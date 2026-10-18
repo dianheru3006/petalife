@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="application-name" content="Petalife" />
+    <meta name="theme-color" content="#FAF6EE" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Petalife" />
+    <meta name="description" content="A cozy Tamagotchi-inspired virtual companion that helps you capture, review, and retain your learning materials." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Telegram Mini App Official SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Petalife — Cozy Virtual Pet & Learning Vault</title>
+    <!-- Friendly typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Defensive cleanup for localhost: immediately unregister any stale production Service Workers -->
+    <script>
+      if ('serviceWorker' in navigator && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var r of regs) r.unregister();
+        });
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            for (var k of keys) caches.delete(k);
+          });
+        }
+      }
+    </script>
+    <script type="module" crossorigin src="./assets/index-CvQUVKn9.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BQJQeks5.css">
+  </head>
+  <body class="bg-[#FDFBF7] text-[#2E2E3A] antialiased selection:bg-[#FED7C5] selection:text-[#2E2E3A] min-h-screen">
+    <div id="root"></div>
+  </body>
+</html>
