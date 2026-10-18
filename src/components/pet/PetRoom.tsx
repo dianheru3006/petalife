@@ -861,7 +861,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         <button
           type="button"
           onClick={() => onNavigate('vault')}
-          className="shrink-0 h-10 px-3 rounded-xl bg-[#FFEFE8] hover:bg-[#FED7C5] text-[#9E410E] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
+          className="shrink-0 min-h-[44px] px-3.5 rounded-xl bg-[#FFEFE8] hover:bg-[#FED7C5] text-[#9E410E] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
           aria-label="Buka halaman Vault"
         >
           <span>Buka Vault</span>

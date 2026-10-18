@@ -41,7 +41,7 @@ export const BottomNav: FC<BottomNavProps> = ({
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-all duration-300 ease-out cursor-pointer min-w-[42px] sm:min-w-[44px] min-h-[42px] sm:min-h-[44px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
+              'transition-all duration-300 ease-out cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
               isActive
                 ? isNightMode
                   ? 'bg-[#D6C7AF] text-[#2E2E3A] p-1 pr-3.5 shadow-2xs'
