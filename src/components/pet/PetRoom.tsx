@@ -875,12 +875,12 @@ export const PetRoom: FC<PetRoomProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="link-sheet-title"
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 anim-modal-backdrop"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsLinkSheetOpen(false);
           }}
         >
-          <div ref={linkModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
+          <div ref={linkModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 anim-modal-sheet">
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
               <div className="flex items-center gap-2">
@@ -975,12 +975,12 @@ export const PetRoom: FC<PetRoomProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="wardrobe-sheet-title"
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 anim-modal-backdrop"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsWardrobeOpen(false);
           }}
         >
-          <div ref={wardrobeModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 animate-slide-up">
+          <div ref={wardrobeModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 anim-modal-sheet">
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
               <div className="flex items-center gap-2">
