@@ -25,7 +25,7 @@ export const BottomNav: FC<BottomNavProps> = ({
     <nav
       aria-label="Navigasi utama"
       className={cn(
-        'fixed bottom-[calc(0.75rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs sm:max-w-sm z-40 backdrop-blur-md rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between select-none transition-colors duration-700 ease-out border',
+        'fixed bottom-[calc(1rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs sm:max-w-sm z-40 backdrop-blur-md rounded-full shadow-lg px-2 py-1.5 flex items-center justify-between select-none transition-colors duration-700 ease-out border',
         isNightMode
           ? 'bg-[#FAF6EE]/95 border-[#DFD6C6]'
           : 'bg-[#FAF7F2]/95 border-[#EAE3D5]'
@@ -41,18 +41,27 @@ export const BottomNav: FC<BottomNavProps> = ({
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-colors duration-200 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
+              'transition-all duration-300 ease-out cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
               isActive
                 ? isNightMode
-                  ? 'bg-[#E5DCCF] text-[#2E2E3A] px-3.5 py-2 rounded-full font-bold text-xs shadow-xs'
-                  : 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-2 rounded-full font-bold text-xs shadow-xs'
+                  ? 'bg-[#E5DCCF] text-[#2E2E3A] px-3.5 py-2 shadow-xs'
+                  : 'bg-[#EFE8DD] text-[#2E2E3A] px-3.5 py-2 shadow-xs'
                 : isNightMode
-                  ? 'p-2.5 text-[#4E4E5E] hover:text-[#2E2E3A] hover:bg-[#EFE7D8] rounded-full'
-                  : 'p-2.5 text-[#4E4E5E] hover:text-[#2E2E3A] hover:bg-[#FAF7F2] rounded-full'
+                  ? 'p-2.5 text-[#4E4E5E] hover:text-[#2E2E3A] hover:bg-[#EFE7D8]'
+                  : 'p-2.5 text-[#4E4E5E] hover:text-[#2E2E3A] hover:bg-[#FAF7F2]'
             )}
           >
-            {tab.icon}
-            {isActive && <span>{tab.label}</span>}
+            <span className="shrink-0 transition-transform duration-300">{tab.icon}</span>
+            <span
+              className={cn(
+                'overflow-hidden whitespace-nowrap transition-all duration-300 ease-out font-bold text-xs leading-none',
+                isActive
+                  ? 'max-w-[72px] opacity-100 ml-1.5'
+                  : 'max-w-0 opacity-0 ml-0 pointer-events-none'
+              )}
+            >
+              {tab.label}
+            </span>
           </button>
         );
       })}

@@ -522,10 +522,10 @@ export const PetRoom: FC<PetRoomProps> = ({
       {/* 1. Header: Greeting & Streak Pill */}
       <div className="flex items-center justify-between px-2 pt-1 pb-1 select-none gap-2">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] sm:text-xs text-[#4E4E5E] font-medium leading-none truncate">
+          <p className="text-xs text-[#4E4E5E] font-medium leading-none truncate">
             {greeting},
           </p>
-          <h1 className="text-lg sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-0.5 whitespace-nowrap truncate">
+          <h1 className="text-xl sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-0.5 whitespace-nowrap truncate">
             Rumah Mochi
           </h1>
         </div>
@@ -819,7 +819,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             }}
             placeholder="Tempel link di sini..."
             className={cn(
-              'w-full text-xs sm:text-sm pl-12 pr-12 py-3 rounded-full text-[#2E2E3A] placeholder-[#5A5A6E] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
+              'w-full text-sm sm:text-base pl-12 pr-12 py-3 rounded-full text-[#2E2E3A] placeholder-[#5A5A6E] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-[#FAF6EE]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] focus:bg-[#FFFDF9]'

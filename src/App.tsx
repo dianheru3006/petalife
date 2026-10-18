@@ -369,50 +369,52 @@ export function App() {
         </div>
       )}
 
-      {currentTab === 'home' && (
-        <DashboardPage
-          pet={pet}
-          savedLinks={savedLinks}
-          dailyGoals={dailyGoals}
-          onFeedPet={handleFeedPet}
-          onToggleGoal={handleToggleGoal}
-          onNavigate={handleSelectTab}
-          onAddLink={handleAddLink}
-          notesCount={notes.length}
-          isNightMode={isNightMode}
-          onToggleNightMode={() => setIsNightMode(prev => !prev)}
-        />
-      )}
+      <div key={currentTab} className="anim-page-enter">
+        {currentTab === 'home' && (
+          <DashboardPage
+            pet={pet}
+            savedLinks={savedLinks}
+            dailyGoals={dailyGoals}
+            onFeedPet={handleFeedPet}
+            onToggleGoal={handleToggleGoal}
+            onNavigate={handleSelectTab}
+            onAddLink={handleAddLink}
+            notesCount={notes.length}
+            isNightMode={isNightMode}
+            onToggleNightMode={() => setIsNightMode(prev => !prev)}
+          />
+        )}
 
-      {currentTab === 'vault' && (
-        <VaultPage
-          links={savedLinks}
-          onAddLink={handleAddLink}
-          onUpdateLink={handleUpdateLink}
-          onDeleteLink={handleDeleteLink}
-          onUpdateStatus={handleUpdateStatus}
-          isNightMode={isNightMode}
-        />
-      )}
+        {currentTab === 'vault' && (
+          <VaultPage
+            links={savedLinks}
+            onAddLink={handleAddLink}
+            onUpdateLink={handleUpdateLink}
+            onDeleteLink={handleDeleteLink}
+            onUpdateStatus={handleUpdateStatus}
+            isNightMode={isNightMode}
+          />
+        )}
 
-      {currentTab === 'notes' && (
-        <NotesPage
-          notes={notes}
-          onAddNote={handleAddNote}
-          onUpdateNote={handleUpdateNote}
-          onDeleteNote={handleDeleteNote}
-          isNightMode={isNightMode}
-        />
-      )}
+        {currentTab === 'notes' && (
+          <NotesPage
+            notes={notes}
+            onAddNote={handleAddNote}
+            onUpdateNote={handleUpdateNote}
+            onDeleteNote={handleDeleteNote}
+            isNightMode={isNightMode}
+          />
+        )}
 
-      {currentTab === 'assistant' && (
-        <AssistantPage
-          messages={chatMessages}
-          onSendMessage={handleSendMessage}
-          onNavigate={handleSelectTab}
-          isNightMode={isNightMode}
-        />
-      )}
+        {currentTab === 'assistant' && (
+          <AssistantPage
+            messages={chatMessages}
+            onSendMessage={handleSendMessage}
+            onNavigate={handleSelectTab}
+            isNightMode={isNightMode}
+          />
+        )}
+      </div>
     </AppLayout>
   );
 }

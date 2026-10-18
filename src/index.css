@@ -747,8 +747,26 @@
   animation: toast-bloom-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Silky-Smooth Page Cross-Fade Micro-Animation */
+@keyframes page-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-page-enter {
+  animation: page-enter 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
 /* Respect Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
+  .anim-page-enter,
   .anim-fab-item-1,
   .anim-fab-item-2,
   .anim-fab-item-3,
