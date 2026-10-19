@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 
-export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying';
+export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying' | 'dizzy';
 export type GazeDirection = 'center' | 'left' | 'right';
 export type AutonomousFidget = 'none' | 'tilt-left' | 'tilt-right' | 'humming' | 'stretch' | 'cute-wink' | 'sprout-joy';
 
@@ -15,6 +15,7 @@ const ACTION_DURATIONS: Record<MochiAction, number> = {
   wink: 700,
   dance: 1400,
   studying: 4200,
+  dizzy: 2400,
 };
 
 const FIDGET_DURATIONS: Record<AutonomousFidget, number> = {
@@ -199,6 +200,8 @@ export const MochiPet: FC<MochiPetProps> = ({
         return 'anim-mochi-wink';
       case 'dance':
         return 'anim-mochi-dance';
+      case 'dizzy':
+        return 'anim-mochi-dizzy';
     }
 
     // Autonomous Fidgets
@@ -238,9 +241,15 @@ export const MochiPet: FC<MochiPetProps> = ({
       )}
 
       {/* Dynamic Floating Particles based on Action & Fidgets */}
-      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink') && (!isSleeping || currentAction === 'studying') && (
+      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink') && (!isSleeping || currentAction === 'studying' || currentAction === 'dizzy') && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
-          {fidget === 'humming' && currentAction === 'idle' ? (
+          {currentAction === 'dizzy' ? (
+            <>
+              <span className="text-xl animate-spin drop-shadow-xs" style={{ animationDuration: '1.2s' }}>💫</span>
+              <span className="text-lg animate-bounce drop-shadow-xs" style={{ animationDuration: '0.8s' }}>⭐</span>
+              <span className="text-xl animate-spin drop-shadow-xs" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }}>🌀</span>
+            </>
+          ) : fidget === 'humming' && currentAction === 'idle' ? (
             <>
               <span className="text-xl anim-float-note text-[#E57399] drop-shadow-xs">♪</span>
               <span className="text-lg anim-float-note text-[#7161BF] drop-shadow-xs" style={{ animationDelay: '0.2s' }}>♫</span>
@@ -388,7 +397,7 @@ export const MochiPet: FC<MochiPetProps> = ({
 
           {/* 2. Sprout on Head (Cylindrical 3D Stem + Sculpted Twin Leaves) */}
           <g
-            className={fidget === 'sprout-joy' ? 'anim-sprout-joy' : 'anim-gentle-sway'}
+            className={currentAction === 'dizzy' || fidget === 'sprout-joy' ? 'anim-sprout-joy' : 'anim-gentle-sway'}
             style={{
               transformOrigin: '100px 42px',
               transform:
@@ -440,27 +449,39 @@ export const MochiPet: FC<MochiPetProps> = ({
           {/* 4. Top-Left Volumetric Gleam / Soft 3D Specular Highlight */}
           <ellipse cx="82" cy="74" rx="38" ry="24" fill="url(#topGleam3D)" transform="rotate(-15 82 74)" />
 
-          {/* 5. 3D Rounded Little Paws (Wave up joyfully during dance) */}
+          {/* 5. 3D Rounded Little Paws (Wave up joyfully during dance / balance during dizzy) */}
           <ellipse
             cx="54"
-            cy={currentAction === 'dance' ? 130 : 138}
+            cy={currentAction === 'dance' ? 130 : currentAction === 'dizzy' ? 126 : 138}
             rx="10"
             ry="8"
             fill="url(#clayPaw)"
             stroke="#C87A22"
             strokeWidth="1.2"
-            transform={currentAction === 'dance' ? 'rotate(-28 54 130)' : 'rotate(-12 54 138)'}
+            transform={
+              currentAction === 'dance'
+                ? 'rotate(-28 54 130)'
+                : currentAction === 'dizzy'
+                ? 'rotate(-32 54 126)'
+                : 'rotate(-12 54 138)'
+            }
             style={{ transition: 'all 0.25s ease' }}
           />
           <ellipse
             cx="146"
-            cy={currentAction === 'dance' ? 130 : 138}
+            cy={currentAction === 'dance' ? 130 : currentAction === 'dizzy' ? 126 : 138}
             rx="10"
             ry="8"
             fill="url(#clayPaw)"
             stroke="#C87A22"
             strokeWidth="1.2"
-            transform={currentAction === 'dance' ? 'rotate(28 146 130)' : 'rotate(12 146 138)'}
+            transform={
+              currentAction === 'dance'
+                ? 'rotate(28 146 130)'
+                : currentAction === 'dizzy'
+                ? 'rotate(32 146 126)'
+                : 'rotate(12 146 138)'
+            }
             style={{ transition: 'all 0.25s ease' }}
           />
 
@@ -485,7 +506,37 @@ export const MochiPet: FC<MochiPetProps> = ({
           />
 
           {/* 7. Eyes (Deep Chocolate Glossy Spheres, Action Shapes, or Fidget/Stat Moods) */}
-          {currentAction === 'studying' ? (
+          {currentAction === 'dizzy' ? (
+            /* Hilarious Dizzy Spiral Swirl Eyes (@ @) */
+            <g className="transition-all duration-300">
+              {/* Left Spiral Eye */}
+              <g transform="translate(78, 102)">
+                <circle cx="0" cy="0" r="10" fill="#FFF4DC" stroke="#2C1A14" strokeWidth="2.0" />
+                <path
+                  d="M0 0 Q3 -2 4 1 Q5 5 1 6 Q-4 7 -6 2 Q-7 -4 -2 -7 Q5 -8 8 -2"
+                  fill="none"
+                  stroke="#2C1A14"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  className="animate-spin"
+                  style={{ transformOrigin: '0 0', animationDuration: '1.4s' }}
+                />
+              </g>
+              {/* Right Spiral Eye */}
+              <g transform="translate(122, 102)">
+                <circle cx="0" cy="0" r="10" fill="#FFF4DC" stroke="#2C1A14" strokeWidth="2.0" />
+                <path
+                  d="M0 0 Q-3 -2 -4 1 Q-5 5 -1 6 Q4 7 6 2 Q7 -4 2 -7 Q-5 -8 -8 -2"
+                  fill="none"
+                  stroke="#2C1A14"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  className="animate-spin"
+                  style={{ transformOrigin: '0 0', animationDuration: '1.4s', animationDirection: 'reverse' }}
+                />
+              </g>
+            </g>
+          ) : currentAction === 'studying' ? (
             /* Focused Scholarly Eyes with Sparkles (◕ ◕) */
             <g>
               {/* Left Eye */}
@@ -651,7 +702,16 @@ export const MochiPet: FC<MochiPetProps> = ({
           )}
 
           {/* 8. Sweet Smile Mouth */}
-          {isFeeding ? (
+          {currentAction === 'dizzy' ? (
+            /* Wobbly wavy squiggly dizzy mouth (~) */
+            <path
+              d="M92 115 Q95 111 98 115 Q101 119 104 115 Q107 111 110 115"
+              stroke="#2C1A14"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              fill="none"
+            />
+          ) : isFeeding ? (
             <path
               d="M93 114 Q100 126 107 114 Z"
               fill="#FF6E6E"

@@ -1,5 +1,5 @@
 import type { FC, FormEvent } from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet, NavigationTab, SavedLink } from '../../lib/types';
 import { MochiPet, type MochiAction } from './MochiPet';
 import {
@@ -16,6 +16,7 @@ import {
   X,
   ArrowRight,
   PawPrint,
+  Vibrate,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus, getDisplayStats } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -98,6 +99,8 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isFabClosing, setIsFabClosing] = useState(false);
   const fabCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastShakeTimeRef = useRef<number>(0);
+  const [isTerrariumShaking, setIsTerrariumShaking] = useState(false);
 
   const closeFab = () => {
     if (!isFabOpen || isFabClosing) return;
@@ -106,7 +109,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     fabCloseTimeoutRef.current = setTimeout(() => {
       setIsFabOpen(false);
       setIsFabClosing(false);
-    }, 280);
+    }, 320);
   };
 
   const handleToggleFab = () => {
@@ -407,6 +410,18 @@ export const PetRoom: FC<PetRoomProps> = ({
       return;
     }
 
+    if (action === 'dizzy') {
+      const dizzyQuotes = [
+        'Whoaa! Gempa bumi kah? Pusing~ (@ o @) 💫',
+        'Aduh aduh... bumi bergoyang! Mataku muter-muter! 🌀',
+        'Hehe geli! Jangan kenceng-kenceng guncangnya ya! (*≧ω≦)',
+        'Waaah... kepalaku berputar-putar kayak gasing! 💫⭐',
+        'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet! 🌪️',
+      ];
+      triggerSpeech(dizzyQuotes[Math.floor(Math.random() * dizzyQuotes.length)], 3800);
+      return;
+    }
+
     if (action === 'studying') {
       const studyLines = [
         'Ssst... Mochi lagi fokus mencatat materi baru! 📝✨',
@@ -439,6 +454,90 @@ export const PetRoom: FC<PetRoomProps> = ({
     setForcedAction({ id: Date.now(), action: 'dance' });
     handlePetTap('dance');
   };
+
+  const triggerShake = useCallback(() => {
+    const now = Date.now();
+    if (now - lastShakeTimeRef.current < 2200) return; // Cooldown 2.2s
+    lastShakeTimeRef.current = now;
+
+    // 1. Device Haptic Vibration (Web Vibration API & Telegram Mini App Haptics)
+    try {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([40, 50, 70, 50, 90]);
+      }
+      (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('warning');
+    } catch {
+      // Safe fallback if vibrations are unsupported or disabled
+    }
+
+    // 2. Terrarium Micro-Tremor Animation
+    setIsTerrariumShaking(true);
+    setTimeout(() => setIsTerrariumShaking(false), 680);
+
+    // 3. Trigger Mochi Dizzy Action
+    setForcedAction({ id: now, action: 'dizzy' });
+
+    // 4. Dizzy Speech Lines
+    const dizzyQuotes = [
+      'Whoaa! Gempa bumi kah? Pusing~ (@ o @) 💫',
+      'Aduh aduh... bumi bergoyang! Mataku muter-muter! 🌀',
+      'Hehe geli! Jangan kenceng-kenceng guncangnya ya! (*≧ω≦)',
+      'Waaah... kepalaku berputar-putar kayak gasing! 💫⭐',
+      'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet! 🌪️',
+    ];
+    triggerSpeech(dizzyQuotes[Math.floor(Math.random() * dizzyQuotes.length)], 3800);
+  }, [triggerSpeech]);
+
+  // Global Shake Sensor Hook (Mobile DeviceMotionEvent + Keyboard 'S' for PC)
+  useEffect(() => {
+    let lastX = 0;
+    let lastY = 0;
+    let lastZ = 0;
+    let lastUpdate = 0;
+    const SHAKE_THRESHOLD = 18; // m/s² delta threshold
+
+    const handleDeviceMotion = (e: DeviceMotionEvent) => {
+      const current = e.accelerationIncludingGravity;
+      if (!current) return;
+
+      const now = Date.now();
+      if (now - lastUpdate > 100) {
+        const diffTime = now - lastUpdate;
+        lastUpdate = now;
+
+        const x = current.x ?? 0;
+        const y = current.y ?? 0;
+        const z = current.z ?? 0;
+
+        const speed = (Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime) * 10000;
+
+        if (speed > SHAKE_THRESHOLD * 25) {
+          triggerShake();
+        }
+
+        lastX = x;
+        lastY = y;
+        lastZ = z;
+      }
+    };
+
+    // Keyboard 'S' or 's' shortcut for PC testing
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 's' || e.key === 'S') {
+        triggerShake();
+      }
+    };
+
+    window.addEventListener('devicemotion', handleDeviceMotion);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('devicemotion', handleDeviceMotion);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [triggerShake]);
 
   const handleQuickAddLink = async (e: FormEvent) => {
     e.preventDefault();
@@ -601,6 +700,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       <div
         className={cn(
           'relative w-full aspect-[9/13] max-h-[560px] rounded-[32px] overflow-hidden select-none transition-all duration-700 ease-out border-2',
+          isTerrariumShaking && 'anim-terrarium-shake',
           activeNight
             ? 'border-[#DDD2C2] bg-[#E5D8C3] shadow-[0_16px_48px_rgba(100,80,60,0.12)]'
             : 'border-[#E8DFCF] bg-[#EEE1CD] shadow-md'
@@ -731,6 +831,23 @@ export const PetRoom: FC<PetRoomProps> = ({
                 aria-label="Buka lemari kostum Mochi"
               >
                 <Shirt className="w-5 h-5" />
+              </button>
+
+              {/* 5. Shake Mochi / Device Shake Simulator */}
+              <button
+                type="button"
+                onClick={() => {
+                  closeFab();
+                  triggerShake();
+                }}
+                className={cn(
+                  isFabClosing ? 'anim-fab-exit-5' : 'anim-fab-item-5',
+                  'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#E57399] hover:text-[#D81B60] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E57399]'
+                )}
+                title="Guncang HP / Mochi! 📳 (Tekan S di keyboard)"
+                aria-label="Guncang HP atau Mochi"
+              >
+                <Vibrate className="w-5 h-5" />
               </button>
             </div>
           )}

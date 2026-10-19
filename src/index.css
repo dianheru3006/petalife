@@ -325,6 +325,71 @@
   transform-origin: bottom center;
 }
 
+/* Hilarious Dizzy Wobble Animation (Device Shake & Spontaneous Stumble) */
+@keyframes mochi-dizzy {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg) scale(1, 1);
+  }
+  8% {
+    transform: translateY(-4px) rotate(-16deg) scale(1.08, 0.92);
+  }
+  18% {
+    transform: translateY(2px) rotate(16deg) scale(0.92, 1.08);
+  }
+  28% {
+    transform: translateY(-5px) rotate(-14deg) scale(1.06, 0.94);
+  }
+  40% {
+    transform: translateY(2px) rotate(12deg) scale(0.94, 1.06);
+  }
+  54% {
+    transform: translateY(-3px) rotate(-8deg) scale(1.03, 0.97);
+  }
+  68% {
+    transform: translateY(1px) rotate(6deg) scale(0.97, 1.03);
+  }
+  82% {
+    transform: translateY(-1px) rotate(-3deg) scale(1.01, 0.99);
+  }
+  92% {
+    transform: translateY(0px) rotate(1deg) scale(1, 1);
+  }
+}
+
+.anim-mochi-dizzy {
+  animation: mochi-dizzy 2.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  transform-origin: bottom center;
+}
+
+/* Physical Terrarium Micro-Tremor (Triggered during Device Shake) */
+@keyframes terrarium-micro-shake {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  15% {
+    transform: translate(-3.5px, 1.5px) rotate(-0.6deg);
+  }
+  30% {
+    transform: translate(3.5px, -2px) rotate(0.6deg);
+  }
+  45% {
+    transform: translate(-2.5px, -1.5px) rotate(-0.4deg);
+  }
+  60% {
+    transform: translate(2px, 2px) rotate(0.4deg);
+  }
+  75% {
+    transform: translate(-1px, 1px) rotate(-0.2deg);
+  }
+  90% {
+    transform: translate(1px, -1px) rotate(0.1deg);
+  }
+}
+
+.anim-terrarium-shake {
+  animation: terrarium-micro-shake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
 /* Dedicated Study & Note-Taking Animation */
 @keyframes mochi-studying {
   0%, 100% {
@@ -841,24 +906,34 @@
   animation-delay: 0.11s;
 }
 
-.anim-fab-exit-4 {
+.anim-fab-item-5 {
+  animation: fab-bubble-bloom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.14s;
+}
+
+.anim-fab-exit-5 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0s;
 }
 
-.anim-fab-exit-3 {
+.anim-fab-exit-4 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0.025s;
 }
 
-.anim-fab-exit-2 {
+.anim-fab-exit-3 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0.05s;
 }
 
-.anim-fab-exit-1 {
+.anim-fab-exit-2 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0.075s;
+}
+
+.anim-fab-exit-1 {
+  animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation-delay: 0.1s;
 }
 
 /* Silky-Smooth Modal Backdrop & Sheet Bloom Micro-Animations */
