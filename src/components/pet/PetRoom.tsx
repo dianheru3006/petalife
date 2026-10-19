@@ -955,16 +955,16 @@ export const PetRoom: FC<PetRoomProps> = ({
         </div>
       </div>
 
-      {/* 4. Quick Link Capture Pill: "+ Tempel link di sini... 📋" (44x44px touch targets) */}
-      <div className="pt-0.5">
+      {/* 4. Quick Link Capture Pill: "+ Tempel link di sini... 📋" (Ergonomic touch targets with generous breathing room) */}
+      <div className="pt-2 sm:pt-3">
         {quickSuccess && (
-          <div role="status" className="mb-2 p-2 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-1.5 animate-fade-in">
+          <div role="status" className="mb-2.5 p-2 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-1.5 animate-fade-in">
             <CheckCircle2 className="w-4 h-4 text-[#1E6B3B] shrink-0" />
             <span>{quickSuccess}</span>
           </div>
         )}
         {quickError && (
-          <div id="quick-link-error" role="alert" className="mb-2 p-2 rounded-xl bg-[#FDF0F4] border border-[#FED7C5] text-xs font-semibold text-[#A82B53]">
+          <div id="quick-link-error" role="alert" className="mb-2.5 p-2 rounded-xl bg-[#FDF0F4] border border-[#FED7C5] text-xs font-semibold text-[#A82B53]">
             ⚠️ {quickError}
           </div>
         )}
@@ -973,7 +973,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           <button
             type="submit"
             disabled={isSavingLink}
-            className="absolute left-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#BA5218] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] active:scale-95"
+            className="absolute left-1.5 w-10 h-10 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#BA5218] hover:bg-black/5 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] active:scale-95"
             title="Simpan Tautan"
             aria-label={isSavingLink ? 'Menyimpan tautan' : 'Simpan tautan ke Vault'}
           >
@@ -992,9 +992,9 @@ export const PetRoom: FC<PetRoomProps> = ({
               setQuickUrl(e.target.value);
               if (quickError) setQuickError(null);
             }}
-            placeholder="Tempel link di sini..."
+            placeholder="Tempel link YouTube, TikTok, atau artikel..."
             className={cn(
-              'w-full text-sm sm:text-base pl-12 pr-12 py-3 rounded-full text-[#2E2E3A] placeholder-[#5A5A6E] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
+              'w-full text-sm sm:text-base pl-12 pr-12 py-3.5 sm:py-4 rounded-full text-[#2E2E3A] placeholder-[#6E6E80] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-[#FAF6EE]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] focus:bg-[#FFFDF9]'
@@ -1013,13 +1013,29 @@ export const PetRoom: FC<PetRoomProps> = ({
                 // Clipboard read blocked by permissions
               }
             }}
-            className="absolute right-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
+            className="absolute right-1.5 w-10 h-10 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] hover:bg-black/5 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
             title="Tempel dari Clipboard"
             aria-label="Tempel tautan dari clipboard"
           >
-            <Clipboard className="w-5 h-5" />
+            <Clipboard className="w-4.5 h-4.5" />
           </button>
         </form>
+
+        {/* Subtle Inspiration Platform Pills: Visually balances screen void without adding clutter */}
+        <div className="flex items-center justify-center gap-1.5 pt-2.5 px-1 select-none flex-wrap">
+          <span className="text-[11px] font-semibold text-[#8C8276] flex items-center gap-1">
+            <span>💡 Cepat simpan:</span>
+          </span>
+          <span className="text-[10px] font-extrabold text-[#7A6A58] bg-[#F2ECE0] border border-[#E2D8C6] px-2.5 py-0.5 rounded-full">
+            🎬 YouTube
+          </span>
+          <span className="text-[10px] font-extrabold text-[#7A6A58] bg-[#F2ECE0] border border-[#E2D8C6] px-2.5 py-0.5 rounded-full">
+            📱 Shorts & Reels
+          </span>
+          <span className="text-[10px] font-extrabold text-[#7A6A58] bg-[#F2ECE0] border border-[#E2D8C6] px-2.5 py-0.5 rounded-full">
+            📖 Artikel Web
+          </span>
+        </div>
       </div>
 
 

@@ -15,20 +15,20 @@ export const BottomNav: FC<BottomNavProps> = ({
   isNightMode = false,
 }) => {
   const tabs: { id: NavigationTab; label: string; icon: ReactNode }[] = [
-    { id: 'home', label: 'Beranda', icon: <Home className="w-4 h-4" /> },
-    { id: 'vault', label: 'Vault', icon: <Bookmark className="w-4 h-4" /> },
-    { id: 'notes', label: 'Notes', icon: <FileText className="w-4 h-4" /> },
-    { id: 'assistant', label: 'Asisten', icon: <MessageSquare className="w-4 h-4" /> },
+    { id: 'home', label: 'Beranda', icon: <Home className="w-[18px] h-[18px]" /> },
+    { id: 'vault', label: 'Vault', icon: <Bookmark className="w-[18px] h-[18px]" /> },
+    { id: 'notes', label: 'Notes', icon: <FileText className="w-[18px] h-[18px]" /> },
+    { id: 'assistant', label: 'Asisten', icon: <MessageSquare className="w-[18px] h-[18px]" /> },
   ];
 
   return (
     <nav
       aria-label="Navigasi utama"
       className={cn(
-        'fixed bottom-[calc(1rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs sm:max-w-sm z-40 backdrop-blur-xl rounded-full px-2.5 sm:px-3 py-1.5 flex items-center justify-between select-none transition-all duration-500 ease-out border shadow-[0_12px_36px_rgba(46,46,58,0.08)]',
+        'fixed bottom-[calc(1.35rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-1.75rem)] max-w-[348px] sm:max-w-[364px] z-40 backdrop-blur-xl rounded-full px-3 sm:px-3.5 py-2 sm:py-2.5 flex items-center justify-between select-none transition-all duration-500 ease-out border shadow-[0_16px_40px_rgba(46,46,58,0.12),0_2px_8px_rgba(0,0,0,0.04)]',
         isNightMode
-          ? 'bg-[#FAF6EE]/92 border-[#DFD6C6]'
-          : 'bg-[#FAF7F2]/90 border-white/80'
+          ? 'bg-[#FAF6EE]/94 border-[#DFD6C6]'
+          : 'bg-[#FAF7F2]/92 border-white/85'
       )}
     >
       {tabs.map(tab => {
@@ -41,20 +41,20 @@ export const BottomNav: FC<BottomNavProps> = ({
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-all duration-300 ease-out cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
+              'transition-all duration-300 ease-out cursor-pointer min-w-[46px] min-h-[46px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
               isActive
                 ? isNightMode
-                  ? 'bg-[#D6C7AF] text-[#2E2E3A] p-1 pr-3.5 shadow-2xs'
-                  : 'bg-[#DDD1BC] text-[#2E2E3A] p-1 pr-3.5 shadow-2xs'
+                  ? 'bg-[#D6C7AF] text-[#2E2E3A] p-1.5 pr-4 shadow-2xs'
+                  : 'bg-[#DDD1BC] text-[#2E2E3A] p-1.5 pr-4 shadow-2xs'
                 : isNightMode
-                  ? 'p-1 text-[#4E4E5E] hover:text-[#2E2E3A] hover:bg-[#EFE7D8]/60'
-                  : 'p-1 text-[#555566] hover:text-[#2E2E3A] hover:bg-black/5'
+                  ? 'p-1.5 text-[#4E4E5E] hover:text-[#2E2E3A] hover:bg-[#EFE7D8]/60'
+                  : 'p-1.5 text-[#555566] hover:text-[#2E2E3A] hover:bg-black/5'
             )}
           >
             {/* Darker Circular Chip for Active Icon, subtle transparent for Inactive */}
             <span
               className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ease-out',
+                'w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ease-out',
                 isActive
                   ? isNightMode
                     ? 'bg-[#AD9576] text-[#2E2E3A] shadow-2xs scale-100'
@@ -68,9 +68,9 @@ export const BottomNav: FC<BottomNavProps> = ({
             {/* Smooth Sliding Label */}
             <span
               className={cn(
-                'overflow-hidden whitespace-nowrap transition-all duration-300 ease-out font-extrabold text-xs leading-none',
+                'overflow-hidden whitespace-nowrap transition-all duration-300 ease-out font-black text-xs sm:text-[13px] leading-none',
                 isActive
-                  ? 'max-w-[76px] opacity-100 ml-1.5 text-[#2E2E3A]'
+                  ? 'max-w-[80px] opacity-100 ml-1.5 text-[#2E2E3A]'
                   : 'max-w-0 opacity-0 ml-0 pointer-events-none'
               )}
             >

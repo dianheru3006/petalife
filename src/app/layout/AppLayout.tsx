@@ -34,7 +34,7 @@ export const AppLayout: FC<AppLayoutProps> = ({
         )}
 
         {/* Page Content: Mobile-optimized spacing with generous clearance for BottomNav and Telegram safe area */}
-        <main className="flex-1 p-3.5 sm:p-4 pb-[calc(7rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] overflow-x-hidden w-full">
+        <main className="flex-1 p-3.5 sm:p-4 pb-[calc(7.5rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] overflow-x-hidden w-full">
           {children}
         </main>
 
