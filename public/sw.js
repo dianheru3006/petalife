@@ -2,6 +2,8 @@
 const CACHE_PREFIX = 'petalife-shell-';
 const BUILD_ID = '__BUILD_ID__';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
+const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
+const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
 
 // 1. Static Web App Shell Assets
 const STATIC_PRECACHE = [
@@ -28,16 +30,25 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// 1. Install & Pre-cache Full App Shell + Build Assets
+// 1. Install & Pre-cache Full App Shell + Build Assets + Persistent CSS Backup
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ALL_PRECACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(ALL_PRECACHE);
+      // Mirror the active CSS stylesheet into a persistent non-purged cache
+      const cssAsset = BUILD_ASSETS.find((a) => a.endsWith('.css'));
+      if (cssAsset) {
+        const cssRes = await cache.match(cssAsset);
+        if (cssRes) {
+          const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
+          await backupCache.put(STABLE_CSS_KEY, cssRes.clone());
+        }
+      }
     })
   );
 });
 
-// 2. Activate & Purge Obsolete Petalife Shell Caches (preserves IndexedDB and non-shell caches)
+// 2. Activate & Purge Obsolete Petalife Shell Caches (preserves persistent CSS backup, IndexedDB and site data)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -120,28 +131,54 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Fetch from network, cache on success
-        return fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        }).catch(async (err) => {
-          // Robust styling fallback: if CSS asset fails to load, attempt fallback from previous shell caches
-          if (request.destination === 'style' || url.pathname.endsWith('.css')) {
-            const cacheNames = await caches.keys();
-            for (const name of cacheNames) {
-              if (name.startsWith(CACHE_PREFIX)) {
-                const c = await caches.open(name);
-                const match = await c.match(request);
-                if (match) return match;
+        return fetch(request)
+          .then(async (networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, responseToCache);
+              });
+              // Keep persistent stylesheet backup updated
+              if (request.destination === 'style' || url.pathname.endsWith('.css')) {
+                caches.open(PERSISTENT_CSS_BACKUP_CACHE).then((backupCache) => {
+                  backupCache.put(STABLE_CSS_KEY, networkResponse.clone());
+                });
+              }
+              return networkResponse;
+            }
+
+            // If CSS returned 404 or non-200 from network/CDN edge, serve persistent backup
+            if (request.destination === 'style' || url.pathname.endsWith('.css')) {
+              const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
+              const fallbackCss = await backupCache.match(STABLE_CSS_KEY);
+              if (fallbackCss) {
+                console.warn('[Petalife SW] CSS returned status ' + networkResponse.status + '. Serving persistent backup stylesheet.');
+                const body = await fallbackCss.blob();
+                return new Response(body, {
+                  status: 200,
+                  headers: { 'Content-Type': 'text/css; charset=utf-8', 'X-Petalife-Fallback': 'true' }
+                });
               }
             }
-          }
-          throw err;
-        });
+
+            return networkResponse;
+          })
+          .catch(async (err) => {
+            // Robust styling fallback: if CSS asset fails to load over network, serve persistent backup
+            if (request.destination === 'style' || url.pathname.endsWith('.css')) {
+              const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
+              const fallbackCss = await backupCache.match(STABLE_CSS_KEY);
+              if (fallbackCss) {
+                console.warn('[Petalife SW] Network failed for CSS. Serving persistent backup stylesheet.');
+                const body = await fallbackCss.blob();
+                return new Response(body, {
+                  status: 200,
+                  headers: { 'Content-Type': 'text/css; charset=utf-8', 'X-Petalife-Fallback': 'true' }
+                });
+              }
+            }
+            throw err;
+          });
       })
     );
   }

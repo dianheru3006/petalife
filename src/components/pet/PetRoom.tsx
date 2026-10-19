@@ -800,9 +800,9 @@ export const PetRoom: FC<PetRoomProps> = ({
       setIsNoteSheetOpen(false);
       setForcedAction({ id: Date.now(), action: 'hop' });
       triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar! 🎓✨`, 4500);
-      setTimeout(() => setQuickSuccess(null), 3500);
-    } catch {
+    } catch (err) {
       setQuickError('Gagal menyimpan catatan ke Vault. Coba lagi.');
+      throw err;
     }
   };
 

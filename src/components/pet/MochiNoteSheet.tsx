@@ -23,12 +23,14 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
   const [notes, setNotes] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (link) {
       setTitle(link.title || '');
       setNotes(link.notes || link.summary || '');
       setTags(link.tags || []);
+      setSaveError(null);
     }
   }, [link]);
 
@@ -39,6 +41,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
     if (isSubmitting) return;
 
     setIsSubmitting(true);
+    setSaveError(null);
     try {
       const trimmedNotes = notes.trim();
       // Sol ADR-003: Never falsely mark as 'grounded' just because user typed >=10 chars.
@@ -60,6 +63,9 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       };
       await onSaveAndFeed(updatedLink);
       onClose();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan catatan ke Vault. Draf Anda tetap aman di sini, coba lagi.';
+      setSaveError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -318,6 +324,14 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Save Error Alert Banner */}
+          {saveError && (
+            <div className="mx-4 mb-2 p-3 rounded-2xl bg-[#FDEDEC] border border-[#F5B7B1] text-[#78281F] text-xs font-semibold flex items-center gap-2 animate-fade-in select-none">
+              <span className="text-sm">⚠️</span>
+              <span className="flex-1">{saveError}</span>
+            </div>
+          )}
 
           {/* Bottom Action Footer with Cookie Button matching reference screenshot */}
           <div className="p-4 border-t border-[#EAE3D5] bg-[#FAF7F2] flex items-center gap-3">
