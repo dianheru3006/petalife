@@ -1,5 +1,7 @@
-// Petalife Service Worker (PWA & Complete Offline Precache)
-const CACHE_NAME = 'petalife-shell-v4';
+// Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
+const CACHE_PREFIX = 'petalife-shell-';
+const BUILD_ID = 'mvex3btw';
+const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 
 // 1. Static Web App Shell Assets
 const STATIC_PRECACHE = [
@@ -15,26 +17,33 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/index-B4fSxhIr.js","./assets/index-Bu0bmlMw.css","./assets/room-bg-B7tupBkv.jpg"];
+const BUILD_ASSETS = ["./assets/index-CwUj4188.js","./assets/index-CZFPa0id.css","./assets/room-bg-B7tupBkv.jpg"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
+
+// Message listener for user-approved update activation
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // 1. Install & Pre-cache Full App Shell + Build Assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ALL_PRECACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// 2. Activate & Purge Obsolete Caches
+// 2. Activate & Purge Obsolete Petalife Shell Caches (preserves IndexedDB and non-shell caches)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
     }).then(() => self.clients.claim())
@@ -50,7 +59,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Completely bypass Service Worker on localhost or for Vite dev paths to prevent breaking Vite HMR
+  // Completely bypass Service Worker on localhost, Vite dev paths, or API endpoints
   if (
     url.hostname === 'localhost' ||
     url.hostname === '127.0.0.1' ||
@@ -58,6 +67,9 @@ self.addEventListener('fetch', (event) => {
     url.pathname.includes('/@vite/') ||
     url.pathname.includes('/@fs/') ||
     url.pathname.includes('/src/') ||
+    url.pathname.includes('/api/') ||
+    url.pathname.includes('/summarize-link') ||
+    url.pathname.includes('/health') ||
     url.search.includes('v=')
   ) {
     return;
