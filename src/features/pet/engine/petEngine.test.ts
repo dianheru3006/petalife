@@ -294,6 +294,7 @@ describe('Pet Storage Adapter - localStorage persistence', () => {
   });
 
   it('saves and loads pet state with envelope versioning', () => {
+    const fixedNow = 1776500000000;
     const customPet: Pet = {
       ...mockPet,
       name: 'Mochi',
@@ -302,8 +303,8 @@ describe('Pet Storage Adapter - localStorage persistence', () => {
       hunger: 85,
     };
 
-    saveStoredPet(customPet);
-    const result = loadStoredPet(mockPet);
+    saveStoredPet(customPet, fixedNow);
+    const result = loadStoredPet(mockPet, fixedNow);
 
     expect(result.pet.level).toBe(4);
     expect(result.pet.exp).toBe(75);

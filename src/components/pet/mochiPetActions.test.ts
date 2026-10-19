@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { MochiAction, GazeDirection } from './MochiPet';
+import type { MochiAction, GazeDirection, AutonomousFidget } from './MochiPet';
 
 describe('MochiPet Action & Movement Constants', () => {
   it('supports all defined interactive tap actions', () => {
@@ -11,6 +11,25 @@ describe('MochiPet Action & Movement Constants', () => {
     expect(validActions).toContain('wink');
     expect(validActions).toContain('dance');
     expect(validActions).toContain('studying');
+  });
+
+  it('supports all defined autonomous idle fidgets', () => {
+    const validFidgets: AutonomousFidget[] = [
+      'none',
+      'tilt-left',
+      'tilt-right',
+      'humming',
+      'stretch',
+      'cute-wink',
+      'sprout-joy',
+    ];
+    expect(validFidgets).toHaveLength(7);
+    expect(validFidgets).toContain('tilt-left');
+    expect(validFidgets).toContain('tilt-right');
+    expect(validFidgets).toContain('humming');
+    expect(validFidgets).toContain('stretch');
+    expect(validFidgets).toContain('cute-wink');
+    expect(validFidgets).toContain('sprout-joy');
   });
 
   it('supports all defined idle gaze directions', () => {

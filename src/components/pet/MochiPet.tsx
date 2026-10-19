@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 
 export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying';
 export type GazeDirection = 'center' | 'left' | 'right';
+export type AutonomousFidget = 'none' | 'tilt-left' | 'tilt-right' | 'humming' | 'stretch' | 'cute-wink' | 'sprout-joy';
 
 const ACTION_DURATIONS: Record<MochiAction, number> = {
   idle: 0,
@@ -14,6 +15,16 @@ const ACTION_DURATIONS: Record<MochiAction, number> = {
   wink: 700,
   dance: 1400,
   studying: 4200,
+};
+
+const FIDGET_DURATIONS: Record<AutonomousFidget, number> = {
+  none: 0,
+  'tilt-left': 2200,
+  'tilt-right': 2200,
+  humming: 2400,
+  stretch: 1900,
+  'cute-wink': 1300,
+  'sprout-joy': 1400,
 };
 
 export interface MochiPetProps {
@@ -35,8 +46,11 @@ export const MochiPet: FC<MochiPetProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [currentAction, setCurrentAction] = useState<MochiAction>('idle');
+  const [fidget, setFidget] = useState<AutonomousFidget>('none');
   const [gaze, setGaze] = useState<GazeDirection>('center');
   const actionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fidgetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nextFidgetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gazeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastForcedIdRef = useRef<number | null>(null);
 
@@ -45,6 +59,11 @@ export const MochiPet: FC<MochiPetProps> = ({
   const isHappy = pet.state === 'happy' || currentAction !== 'idle';
   const effectiveGaze: GazeDirection = isSleeping || isFeeding ? 'center' : gaze;
 
+  // Stat-driven contextual states for dynamic baseline expressions
+  const isTired = pet.energy < 45 && !isSleeping;
+  const isHungry = pet.hunger < 60 && !isFeeding;
+  const isFullAndHappy = pet.hunger >= 80 && pet.energy >= 70 && (pet.mood ?? 70) >= 70;
+
   // Natural idle looking around (bookshelf left <-> TV right <-> center)
   useEffect(() => {
     if (isSleeping || isFeeding) {
@@ -52,8 +71,8 @@ export const MochiPet: FC<MochiPetProps> = ({
     }
 
     const interval = setInterval(() => {
-      // Only glance around if Mochi is idle
-      if (currentAction !== 'idle') return;
+      // Only glance around if Mochi is idle and not in middle of a fidget
+      if (currentAction !== 'idle' || fidget !== 'none') return;
 
       const rand = Math.random();
       const newGaze: GazeDirection = rand < 0.38 ? 'left' : rand < 0.76 ? 'right' : 'center';
@@ -71,9 +90,59 @@ export const MochiPet: FC<MochiPetProps> = ({
       clearInterval(interval);
       if (gazeTimerRef.current) clearTimeout(gazeTimerRef.current);
     };
-  }, [isSleeping, isFeeding, currentAction]);
+  }, [isSleeping, isFeeding, currentAction, fidget]);
+
+  // Autonomous Fidget System (Spontaneous cute idle behaviors every 10-15s)
+  useEffect(() => {
+    if (isSleeping || isFeeding) {
+      setFidget('none');
+      if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
+      if (nextFidgetTimerRef.current) clearTimeout(nextFidgetTimerRef.current);
+      return;
+    }
+
+    let isSubscribed = true;
+
+    const scheduleFidget = () => {
+      // Random interval between 10s and 15s
+      const delay = 10000 + Math.random() * 5000;
+      nextFidgetTimerRef.current = setTimeout(() => {
+        if (!isSubscribed) return;
+        if (currentAction === 'idle' && !isSleeping && !isFeeding) {
+          // Available fidget pool
+          const pool: AutonomousFidget[] = ['tilt-left', 'tilt-right', 'stretch', 'cute-wink', 'sprout-joy'];
+          // Mochi hums when well-fed and energized
+          if (pet.hunger >= 65 && pet.energy >= 50) {
+            pool.push('humming', 'humming');
+          }
+          const chosen = pool[Math.floor(Math.random() * pool.length)];
+          setFidget(chosen);
+
+          fidgetTimerRef.current = setTimeout(() => {
+            if (!isSubscribed) return;
+            setFidget('none');
+            scheduleFidget();
+          }, FIDGET_DURATIONS[chosen]);
+        } else {
+          scheduleFidget();
+        }
+      }, delay);
+    };
+
+    scheduleFidget();
+
+    return () => {
+      isSubscribed = false;
+      if (nextFidgetTimerRef.current) clearTimeout(nextFidgetTimerRef.current);
+      if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
+    };
+  }, [isSleeping, isFeeding, currentAction, pet.hunger, pet.energy]);
 
   const triggerAction = useCallback((action: MochiAction) => {
+    // Clear any active autonomous fidget immediately
+    setFidget('none');
+    if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
+
     setCurrentAction(action);
     if (actionTimerRef.current) clearTimeout(actionTimerRef.current);
     actionTimerRef.current = setTimeout(() => {
@@ -95,6 +164,10 @@ export const MochiPet: FC<MochiPetProps> = ({
 
   // Handle interactive clicks on Mochi with random animations
   const handleClick = () => {
+    // Clear any active autonomous fidget instantly so user click has immediate priority
+    setFidget('none');
+    if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
+
     if (isSleeping) {
       onPetClick?.('idle');
       return;
@@ -113,6 +186,8 @@ export const MochiPet: FC<MochiPetProps> = ({
     if (isFeeding) return 'anim-mochi-eating';
     if (currentAction === 'studying') return 'anim-mochi-studying';
     if (isSleeping) return 'anim-mochi-sleeping';
+
+    // Interactive actions triggered by user have top priority
     switch (currentAction) {
       case 'hop':
         return 'anim-mochi-hop';
@@ -124,9 +199,30 @@ export const MochiPet: FC<MochiPetProps> = ({
         return 'anim-mochi-wink';
       case 'dance':
         return 'anim-mochi-dance';
-      default:
+    }
+
+    // Autonomous Fidgets
+    switch (fidget) {
+      case 'tilt-left':
+        return 'anim-mochi-tilt-left';
+      case 'tilt-right':
+        return 'anim-mochi-tilt-right';
+      case 'humming':
+        return 'anim-mochi-humming';
+      case 'stretch':
+        return 'anim-mochi-stretch';
+      case 'cute-wink':
+        return 'anim-mochi-wink';
+      case 'sprout-joy':
         return 'anim-mochi-idle';
     }
+
+    // Stat-driven idle breathing
+    if (isTired) {
+      return 'anim-mochi-idle-tired';
+    }
+
+    return 'anim-mochi-idle';
   };
 
   return (
@@ -141,10 +237,21 @@ export const MochiPet: FC<MochiPetProps> = ({
         </div>
       )}
 
-      {/* Dynamic Floating Particles based on Action */}
-      {(isFeeding || currentAction !== 'idle' || isHappy) && (!isSleeping || currentAction === 'studying') && (
+      {/* Dynamic Floating Particles based on Action & Fidgets */}
+      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink') && (!isSleeping || currentAction === 'studying') && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
-          {currentAction === 'studying' ? (
+          {fidget === 'humming' && currentAction === 'idle' ? (
+            <>
+              <span className="text-xl anim-float-note text-[#E57399] drop-shadow-xs">♪</span>
+              <span className="text-lg anim-float-note text-[#7161BF] drop-shadow-xs" style={{ animationDelay: '0.2s' }}>♫</span>
+              <span className="text-sm anim-float-note text-[#F4A261] drop-shadow-xs" style={{ animationDelay: '0.4s' }}>✨</span>
+            </>
+          ) : fidget === 'cute-wink' && currentAction === 'idle' ? (
+            <>
+              <span className="text-lg anim-float-heart">✨</span>
+              <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>💖</span>
+            </>
+          ) : currentAction === 'studying' ? (
             <>
               <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0s' }}>📖</span>
               <span className="text-lg anim-float-note drop-shadow-xs" style={{ animationDelay: '0.2s' }}>✏️</span>
@@ -281,7 +388,7 @@ export const MochiPet: FC<MochiPetProps> = ({
 
           {/* 2. Sprout on Head (Cylindrical 3D Stem + Sculpted Twin Leaves) */}
           <g
-            className="anim-gentle-sway"
+            className={fidget === 'sprout-joy' ? 'anim-sprout-joy' : 'anim-gentle-sway'}
             style={{
               transformOrigin: '100px 42px',
               transform:
@@ -357,11 +464,27 @@ export const MochiPet: FC<MochiPetProps> = ({
             style={{ transition: 'all 0.25s ease' }}
           />
 
-          {/* 6. Soft Rosy Blushing Cheeks */}
-          <ellipse cx="58" cy="112" rx="13" ry="8" fill="url(#blushClay)" />
-          <ellipse cx="142" cy="112" rx="13" ry="8" fill="url(#blushClay)" />
+          {/* 6. Soft Rosy Blushing Cheeks (Dynamically responsive to mood & stamina) */}
+          <ellipse
+            cx="58"
+            cy="112"
+            rx={isFullAndHappy ? 14 : isTired ? 11 : 13}
+            ry={isFullAndHappy ? 9 : isTired ? 7 : 8}
+            fill="url(#blushClay)"
+            opacity={isFullAndHappy ? 0.95 : isTired ? 0.45 : 0.75}
+            style={{ transition: 'all 0.4s ease' }}
+          />
+          <ellipse
+            cx="142"
+            cy="112"
+            rx={isFullAndHappy ? 14 : isTired ? 11 : 13}
+            ry={isFullAndHappy ? 9 : isTired ? 7 : 8}
+            fill="url(#blushClay)"
+            opacity={isFullAndHappy ? 0.95 : isTired ? 0.45 : 0.75}
+            style={{ transition: 'all 0.4s ease' }}
+          />
 
-          {/* 7. Eyes (Deep Chocolate Glossy Spheres or Expressive Action Shapes) */}
+          {/* 7. Eyes (Deep Chocolate Glossy Spheres, Action Shapes, or Fidget/Stat Moods) */}
           {currentAction === 'studying' ? (
             /* Focused Scholarly Eyes with Sparkles (◕ ◕) */
             <g>
@@ -407,8 +530,8 @@ export const MochiPet: FC<MochiPetProps> = ({
               <path d="M78 92 L80.5 98 L86.5 99 L82 103 L83.5 109 L78 105.5 L72.5 109 L74 103 L69.5 99 L75.5 98 Z" />
               <path d="M122 92 L124.5 98 L130.5 99 L126 103 L127.5 109 L122 105.5 L116.5 109 L118 103 L113.5 99 L119.5 98 Z" />
             </g>
-          ) : currentAction === 'wink' ? (
-            /* Left Eye Winks Shut (>), Right Eye Wide Sparkle */
+          ) : currentAction === 'wink' || (currentAction === 'idle' && fidget === 'cute-wink') ? (
+            /* Playful Wink (> ✦) */
             <g>
               <path d="M72 102 Q80 95 88 102" stroke="#2C1A14" strokeWidth="3.5" strokeLinecap="round" fill="none" />
               <path d="M72 102 Q80 108 88 102" stroke="#2C1A14" strokeWidth="2.5" strokeLinecap="round" fill="none" />
@@ -417,6 +540,89 @@ export const MochiPet: FC<MochiPetProps> = ({
               <ellipse cx="122" cy="102" rx="9" ry="11" fill="#2C1A14" />
               <circle cx="119" cy="97" r="3.6" fill="#FFFFFF" />
               <circle cx="125" cy="106" r="1.8" fill="#FFFFFF" />
+            </g>
+          ) : currentAction === 'idle' && (fidget === 'stretch' || fidget === 'humming') ? (
+            /* Contented Singing / Stretching Curved Eyes (^ ^) */
+            <g stroke="#2C1A14" strokeWidth="3.4" strokeLinecap="round" fill="none">
+              <path d="M72 103 Q80 96 88 103" />
+              <path d="M112 103 Q120 96 128 103" />
+            </g>
+          ) : currentAction === 'idle' && (fidget === 'tilt-left' || fidget === 'tilt-right') ? (
+            /* Curious Inquisitive Wide Eyes with Bright Highlights */
+            <g>
+              <ellipse cx="78" cy="102" rx="9" ry="11" fill="#2C1A14" />
+              <circle cx="75" cy="97" r="3.8" fill="#FFFFFF" />
+              <circle cx="81.5" cy="106" r="1.8" fill="#FFFFFF" />
+
+              <ellipse cx="122" cy="102" rx="9" ry="11" fill="#2C1A14" />
+              <circle cx="119" cy="97" r="3.8" fill="#FFFFFF" />
+              <circle cx="125.5" cy="106" r="1.8" fill="#FFFFFF" />
+            </g>
+          ) : isTired ? (
+            /* Sleepy / Drowsy Droopy Eyes with Soft Blinking */
+            <g
+              className="anim-sleepy-blink"
+              style={{
+                transform:
+                  effectiveGaze === 'left'
+                    ? 'translateX(-3px)'
+                    : effectiveGaze === 'right'
+                    ? 'translateX(3px)'
+                    : 'translateX(0px)',
+                transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.4, 1)',
+              }}
+            >
+              <ellipse cx="78" cy="104" rx="8" ry="7.5" fill="#2C1A14" />
+              <circle cx="76" cy="101" r="2.4" fill="#FFFFFF" />
+              <path d="M68 98 Q78 103 88 98" stroke="#E99F37" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+
+              <ellipse cx="122" cy="104" rx="8" ry="7.5" fill="#2C1A14" />
+              <circle cx="120" cy="101" r="2.4" fill="#FFFFFF" />
+              <path d="M112 98 Q122 103 132 98" stroke="#E99F37" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+            </g>
+          ) : isHungry ? (
+            /* Hungry Puppy Eyes Looking Subtly Towards Food Tray */
+            <g
+              className="anim-natural-blink"
+              style={{
+                transform:
+                  effectiveGaze === 'left'
+                    ? 'translateX(-3.5px) translateY(1.5px)'
+                    : effectiveGaze === 'right'
+                    ? 'translateX(3.5px) translateY(1.5px)'
+                    : 'translateY(1.5px)',
+                transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.4, 1)',
+              }}
+            >
+              <ellipse cx="78" cy="103" rx="8.5" ry="10" fill="#2C1A14" />
+              <circle cx="76" cy="99.5" r="3.4" fill="#FFFFFF" />
+              <circle cx="81" cy="106.5" r="1.6" fill="#FFFFFF" />
+
+              <ellipse cx="122" cy="103" rx="8.5" ry="10" fill="#2C1A14" />
+              <circle cx="120" cy="99.5" r="3.4" fill="#FFFFFF" />
+              <circle cx="125" cy="106.5" r="1.6" fill="#FFFFFF" />
+            </g>
+          ) : isFullAndHappy ? (
+            /* Radiant Full & Happy Sparkling Eyes */
+            <g
+              className="anim-natural-blink"
+              style={{
+                transform:
+                  effectiveGaze === 'left'
+                    ? 'translateX(-3.5px)'
+                    : effectiveGaze === 'right'
+                    ? 'translateX(3.5px)'
+                    : 'translateX(0px)',
+                transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.4, 1)',
+              }}
+            >
+              <ellipse cx="78" cy="102" rx="8.5" ry="10.5" fill="#2C1A14" />
+              <circle cx="75.5" cy="97" r="3.6" fill="#FFFFFF" />
+              <circle cx="81.5" cy="105.5" r="1.8" fill="#FFFFFF" />
+
+              <ellipse cx="122" cy="102" rx="8.5" ry="10.5" fill="#2C1A14" />
+              <circle cx="119.5" cy="97" r="3.6" fill="#FFFFFF" />
+              <circle cx="125.5" cy="105.5" r="1.8" fill="#FFFFFF" />
             </g>
           ) : (
             /* Expressive 3D Glossy Eyes with Natural Blinking and Organic Gaze Shift */
@@ -471,9 +677,9 @@ export const MochiPet: FC<MochiPetProps> = ({
               strokeLinecap="round"
               fill="none"
             />
-          ) : currentAction === 'dance' ? (
-            /* Musical Singing Mouth (o) */
-            <ellipse cx="100" cy="115" rx="5.5" ry="7" fill="#FF7070" stroke="#2C1A14" strokeWidth="2.0" />
+          ) : currentAction === 'dance' || (currentAction === 'idle' && fidget === 'humming') ? (
+            /* Musical Singing / Humming Mouth (o) */
+            <ellipse cx="100" cy="115" rx="5" ry="6.5" fill="#FF7070" stroke="#2C1A14" strokeWidth="2.0" />
           ) : currentAction === 'wiggle' ? (
             /* Laughing open happy mouth */
             <path
@@ -486,7 +692,7 @@ export const MochiPet: FC<MochiPetProps> = ({
           ) : currentAction === 'spin' ? (
             /* Excited rounded mouth */
             <ellipse cx="100" cy="115" rx="5" ry="6" fill="#FF7575" stroke="#2C1A14" strokeWidth="2.0" />
-          ) : currentAction === 'wink' ? (
+          ) : currentAction === 'wink' || (currentAction === 'idle' && fidget === 'cute-wink') ? (
             /* Playful cute kitty smile */
             <path
               d="M93 113 Q96.5 117 100 114 Q103.5 117 107 113"
@@ -500,6 +706,42 @@ export const MochiPet: FC<MochiPetProps> = ({
               d="M93 113 Q100 122 107 113"
               stroke="#2C1A14"
               strokeWidth="2.5"
+              strokeLinecap="round"
+              fill="none"
+            />
+          ) : currentAction === 'idle' && fidget === 'stretch' ? (
+            /* Contented sigh smile */
+            <path
+              d="M94 112 Q100 118 106 112"
+              stroke="#2C1A14"
+              strokeWidth="2.3"
+              strokeLinecap="round"
+              fill="none"
+            />
+          ) : isHungry ? (
+            /* Cute pouty mouth asking for food */
+            <path
+              d="M94 115 Q100 111 106 115"
+              stroke="#2C1A14"
+              strokeWidth="2.3"
+              strokeLinecap="round"
+              fill="none"
+            />
+          ) : isTired ? (
+            /* Gentle drowsy mouth */
+            <path
+              d="M96 113 Q100 115 104 113"
+              stroke="#2C1A14"
+              strokeWidth="2.0"
+              strokeLinecap="round"
+              fill="none"
+            />
+          ) : isFullAndHappy ? (
+            /* Wide beaming cheerful smile */
+            <path
+              d="M93 112 Q100 121 107 112"
+              stroke="#2C1A14"
+              strokeWidth="2.4"
               strokeLinecap="round"
               fill="none"
             />
