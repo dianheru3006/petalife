@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'petalife.brainGatewayUrl.v1';
-export const DEFAULT_BRAIN_GATEWAY_URL = 'https://7474911c071a9d.lhr.life';
+export const DEFAULT_BRAIN_GATEWAY_URL = 'https://8202463e0c3783.lhr.life';
 
 export function normalizeBrainGatewayUrl(input: string): string | null {
   const value = input.trim();
