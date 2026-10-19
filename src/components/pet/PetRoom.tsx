@@ -619,7 +619,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             keyTakeaways: parsed.keyTakeaways,
             actionableInsights: parsed.actionableInsights,
             reflectionPrompt: parsed.reflectionPrompt,
-            notes: parsed.notes || parsed.coreThesis || 'Imported from AI Sol',
+            notes: parsed.notes || parsed.coreThesis || 'Catatan Ekstraksi',
             summary: parsed.coreThesis || parsed.title,
           };
 
@@ -635,11 +635,11 @@ export const PetRoom: FC<PetRoomProps> = ({
             setQuickUrl('');
             setHoldingNoteLink(newLink);
             setForcedAction({ id: Date.now(), action: 'holding-note' });
-            triggerSpeech('Ringkasan Sol berhasil diimpor! Cek catatan Mochi yuk 📄✨', 6000);
+            triggerSpeech('Catatan materi berhasil disimpan! Cek catatan Mochi yuk 📄✨', 6000);
             if (isAwarded) {
-              setQuickSuccess(`🎉 Ringkasan AI berhasil disimpan! (+10 XP)`);
+              setQuickSuccess(`🎉 Ringkasan berhasil disimpan! (+10 XP)`);
             } else {
-              setQuickSuccess(`🎉 Ringkasan AI berhasil disimpan ke Vault!`);
+              setQuickSuccess(`🎉 Ringkasan berhasil disimpan ke Vault!`);
             }
             setTimeout(() => setQuickSuccess(null), 3500);
             return;
@@ -656,7 +656,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     const targetUrl = urlMatch ? urlMatch[0] : trimmed;
     const userContext = urlMatch ? trimmed.replace(targetUrl, '').trim() : '';
     if (!isValidUrl(targetUrl)) {
-      setQuickError('Masukkan format URL valid (youtube.com, web) atau tempel JSON dari Sol.');
+      setQuickError('Masukkan format tautan yang valid (contoh: https://youtube.com/...)');
       return;
     }
 
@@ -1073,8 +1073,8 @@ export const PetRoom: FC<PetRoomProps> = ({
         </div>
       </div>
 
-      {/* 4. Quick Link Capture Pill: "+ Tempel link di sini... 📋" (Ergonomic touch targets with generous breathing room) */}
-      <div className="pt-2 sm:pt-3">
+      {/* 4. Quick Link Capture */}
+      <div className="pt-2 sm:pt-2.5">
         {quickSuccess && (
           <div role="status" className="mb-2.5 p-2 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-1.5 animate-fade-in">
             <CheckCircle2 className="w-4 h-4 text-[#1E6B3B] shrink-0" />
@@ -1087,6 +1087,14 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
+        {/* Clean, Cozy Section Header */}
+        <div className="flex items-center justify-between px-2.5 mb-2 text-xs select-none">
+          <span className="font-bold text-[#5A5043] flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#D97736]" />
+            <span>Simpan Materi Belajar</span>
+          </span>
+          <span className="text-[11px] font-semibold text-[#8C8275]">YouTube & Artikel</span>
+        </div>
 
         <form onSubmit={handleQuickAddLink} className="relative flex items-center">
           {/* Subtle Decorative Link Icon on Left */}
@@ -1105,9 +1113,9 @@ export const PetRoom: FC<PetRoomProps> = ({
               setQuickUrl(e.target.value);
               if (quickError) setQuickError(null);
             }}
-            placeholder="Tempel link atau JSON dari Sol..."
+            placeholder="Tempel tautan materi (YouTube, artikel)..."
             className={cn(
-              'w-full text-sm sm:text-base pl-11 pr-13 py-3.5 sm:py-4 rounded-full text-[#2E2E3A] placeholder-[#7E786D] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-500 border',
+              'w-full text-sm sm:text-base pl-11 pr-12 sm:pr-14 py-3.5 sm:py-4 rounded-full text-[#2E2E3A] placeholder-[#7E786D] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-500 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-[#FAF6EE]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] focus:bg-[#FFFDF9]'
