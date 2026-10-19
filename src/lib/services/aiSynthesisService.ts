@@ -72,11 +72,17 @@ export async function synthesizeLink(
         ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
         : '';
 
+      const envSecret = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_SECRET) as string | undefined;
+      const devSecret = typeof window !== 'undefined' ? localStorage.getItem('petalife.devApiSecret') : null;
+      const apiSecret = envSecret || devSecret;
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
       if (initData) {
         headers['X-Telegram-Init-Data'] = initData;
+      } else if (apiSecret) {
+        headers['X-API-Secret'] = apiSecret;
       }
 
       const res = await fetch(apiUrl, {
