@@ -16,7 +16,6 @@ import {
   X,
   ArrowRight,
   PawPrint,
-  Vibrate,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus, getDisplayStats } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -109,7 +108,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     fabCloseTimeoutRef.current = setTimeout(() => {
       setIsFabOpen(false);
       setIsFabClosing(false);
-    }, 320);
+    }, 280);
   };
 
   const handleToggleFab = () => {
@@ -831,23 +830,6 @@ export const PetRoom: FC<PetRoomProps> = ({
                 aria-label="Buka lemari kostum Mochi"
               >
                 <Shirt className="w-5 h-5" />
-              </button>
-
-              {/* 5. Shake Mochi / Device Shake Simulator */}
-              <button
-                type="button"
-                onClick={() => {
-                  closeFab();
-                  triggerShake();
-                }}
-                className={cn(
-                  isFabClosing ? 'anim-fab-exit-5' : 'anim-fab-item-5',
-                  'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#E57399] hover:text-[#D81B60] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E57399]'
-                )}
-                title="Guncang HP / Mochi! 📳 (Tekan S di keyboard)"
-                aria-label="Guncang HP atau Mochi"
-              >
-                <Vibrate className="w-5 h-5" />
               </button>
             </div>
           )}

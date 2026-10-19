@@ -906,34 +906,24 @@
   animation-delay: 0.11s;
 }
 
-.anim-fab-item-5 {
-  animation: fab-bubble-bloom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.14s;
-}
-
-.anim-fab-exit-5 {
+.anim-fab-exit-4 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0s;
 }
 
-.anim-fab-exit-4 {
+.anim-fab-exit-3 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0.025s;
 }
 
-.anim-fab-exit-3 {
+.anim-fab-exit-2 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
   animation-delay: 0.05s;
 }
 
-.anim-fab-exit-2 {
-  animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
-  animation-delay: 0.075s;
-}
-
 .anim-fab-exit-1 {
   animation: fab-bubble-collapse 0.18s cubic-bezier(0.32, 0, 0.67, 0) forwards;
-  animation-delay: 0.1s;
+  animation-delay: 0.075s;
 }
 
 /* Silky-Smooth Modal Backdrop & Sheet Bloom Micro-Animations */
