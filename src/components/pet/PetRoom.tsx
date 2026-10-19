@@ -681,6 +681,13 @@ export const PetRoom: FC<PetRoomProps> = ({
     const startedAt = Date.now();
     if (platform === 'youtube') {
       startYouTubeStages();
+    } else if (platform === 'instagram' || platform === 'tiktok') {
+      forceMochiAction('studying');
+      triggerSpeech('Mochi sedang mengunduh & menyimak video Reel... 📹✨', 9000);
+      youtubeStageTimersRef.current.push(
+        setTimeout(() => triggerSpeech('Menganalisis ucapan & visual dengan Gemini... 🧠🔍', 12000), 9000),
+        setTimeout(() => triggerSpeech('Menyusun draf catatan empat lapis... 📄✨', 15000), 21000)
+      );
     } else {
       forceMochiAction('studying');
       triggerSpeech('Aku cek teks yang bisa kubaca... 📖🔍', 3500);
