@@ -311,14 +311,20 @@ export const PetRoom: FC<PetRoomProps> = ({
             'Ada materi seru yang mau dipelajari? 🎬',
             `Mochi senang bersama ${getUserDisplayName()}! 💖`,
           ];
+          if (savedLinks.length > 0) {
+            whispers.push(
+              `Ada ${savedLinks.length} materi di Vault! Mau pelajari 1 bareng Mochi? 📚✨`,
+              `Yuk buka Vault! Ada ${savedLinks.length} materi seru menunggumu 🎬`
+            );
+          }
           const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
-          triggerSpeech(randomWhisper, 3200);
+          triggerSpeech(randomWhisper, 4200);
         }
       }
     }, 45000);
 
     return () => clearInterval(whisperInterval);
-  }, [isFeeding, activeNight]);
+  }, [isFeeding, activeNight, savedLinks.length]);
 
   // Idle gentle food alternation ("kadang onigiri, kadang varian makanan lain")
   useEffect(() => {
@@ -438,11 +444,22 @@ export const PetRoom: FC<PetRoomProps> = ({
     const cuteReplies = [
       'Yaaay! Semangat belajar bareng kamu! ✨',
       `Mochi siap menemani ${getUserDisplayName()}! 🍵`,
-      'Ada resep atau video baru yang seru? 🍳',
       `Streak belajarmu ${pet.streakDays} hari berturut-turut! 🔥`,
       contextualStatus.speechText,
     ];
-    triggerSpeech(cuteReplies[Math.floor(Math.random() * cuteReplies.length)], 3800);
+
+    if (savedLinks.length > 0) {
+      cuteReplies.push(
+        `Ada ${savedLinks.length} materi di Vault nih! Mau review 1 bareng aku? 📚✨`,
+        `Mochi siap belajar! Ada ${savedLinks.length} materi tersimpan di Vault 📖`
+      );
+    } else {
+      cuteReplies.push(
+        'Ada resep atau video baru yang seru? Tempel link di bawah ya! 🍳'
+      );
+    }
+
+    triggerSpeech(cuteReplies[Math.floor(Math.random() * cuteReplies.length)], 4000);
   };
 
   const handleDanceClick = () => {
@@ -842,16 +859,34 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        {/* Speech Bubble directly above Mochi (Only appears on direct interaction, wraps to 2 lines when long) */}
+        {/* Speech Bubble directly above Mochi (Wraps cleanly, interactive button when mentioning Vault) */}
         <div
-          className={`absolute bottom-[52%] sm:bottom-[53%] left-[49%] -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 ease-out transform ${
+          className={cn(
+            'absolute bottom-[52%] sm:bottom-[53%] left-[49%] -translate-x-1/2 z-30 transition-all duration-300 ease-out transform',
             showSpeech
-              ? 'opacity-100 scale-100 translate-y-0'
+              ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
               : 'opacity-0 scale-90 translate-y-2 pointer-events-none'
-          }`}
+          )}
         >
-          <div className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] max-w-[220px] sm:max-w-[280px] text-center leading-snug break-words whitespace-normal relative">
+          <div
+            onClick={() => {
+              if (speech.includes('Vault')) {
+                onNavigate('vault');
+              }
+            }}
+            className={cn(
+              'bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] max-w-[220px] sm:max-w-[280px] text-center leading-snug break-words whitespace-normal relative transition-all active:scale-95',
+              speech.includes('Vault') ? 'cursor-pointer hover:border-[#D97736] hover:shadow-lg' : ''
+            )}
+            title={speech.includes('Vault') ? 'Ketuk untuk langsung membuka Vault' : undefined}
+          >
             <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
+            {speech.includes('Vault') && (
+              <span className="flex items-center justify-center gap-1 text-[10px] font-black text-[#BA5218] mt-1 bg-[#FFEFE8] px-2 py-0.5 rounded-full border border-[#FED7C5]/60">
+                <span>Buka Vault yuk</span>
+                <ArrowRight className="w-3 h-3" />
+              </span>
+            )}
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
           </div>
         </div>
@@ -987,27 +1022,6 @@ export const PetRoom: FC<PetRoomProps> = ({
         </form>
       </div>
 
-      {/* 5. Quiet Contextual Companion Strip (Connects Home to Vault & Solves Tall Screen Void) */}
-      <div className="p-3 rounded-2xl bg-[#FFF8F5] border border-[#FED7C5] flex items-center justify-between gap-3 text-xs shadow-xs select-none">
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-[#2E2E3A] leading-snug">
-            {savedLinks.length > 0 ? (
-              <>Ada <strong className="font-bold text-[#BA5218]">{savedLinks.length} materi</strong> di Vault. Mau pelajari 1 hari ini?</>
-            ) : (
-              <>Belum ada materi tersimpan. Simpan video atau link belajar favoritmu!</>
-            )}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => onNavigate('vault')}
-          className="shrink-0 min-h-[44px] px-3.5 rounded-xl bg-[#FFEFE8] hover:bg-[#FED7C5] text-[#9E410E] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
-          aria-label="Buka halaman Vault"
-        >
-          <span>Buka Vault</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
 
       {/* Modal Sheet: Quick Link Capture (Direct access on short screens) */}
       {isLinkSheetOpen && (
