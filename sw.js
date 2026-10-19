@@ -1,6 +1,6 @@
 // Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
 const CACHE_PREFIX = 'petalife-shell-';
-const BUILD_ID = 'mvfdwfxo';
+const BUILD_ID = 'mvfenmcj';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 
 // 1. Static Web App Shell Assets
@@ -128,6 +128,19 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return networkResponse;
+        }).catch(async (err) => {
+          // Robust styling fallback: if CSS asset fails to load, attempt fallback from previous shell caches
+          if (request.destination === 'style' || url.pathname.endsWith('.css')) {
+            const cacheNames = await caches.keys();
+            for (const name of cacheNames) {
+              if (name.startsWith(CACHE_PREFIX)) {
+                const c = await caches.open(name);
+                const match = await c.match(request);
+                if (match) return match;
+              }
+            }
+          }
+          throw err;
         });
       })
     );
