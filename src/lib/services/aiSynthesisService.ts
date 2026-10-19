@@ -41,14 +41,6 @@ export async function synthesizeLink(
   // Tier 1: Client-side metadata resolution (e.g. YouTube oEmbed)
   const meta = await resolveLinkMetadata(cleanUrl, platform, domain);
 
-  const isClosedSocial =
-    platform === 'instagram' ||
-    platform === 'tiktok' ||
-    domain.includes('threads.net') ||
-    domain.includes('x.com') ||
-    domain.includes('twitter') ||
-    domain.includes('facebook');
-
   // Tier 2: Check remote AI gateway (Asisten Heru / Gemini Flash / Groq)
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
   const isStaticHost = typeof window !== 'undefined' && Boolean(window.location?.hostname?.endsWith('github.io'));
@@ -132,25 +124,23 @@ export async function synthesizeLink(
   // Tier 3: Client-side ADR-001 compliant synthesizer
   const localSmart = generateSmartVaultContent(cleanUrl, platform, domain, meta.title, meta.author, userContext);
   
-  if (isClosedSocial && !userContext && !meta.isRealMetadata) {
-    return {
-      content: localSmart,
-      isFromRemoteAI: false,
-      evidenceLevel: 'url_only',
-      qualityStatus: 'needs_context',
-      captureMethod,
-      sourceExcerpt: undefined,
-    };
-  }
+  // Sol ADR-001: If user did NOT provide text context and we don't have full article text,
+  // metadata alone (like YouTube title or social link) is NEVER 'grounded'. It is 'needs_context'.
+  const evidenceLevel: EvidenceLevel = userContext
+    ? 'excerpt'
+    : (meta.isRealMetadata ? 'metadata_only' : 'url_only');
 
-  const hasGroundedContent = Boolean(userContext || meta.isRealMetadata);
+  const qualityStatus: LinkQualityStatus = userContext
+    ? 'grounded'
+    : 'needs_context';
+
   return {
     content: localSmart,
     isFromRemoteAI: false,
-    evidenceLevel: userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'),
-    qualityStatus: hasGroundedContent ? 'grounded' : 'needs_context',
+    evidenceLevel,
+    qualityStatus,
     captureMethod,
     sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
-    synthesizedAt: hasGroundedContent ? Date.now() : undefined,
+    synthesizedAt: userContext ? Date.now() : undefined,
   };
 }

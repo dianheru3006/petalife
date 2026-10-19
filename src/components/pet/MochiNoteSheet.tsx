@@ -215,10 +215,12 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   <span className="text-xl">💬</span>
                   <div className="text-xs text-[#6B4B18] leading-relaxed">
                     <p className="font-extrabold text-[13px] text-[#54380E]">
-                      Mochi baru mendapat tautannya
+                      Mochi baru mendapat tautan & judulnya
                     </p>
                     <p className="text-[11px] text-[#7A5B28] mt-0.5">
-                      Platform membatasi akses tanpa login. Tempelkan caption atau 1–2 kalimat intisari di bawah agar Mochi membuatkan ringkasan komprehensif.
+                      {link.platform === 'youtube'
+                        ? 'Video ini belum memiliki transkrip terbaca. Tempelkan 1–2 kalimat intisari atau poin penting materi agar Mochi melengkapi catatannya.'
+                        : 'Platform membatasi akses tanpa login. Tempelkan caption atau 1–2 kalimat intisari di bawah agar Mochi membuatkan ringkasan komprehensif.'}
                     </p>
                   </div>
                 </div>

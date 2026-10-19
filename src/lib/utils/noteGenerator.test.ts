@@ -57,4 +57,26 @@ describe('Sol ADR-001 Note Generator & Knowledge Synthesizer', () => {
     expect(threadsResult.actionableInsights.length).toBeGreaterThan(0);
     expect(threadsResult.notes).not.toContain('Mochi belum dapat membaca');
   });
+
+  it('correctly categorizes YouTube video "Bagaimana Uang Bisa Jadi Segalanya?" as Finansial (not Tech) and avoids fake takeaways without transcript', () => {
+    const youtubeResult = generateSmartVaultContent(
+      'https://youtu.be/z5rgIeCg0FU?si=g-cRpEt7gXPLQY70',
+      'youtube',
+      'youtu.be',
+      'Bagaimana Uang Bisa Jadi Segalanya?'
+    );
+
+    // 1. Must NEVER be categorized as Tech (due to substring "ai" in "Bagaimana")
+    expect(youtubeResult.category).toBe('Finansial');
+    expect(youtubeResult.tags).toContain('#finansial');
+    expect(youtubeResult.tags).not.toContain('#tech');
+    expect(youtubeResult.tags).not.toContain('#coding');
+
+    // 2. Sol ADR-001: Without transcript/user context, must NOT hallucinate software takeaways
+    expect(youtubeResult.keyTakeaways).toHaveLength(0);
+    expect(youtubeResult.actionableInsights).toHaveLength(0);
+    expect(youtubeResult.notes).not.toContain('Separation of Concerns');
+    expect(youtubeResult.notes).not.toContain('Offline-First');
+    expect(youtubeResult.notes).toContain('Mochi baru berhasil mencatat judul');
+  });
 });

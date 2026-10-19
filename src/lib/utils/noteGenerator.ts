@@ -15,8 +15,20 @@ export interface SmartVaultContent {
   author?: string;
 }
 
+function matchesKeyword(text: string, words: string[]): boolean {
+  const lower = text.toLowerCase();
+  return words.some(w => {
+    // For short tokens (<= 3 chars, e.g. 'ai', 'dev', 'ml'), enforce word boundaries so 'bagaimana' never matches 'ai'!
+    if (w.length <= 3) {
+      const re = new RegExp(`(^|[^a-z0-9])${w}([^a-z0-9]|$)`, 'i');
+      return re.test(lower);
+    }
+    return lower.includes(w.toLowerCase());
+  });
+}
+
 /**
- * Mochi Second Brain Comprehensive Synthesizer for Petalife.
+ * Mochi Second Brain Comprehensive Synthesizer for Petalife (Sol ADR-001).
  * Synthesizes links into deep, structured, high-signal knowledge without quiz clutter.
  */
 export function generateSmartVaultContent(
@@ -35,39 +47,71 @@ export function generateSmartVaultContent(
     domain.includes('twitter') ||
     domain.includes('facebook');
 
-  // ADR-001: For closed social media without user context or real metadata, do NOT hallucinate takeaways!
-  if (isClosedSocial && !userContext && !rawTitle) {
-    const title = `Bookmark ${platform.charAt(0).toUpperCase() + platform.slice(1)} (${domain})`;
-    const coreThesis = `Tautan ${platform} tersimpan sebagai bookmark. Menunggu cuplikan teks atau caption pengguna untuk dirangkum.`;
-    const formattedNotes = `📌 **Tautan Tersimpan sebagai Bookmark**\n\nMochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login.\n\n💡 **Tips Mochi:** Tempelkan caption atau 1–2 kalimat intisari agar Mochi dapat membuatkan ringkasan komprehensif!`;
+  const isVideoPlatform = platform === 'youtube';
+
+  // Determine subject matter from title and URL
+  const searchCorpus = `${url} ${rawTitle || ''} ${userContext || ''}`;
+
+  let detectedCategory: SmartVaultContent['category'] = 'Umum';
+  let defaultTags: string[] = [`#${platform}`];
+
+  if (matchesKeyword(searchCorpus, ['uang', 'finansial', 'finance', 'invest', 'bisnis', 'saham', 'crypto', 'kekayaan', 'wealth', 'money'])) {
+    detectedCategory = 'Finansial';
+    defaultTags.push('#finansial', '#investasi');
+  } else if (matchesKeyword(searchCorpus, ['psikolog', 'mental', 'bias', 'mindset', 'habit', 'emosi', 'fokus', 'kebiasaan', 'ego', 'filsafat'])) {
+    detectedCategory = 'Psikologi';
+    defaultTags.push('#psikologi', '#mindset');
+  } else if (matchesKeyword(searchCorpus, ['schedule', 'maker', 'produktiv', 'waktu', 'deepwork', 'graham', 'manajemen'])) {
+    detectedCategory = 'Produktivitas';
+    defaultTags.push('#produktivitas', '#manajemenwaktu');
+  } else if (matchesKeyword(searchCorpus, ['code', 'dev', 'tech', 'ai', 'program', 'software', 'python', 'react', 'coding', 'arsitektur'])) {
+    detectedCategory = 'Tech';
+    defaultTags.push('#tech', '#coding');
+  } else if (matchesKeyword(searchCorpus, ['resep', 'masak', 'cook', 'makan', 'steak', 'kopi', 'kuliner'])) {
+    detectedCategory = 'Kuliner';
+    defaultTags.push('#kuliner');
+  }
+
+  // Sol ADR-001: For video & closed social media WITHOUT user context or transcript,
+  // do NOT fabricate fake 4-layer takeaways! Save honestly as metadata/bookmark.
+  if ((isClosedSocial || isVideoPlatform) && !userContext) {
+    const title = rawTitle || `Bookmark ${platform.charAt(0).toUpperCase() + platform.slice(1)} (${domain})`;
+    const coreThesis = rawTitle
+      ? `Tautan ${platform} tentang ${detectedCategory.toLowerCase()} tersimpan. Menunggu catatan atau transkrip untuk analisis mendalam.`
+      : `Tautan ${platform} tersimpan sebagai bookmark. Menunggu cuplikan teks atau caption pengguna untuk dirangkum.`;
+    
+    const reasonText = isClosedSocial && !rawTitle
+      ? 'Mochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login.'
+      : 'Mochi baru berhasil mencatat judul dan tautannya. Karena video/postingan ini belum memiliki transkrip tertulis, Mochi belum membuat analisis 4 lapis tiruan.';
+
+    const formattedNotes = [
+      `📌 **Tautan Tersimpan sebagai Bookmark (Metadata Terverifikasi)**\n`,
+      `**Judul:** ${title}`,
+      `**Kategori Terdeteksi:** ${detectedCategory}`,
+      `**Sumber:** ${domain}${author ? ` (${author})` : ''}\n`,
+      `💬 **Catatan Mochi:** ${reasonText}`,
+      `💡 **Tips:** Tempelkan 1–2 kalimat poin penting yang kamu pelajari dari materi ini agar Mochi buatkan intisari komprehensif!`
+    ].join('\n');
 
     return {
       title,
-      category: 'Umum',
+      category: detectedCategory,
       coreThesis,
       keyTakeaways: [],
       actionableInsights: [],
-      reflectionPrompt: 'Apa gagasan atau alasan utama kamu menyimpan postingan ini?',
+      reflectionPrompt: 'Apa gagasan atau wawasan paling menarik yang kamu temukan dari materi ini?',
       notes: formattedNotes,
       summary: coreThesis,
-      tags: [`#${platform}`, '#bookmark'],
+      tags: defaultTags,
       author,
     };
   }
 
-  const lowerUrl = (url + ' ' + (rawTitle || '') + ' ' + (userContext || '')).toLowerCase();
+  const lowerUrl = searchCorpus.toLowerCase();
 
   // 1. Tech, AI, Coding, Software Architecture
   if (
-    lowerUrl.includes('code') ||
-    lowerUrl.includes('dev') ||
-    lowerUrl.includes('tech') ||
-    lowerUrl.includes('ai') ||
-    lowerUrl.includes('program') ||
-    lowerUrl.includes('software') ||
-    lowerUrl.includes('python') ||
-    lowerUrl.includes('react') ||
-    lowerUrl.includes('clean code')
+    matchesKeyword(lowerUrl, ['code', 'dev', 'tech', 'ai', 'program', 'software', 'python', 'react', 'clean code', 'arsitektur'])
   ) {
     const title = rawTitle || `Prinsip Arsitektur & Efisiensi Sistem (${domain})`;
     const coreThesis = 'Sistem perangkat lunak yang tangguh dibangun di atas pemisahan modularitas yang disiplin, prediktabilitas state, dan kemudahan pemeliharaan jangka panjang.';
