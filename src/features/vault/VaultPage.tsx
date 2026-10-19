@@ -274,7 +274,7 @@ export const VaultPage: FC<VaultPageProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-[#4A4A5A] mb-1">
-                Initial Takeaway / Note (Feeds into Daily Quiz)
+                Catatan & Intisari Pembelajaran
               </label>
               <textarea
                 value={customNotes}
@@ -479,9 +479,9 @@ export const VaultPage: FC<VaultPageProps> = ({
                       </h4>
 
                       {(link.summary || link.notes) && (
-                        <p className="text-xs text-[#3E3E4E] mb-3 bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EFE8DD] leading-relaxed">
-                          💡 <b>Takeaway:</b> {link.notes || link.summary}
-                        </p>
+                        <div className="text-xs text-[#3E3E4E] mb-3 bg-[#FAF7F2] p-3 rounded-2xl border border-[#EFE8DD] leading-relaxed whitespace-pre-wrap font-normal">
+                          {link.notes || link.summary}
+                        </div>
                       )}
                     </>
                   )}
