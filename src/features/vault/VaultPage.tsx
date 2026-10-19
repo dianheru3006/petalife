@@ -5,8 +5,9 @@ import { detectPlatform, isValidUrl, cn } from '../../lib/utils';
 import { normalizeUrl } from '../../lib/utils/urlUtils';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { Search, Plus, ExternalLink, Trash2, Bookmark, Pencil, Check } from 'lucide-react';
+import { Search, Plus, ExternalLink, Trash2, Bookmark, Pencil, Check, RefreshCw, AlertTriangle } from 'lucide-react';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
+import { synthesizeLink } from '../../lib/services/aiSynthesisService';
 
 export interface VaultPageProps {
   links: SavedLink[];
@@ -35,6 +36,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [isAddingOpen, setIsAddingOpen] = useState(false);
+  const [retryingLinkId, setRetryingLinkId] = useState<string | null>(null);
 
   // Card edit mode states
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
@@ -66,6 +68,48 @@ export const VaultPage: FC<VaultPageProps> = ({
       setEditingLinkId(null);
       setSuccessToast('✨ Study material updated successfully!');
       setTimeout(() => setSuccessToast(null), 3000);
+    }
+  };
+
+  const handleRetrySynthesis = async (link: SavedLink) => {
+    setRetryingLinkId(link.id);
+    try {
+      const { platform, domain } = detectPlatform(link.url);
+      const res = await synthesizeLink(link.url, platform, domain);
+      if (onUpdateLink) {
+        onUpdateLink(link.id, {
+          title: res.content.title || link.title,
+          category: res.content.category || link.category,
+          coreThesis: res.content.coreThesis || link.coreThesis,
+          keyTakeaways: res.content.keyTakeaways || link.keyTakeaways,
+          actionableInsights: res.content.actionableInsights || link.actionableInsights,
+          reflectionPrompt: res.content.reflectionPrompt || link.reflectionPrompt,
+          notes: res.content.notes || link.notes,
+          summary: res.content.summary || link.summary,
+          tags: res.content.tags || link.tags,
+          author: res.content.author || link.author,
+          evidenceLevel: res.evidenceLevel,
+          qualityStatus: res.qualityStatus,
+          gatewayErrorType: res.gatewayErrorType,
+          gatewayErrorMessage: res.gatewayErrorMessage,
+          gatewayErrorAction: res.gatewayErrorAction,
+          gatewayHttpStatus: res.gatewayHttpStatus,
+          synthesizedAt: res.synthesizedAt || link.synthesizedAt,
+          updatedAt: Date.now(),
+        });
+      }
+      if (res.qualityStatus === 'grounded') {
+        setSuccessToast('🎉 Sintesis 4 lapis berhasil diperbarui dari Brain Gateway!');
+        setTimeout(() => setSuccessToast(null), 3500);
+      } else if (res.qualityStatus === 'gateway_error') {
+        setUrlError(res.gatewayErrorMessage || 'Koneksi gateway gagal.');
+        setTimeout(() => setUrlError(null), 4000);
+      }
+    } catch {
+      setUrlError('Gagal melakukan sintesis ulang. Periksa koneksi.');
+      setTimeout(() => setUrlError(null), 4000);
+    } finally {
+      setRetryingLinkId(null);
     }
   };
 
@@ -543,6 +587,34 @@ export const VaultPage: FC<VaultPageProps> = ({
                       <h4 className="font-extrabold text-sm text-[#2E2E3A] leading-snug mb-2">
                         {link.title}
                       </h4>
+
+                      {/* Honest Gateway Fallback / Error Banner (Sol ADR-002) */}
+                      {(link.qualityStatus === 'gateway_error' || link.qualityStatus === 'needs_context') && (
+                        <div className="mb-3 p-3 rounded-2xl bg-[#FFF5F2] border border-[#FED7C5] text-xs space-y-1.5 select-none">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-1.5 min-w-0">
+                              <AlertTriangle className="w-4 h-4 text-[#BA5218] shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <p className="font-bold text-[#BA5218]">
+                                  {link.gatewayErrorMessage || (link.qualityStatus === 'needs_context' ? 'Transkrip video belum tersedia' : 'Koneksi Brain Gateway terputus')}
+                                </p>
+                                <p className="text-[11px] text-[#7A3613] mt-0.5 leading-snug">
+                                  {link.gatewayErrorAction || (link.qualityStatus === 'needs_context' ? 'Tambah caption/cuplikan teks materi untuk intisari.' : 'Periksa koneksi gateway atau coba lagi.')}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRetrySynthesis(link)}
+                              disabled={retryingLinkId === link.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#BA5218] text-white text-[11px] font-bold rounded-xl shrink-0 hover:bg-[#9E410E] active:scale-95 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                            >
+                              <RefreshCw className={`w-3 h-3 ${retryingLinkId === link.id ? 'animate-spin' : ''}`} />
+                              <span>{retryingLinkId === link.id ? 'Memproses...' : 'Sintesis Ulang'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {(link.summary || link.notes) && (
                         <div className="text-xs text-[#3E3E4E] mb-3 bg-[#FAF7F2] p-3 rounded-2xl border border-[#EFE8DD] leading-relaxed whitespace-pre-wrap font-normal">

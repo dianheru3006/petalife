@@ -32,7 +32,15 @@ export interface KeyTakeaway {
 
 export type CaptureMethod = 'share_sheet' | 'bot_chat' | 'manual_paste' | 'import_json';
 export type EvidenceLevel = 'full_text' | 'excerpt' | 'metadata_only' | 'url_only';
-export type LinkQualityStatus = 'grounded' | 'needs_context' | 'bookmark_only' | 'draft';
+export type GatewayErrorType =
+  | 'network_error'
+  | 'timeout'
+  | 'unauthorized'
+  | 'rate_limited'
+  | 'server_error'
+  | 'invalid_response';
+
+export type LinkQualityStatus = 'grounded' | 'needs_context' | 'bookmark_only' | 'draft' | 'gateway_error';
 
 export interface SavedLink {
   id: string;
@@ -58,6 +66,10 @@ export interface SavedLink {
   qualityStatus?: LinkQualityStatus;
   sourceExcerpt?: string;
   synthesizedAt?: number;
+  gatewayErrorType?: GatewayErrorType;
+  gatewayErrorMessage?: string;
+  gatewayErrorAction?: string;
+  gatewayHttpStatus?: number;
 }
 
 export interface QuizQuestion {

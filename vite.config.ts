@@ -21,13 +21,17 @@ function injectServiceWorkerAssetsPlugin(): Plugin {
       }
 
       let swContent = fs.readFileSync(swFile, 'utf-8');
+      const buildId = Date.now().toString(36);
       const assetsJson = JSON.stringify(assetFiles);
       swContent = swContent.replace(
         'const BUILD_ASSETS = [];',
         `const BUILD_ASSETS = ${assetsJson};`
+      ).replace(
+        "const BUILD_ID = '__BUILD_ID__';",
+        `const BUILD_ID = '${buildId}';`
       );
       fs.writeFileSync(swFile, swContent, 'utf-8');
-      console.log(`[PWA Plugin] Injected ${assetFiles.length} hashed build assets into dist/sw.js for offline precache.`);
+      console.log(`[PWA Plugin] Injected ${assetFiles.length} hashed build assets & build ID (${buildId}) into dist/sw.js for offline precache.`);
     }
   };
 }

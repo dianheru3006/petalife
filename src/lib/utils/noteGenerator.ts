@@ -1,4 +1,4 @@
-import type { PlatformType, KeyTakeaway } from '../types';
+import type { PlatformType, KeyTakeaway, GatewayErrorType } from '../types';
 
 export type { KeyTakeaway };
 
@@ -37,7 +37,8 @@ export function generateSmartVaultContent(
   domain: string,
   rawTitle?: string,
   author?: string,
-  userContext?: string
+  userContext?: string,
+  gatewayError?: { type: GatewayErrorType; message: string; action: string; status?: number }
 ): SmartVaultContent {
   const isClosedSocial =
     platform === 'instagram' ||
@@ -74,23 +75,29 @@ export function generateSmartVaultContent(
 
   // Sol ADR-001: For video & closed social media WITHOUT user context or transcript,
   // do NOT fabricate fake 4-layer takeaways! Save honestly as metadata/bookmark.
-  if ((isClosedSocial || isVideoPlatform) && !userContext) {
+  if ((isClosedSocial || isVideoPlatform || gatewayError) && !userContext) {
     const title = rawTitle || `Bookmark ${platform.charAt(0).toUpperCase() + platform.slice(1)} (${domain})`;
     const coreThesis = rawTitle
-      ? `Tautan ${platform} tentang ${detectedCategory.toLowerCase()} tersimpan. Menunggu catatan atau transkrip untuk analisis mendalam.`
+      ? (gatewayError
+          ? `Tautan ${platform} tersimpan sebagai bookmark (menunggu sintesis: ${gatewayError.message}).`
+          : `Tautan ${platform} tentang ${detectedCategory.toLowerCase()} tersimpan. Menunggu catatan atau transkrip untuk analisis mendalam.`)
       : `Tautan ${platform} tersimpan sebagai bookmark. Menunggu cuplikan teks atau caption pengguna untuk dirangkum.`;
     
-    const reasonText = isClosedSocial && !rawTitle
-      ? 'Mochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login.'
-      : 'Mochi baru berhasil mencatat judul dan tautannya. Karena video/postingan ini belum memiliki transkrip tertulis, Mochi belum membuat analisis 4 lapis tiruan.';
+    const reasonText = gatewayError
+      ? `⚠️ **Koneksi Gateway:** ${gatewayError.message}\n🎯 **Tindakan:** ${gatewayError.action}`
+      : (isClosedSocial && !rawTitle
+          ? 'Mochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login.'
+          : 'Mochi baru berhasil mencatat judul dan tautannya. Karena video/postingan ini belum memiliki transkrip tertulis, Mochi belum membuat analisis 4 lapis tiruan.');
 
     const formattedNotes = [
-      `📌 **Tautan Tersimpan sebagai Bookmark (Metadata Terverifikasi)**\n`,
+      `📌 **Tautan Tersimpan sebagai Bookmark (${gatewayError ? 'Menunggu Sintesis' : 'Metadata Terverifikasi'})**\n`,
       `**Judul:** ${title}`,
       `**Kategori Terdeteksi:** ${detectedCategory}`,
       `**Sumber:** ${domain}${author ? ` (${author})` : ''}\n`,
-      `💬 **Catatan Mochi:** ${reasonText}`,
-      `💡 **Tips:** Tempelkan 1–2 kalimat poin penting yang kamu pelajari dari materi ini agar Mochi buatkan intisari komprehensif!`
+      `💬 **Catatan Mochi:**\n${reasonText}`,
+      gatewayError
+        ? `\n💡 **Tips:** Tekan tombol "Sintesis Ulang" di Vault setelah koneksi gateway tersedia!`
+        : `💡 **Tips:** Tempelkan 1–2 kalimat poin penting yang kamu pelajari dari materi ini agar Mochi buatkan intisari komprehensif!`
     ].join('\n');
 
     return {

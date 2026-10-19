@@ -1,4 +1,4 @@
-import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod } from '../types';
+import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod, GatewayErrorType } from '../types';
 import { generateSmartVaultContent, type SmartVaultContent } from '../utils/noteGenerator';
 import { resolveLinkMetadata } from './linkMetadataService';
 import { getBrainGatewayUrl, DEFAULT_BRAIN_GATEWAY_URL } from './brainGatewaySettings';
@@ -17,17 +17,22 @@ export interface SynthesizedLinkResult {
   captureMethod: CaptureMethod;
   sourceExcerpt?: string;
   synthesizedAt?: number;
+  gatewayErrorType?: GatewayErrorType;
+  gatewayErrorMessage?: string;
+  gatewayErrorAction?: string;
+  gatewayHttpStatus?: number;
 }
 
 /**
- * Mochi Second Brain Comprehensive AI Synthesizer Service (Sol ADR-001).
+ * Mochi Second Brain Comprehensive AI Synthesizer Service (Sol ADR-001 / ADR-002).
  *
  * Evidence-based ingestion pipeline:
  * 1. Resolves YouTube oEmbed metadata for real author & title.
  * 2. If genuine text evidence (user context, caption, or readable article) is present,
  *    calls remote Asisten Heru AI Gateway (/api/petalife/summarize-link) powered by Gemini & Groq.
  * 3. Never hallucinates fake 4-layer notes if source text is not genuinely available.
- *    Honors Sol's ADR-001 contract: grounded, needs_context, or bookmark_only.
+ * 4. Honest error propagation: distinguishes between missing transcript, auth failure (401),
+ *    rate limit (429), server error (502/503), timeout, and network/DNS failures.
  */
 export async function synthesizeLink(
   url: string,
@@ -50,6 +55,11 @@ export async function synthesizeLink(
     ? `${gatewayUrl.replace(/\/$/, '')}/api/petalife/summarize-link`
     : (!isStaticHost ? '/api/petalife/summarize-link' : null);
 
+  let gatewayErrorType: GatewayErrorType | undefined;
+  let gatewayErrorMessage: string | undefined;
+  let gatewayErrorAction: string | undefined;
+  let gatewayHttpStatus: number | undefined;
+
   if (apiUrl) {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -65,8 +75,6 @@ export async function synthesizeLink(
       };
       if (initData) {
         headers['X-Telegram-Init-Data'] = initData;
-      } else {
-        headers['X-API-Secret'] = '6116a98e96fc145b95df22582a254ed24dce6123ce8d74240b7d49a10e17e891';
       }
 
       const res = await fetch(apiUrl, {
@@ -78,10 +86,39 @@ export async function synthesizeLink(
         }),
         signal: controller.signal,
       });
+
+      gatewayHttpStatus = res.status;
+
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data && json.data.title) {
           const d = json.data;
+
+          // Check if server indicated missing transcript
+          if (d.qualityStatus === 'needs_context' && !d.notes) {
+            gatewayErrorMessage = 'Transkrip video belum tersedia.';
+            gatewayErrorAction = 'Tambah caption atau cuplikan teks materi.';
+            const localSmart = generateSmartVaultContent(
+              cleanUrl,
+              platform,
+              domain,
+              d.title || meta.title,
+              meta.author || d.author,
+              userContext
+            );
+            return {
+              content: localSmart,
+              isFromRemoteAI: true,
+              evidenceLevel: 'metadata_only',
+              qualityStatus: 'needs_context',
+              captureMethod,
+              sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
+              gatewayErrorMessage,
+              gatewayErrorAction,
+              gatewayHttpStatus: 200,
+            };
+          }
+
           const formattedNotes = d.notes || [
             `💡 **Gagasan Utama:**\n${d.coreThesis || ''}`,
             d.keyTakeaways?.length
@@ -119,28 +156,67 @@ export async function synthesizeLink(
             captureMethod,
             sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
             synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
+            gatewayHttpStatus: res.status,
           };
         }
+      } else if (res.status === 401) {
+        gatewayErrorType = 'unauthorized';
+        gatewayErrorMessage = 'Sesi AI belum valid.';
+        gatewayErrorAction = 'Buka lewat Telegram Mini App atau masuk ulang.';
+      } else if (res.status === 429) {
+        gatewayErrorType = 'rate_limited';
+        gatewayErrorMessage = 'Mochi sedang sibuk.';
+        gatewayErrorAction = 'Coba lagi setelah jeda; kuota batas permintaan tercapai.';
+      } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+        gatewayErrorType = 'server_error';
+        gatewayErrorMessage = 'Sintesis server belum tersedia.';
+        gatewayErrorAction = 'Simpan bookmark, lalu Sintesis ulang.';
+      } else {
+        gatewayErrorType = 'invalid_response';
+        gatewayErrorMessage = `Server mengembalikan status HTTP ${res.status}.`;
+        gatewayErrorAction = 'Periksa konfigurasi gateway atau coba lagi.';
       }
-    } catch {
-      // Graceful fallback to client-side ADR-001 synthesizer below
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        gatewayErrorType = 'timeout';
+        gatewayErrorMessage = 'Pemrosesan terlalu lama (timeout).';
+        gatewayErrorAction = 'Coba lagi.';
+      } else {
+        gatewayErrorType = 'network_error';
+        gatewayErrorMessage = 'Browser belum dapat menghubungi Brain Gateway.';
+        gatewayErrorAction = 'Periksa koneksi dan URL; Coba lagi.';
+      }
     } finally {
       if (timeout) clearTimeout(timeout);
     }
   }
 
   // Tier 3: Client-side ADR-001 compliant synthesizer
-  const localSmart = generateSmartVaultContent(cleanUrl, platform, domain, meta.title, meta.author, userContext);
+  const localSmart = generateSmartVaultContent(
+    cleanUrl,
+    platform,
+    domain,
+    meta.title,
+    meta.author,
+    userContext,
+    gatewayErrorType
+      ? {
+          type: gatewayErrorType,
+          message: gatewayErrorMessage || '',
+          action: gatewayErrorAction || '',
+          status: gatewayHttpStatus,
+        }
+      : undefined
+  );
   
-  // Sol ADR-001: If user did NOT provide text context and we don't have full article text,
-  // metadata alone (like YouTube title or social link) is NEVER 'grounded'. It is 'needs_context'.
+  // Sol ADR-001 & ADR-002: Distinguish between missing context and genuine gateway errors
   const evidenceLevel: EvidenceLevel = userContext
     ? 'excerpt'
     : (meta.isRealMetadata ? 'metadata_only' : 'url_only');
 
-  const qualityStatus: LinkQualityStatus = userContext
-    ? 'draft'
-    : 'needs_context';
+  const qualityStatus: LinkQualityStatus = gatewayErrorType
+    ? 'gateway_error'
+    : (userContext ? 'draft' : 'needs_context');
 
   return {
     content: localSmart,
@@ -150,5 +226,9 @@ export async function synthesizeLink(
     captureMethod,
     sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
     synthesizedAt: userContext ? Date.now() : undefined,
+    gatewayErrorType,
+    gatewayErrorMessage,
+    gatewayErrorAction,
+    gatewayHttpStatus,
   };
 }

@@ -22,6 +22,7 @@ import { VaultPage } from './features/vault/VaultPage';
 import { NotesPage } from './features/notes/NotesPage';
 import { AssistantPage } from './features/assistant/AssistantPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { applyServiceWorkerUpdate } from './registerServiceWorker';
 
 const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant', 'settings'];
 
@@ -40,6 +41,17 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isNightMode, setIsNightMode] = useState<boolean>(() => Boolean(pet.isSleeping));
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  // PWA Update notification listener (Sol ADR-002)
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ registration: ServiceWorkerRegistration }>;
+      setSwRegistration(customEvent.detail?.registration || null);
+    };
+    window.addEventListener('petalife:update-available', handleUpdate);
+    return () => window.removeEventListener('petalife:update-available', handleUpdate);
+  }, []);
 
   // Sync night mode when pet sleep state changes
   useEffect(() => {
@@ -418,6 +430,23 @@ export function App() {
             className="text-[#8C6D23] hover:text-black font-bold px-2 py-0.5 cursor-pointer"
           >
             ✕
+          </button>
+        </div>
+      )}
+
+      {/* PWA Update Prompt Banner (Sol ADR-002) */}
+      {swRegistration && (
+        <div className="bg-[#BA5218] text-white px-4 py-2.5 rounded-2xl mb-3 flex items-center justify-between text-xs font-bold shadow-md animate-fade-in select-none">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✨</span>
+            <span>Versi baru Petalife tersedia.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => applyServiceWorkerUpdate(swRegistration)}
+            className="bg-white text-[#BA5218] px-3 py-1 rounded-xl font-black text-xs hover:bg-[#FAF7EE] active:scale-95 transition-all shadow-xs cursor-pointer"
+          >
+            Muat Ulang
           </button>
         </div>
       )}

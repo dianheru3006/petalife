@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getBrainGatewayUrl, normalizeBrainGatewayUrl, saveBrainGatewayUrl, DEFAULT_BRAIN_GATEWAY_URL } from './brainGatewaySettings';
+import {
+  getBrainGatewayUrl,
+  getEffectiveGatewayUrl,
+  normalizeBrainGatewayUrl,
+  saveBrainGatewayUrl,
+  clearStoredBrainGatewayUrl,
+  DEFAULT_BRAIN_GATEWAY_URL
+} from './brainGatewaySettings';
 
 const values = new Map<string, string>();
 
@@ -23,6 +30,15 @@ describe('Brain Gateway URL setting', () => {
     expect(getBrainGatewayUrl()).toBe('https://brain.example.com');
     expect(saveBrainGatewayUrl('')).toBe(true);
     expect(getBrainGatewayUrl()).toBe('');
+  });
+
+  it('tracks effective source and allows clearing stored override to default', () => {
+    saveBrainGatewayUrl('https://custom.example.com');
+    expect(getEffectiveGatewayUrl().source).toBe('localStorage');
+    expect(getBrainGatewayUrl()).toBe('https://custom.example.com');
+    expect(clearStoredBrainGatewayUrl()).toBe(true);
+    expect(getEffectiveGatewayUrl().source).toBe('default');
+    expect(getBrainGatewayUrl()).toBe(DEFAULT_BRAIN_GATEWAY_URL);
   });
 
   it('rejects HTTP, embedded credentials, paths, and query tokens', () => {
