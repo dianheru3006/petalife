@@ -37,8 +37,10 @@ describe('Brain Gateway URL setting', () => {
     expect(getEffectiveGatewayUrl().source).toBe('localStorage');
     expect(getBrainGatewayUrl()).toBe('https://custom.example.com');
     expect(clearStoredBrainGatewayUrl()).toBe(true);
-    expect(getEffectiveGatewayUrl().source).toBe('default');
-    expect(getBrainGatewayUrl()).toBe(DEFAULT_BRAIN_GATEWAY_URL);
+    const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
+    const expectedSource = envUrl ? 'environment' : 'default';
+    expect(getEffectiveGatewayUrl().source).toBe(expectedSource);
+    expect(getBrainGatewayUrl()).toBe(envUrl || DEFAULT_BRAIN_GATEWAY_URL);
   });
 
   it('rejects HTTP, embedded credentials, paths, and query tokens', () => {

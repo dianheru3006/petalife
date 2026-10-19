@@ -45,6 +45,8 @@ export type LinkQualityStatus = 'grounded' | 'needs_context' | 'bookmark_only' |
 export type LinkProvenance =
   | 'video_analysis'
   | 'caption_and_video'
+  | 'audio_transcript'
+  | 'caption_and_audio'
   | 'caption'
   | 'manual_context'
   | 'youtube_transcript'

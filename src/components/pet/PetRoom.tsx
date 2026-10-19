@@ -683,10 +683,10 @@ export const PetRoom: FC<PetRoomProps> = ({
       startYouTubeStages();
     } else if (platform === 'instagram' || platform === 'tiktok') {
       forceMochiAction('studying');
-      triggerSpeech('Mochi sedang mengunduh & menyimak video Reel... 📹✨', 9000);
+      triggerSpeech('Mochi sedang mengunduh & menyimak audio Reel... 📹✨', 6000);
       youtubeStageTimersRef.current.push(
-        setTimeout(() => triggerSpeech('Menganalisis ucapan & visual dengan Gemini... 🧠🔍', 12000), 9000),
-        setTimeout(() => triggerSpeech('Menyusun draf catatan empat lapis... 📄✨', 15000), 21000)
+        setTimeout(() => triggerSpeech('Menganalisis intisari ucapan dengan Gemini... 🧠🔍', 8000), 6000),
+        setTimeout(() => triggerSpeech('Menyusun draf catatan empat lapis... 📄✨', 10000), 14000)
       );
     } else {
       forceMochiAction('studying');

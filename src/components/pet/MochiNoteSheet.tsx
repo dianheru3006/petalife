@@ -205,6 +205,16 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                       <span>🎬</span> Ucapan video & caption
                     </span>
                   )}
+                  {link.provenance === 'audio_transcript' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#E8F8F5] text-[#117864] border border-[#A3E4D7] flex items-center gap-1">
+                      <span>🎙️</span> Berdasarkan ucapan audio
+                    </span>
+                  )}
+                  {link.provenance === 'caption_and_audio' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#E8F8F5] text-[#117864] border border-[#A3E4D7] flex items-center gap-1">
+                      <span>🎙️</span> Ucapan audio & caption
+                    </span>
+                  )}
                   {link.provenance === 'caption' && (
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF9E7] text-[#7D6608] border border-[#F9E79F] flex items-center gap-1">
                       <span>📝</span> Berdasarkan caption
