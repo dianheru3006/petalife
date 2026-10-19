@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'petalife.brainGatewayUrl.v1';
 const LAST_SYNTH_KEY = 'petalife.brainLastSynthesis.v1';
-export const DEFAULT_BRAIN_GATEWAY_URL = 'https://8202463e0c3783.lhr.life';
+export const DEFAULT_BRAIN_GATEWAY_URL = 'https://cream-cookies-belfast-referring.trycloudflare.com';
 
 export type GatewayUrlSource = 'localStorage' | 'environment' | 'default' | 'none';
 
