@@ -7,7 +7,8 @@ import {
   CheckCircle2,
   Moon,
   Sun,
-  Plus,
+  ArrowUp,
+  Link2,
   Clipboard,
   Shirt,
   Info,
@@ -555,6 +556,50 @@ export const PetRoom: FC<PetRoomProps> = ({
     };
   }, [triggerShake]);
 
+  const handlePasteToInput = async () => {
+    let pasted = false;
+
+    // 1. Try Telegram Mini App Native Clipboard API (Bot API 6.4+)
+    const tg = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : undefined;
+    if (typeof tg?.readTextFromClipboard === 'function') {
+      try {
+        tg.readTextFromClipboard((clipText?: string | null) => {
+          if (clipText && typeof clipText === 'string' && clipText.trim()) {
+            setQuickUrl(clipText.trim());
+            setQuickError(null);
+            pasted = true;
+          }
+        });
+      } catch (err) {
+        console.warn('[PetRoom] Telegram clipboard error:', err);
+      }
+    }
+
+    // 2. Try Standard Web navigator.clipboard API
+    if (!pasted && typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          setQuickUrl(text.trim());
+          setQuickError(null);
+          pasted = true;
+          return;
+        }
+      } catch (err) {
+        console.warn('[PetRoom] Standard clipboard error:', err);
+      }
+    }
+
+    // 3. Fallback: If clipboard read is restricted by browser security policies, focus input
+    if (!pasted) {
+      const inputEl = document.querySelector<HTMLInputElement>('input[name="quick-url"]');
+      inputEl?.focus();
+      if (!quickUrl.trim()) {
+        setQuickError('Izin clipboard browser dibatasi. Tahan kolom input & pilih Tempel (Paste).');
+      }
+    }
+  };
+
   const handleQuickAddLink = async (e: FormEvent) => {
     e.preventDefault();
     if (isSavingLink) return;
@@ -970,15 +1015,9 @@ export const PetRoom: FC<PetRoomProps> = ({
         )}
 
         <form onSubmit={handleQuickAddLink} className="relative flex items-center">
-          <button
-            type="submit"
-            disabled={isSavingLink}
-            className="absolute left-1.5 w-10 h-10 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#BA5218] hover:bg-black/5 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] active:scale-95"
-            title="Simpan Tautan"
-            aria-label={isSavingLink ? 'Menyimpan tautan' : 'Simpan tautan ke Vault'}
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          {/* Subtle Decorative Link Icon on Left */}
+          <Link2 className="absolute left-3.5 sm:left-4 w-5 h-5 text-[#9E9484] pointer-events-none" />
+
           <input
             type="text"
             name="quick-url"
@@ -992,33 +1031,41 @@ export const PetRoom: FC<PetRoomProps> = ({
               setQuickUrl(e.target.value);
               if (quickError) setQuickError(null);
             }}
-            placeholder="Tempel link YouTube, TikTok, atau artikel..."
+            placeholder="Tempel link YouTube, TikTok, artikel..."
             className={cn(
-              'w-full text-sm sm:text-base pl-12 pr-12 py-3.5 sm:py-4 rounded-full text-[#2E2E3A] placeholder-[#6E6E80] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-700 border',
+              'w-full text-sm sm:text-base pl-11 pr-13 py-3.5 sm:py-4 rounded-full text-[#2E2E3A] placeholder-[#7E786D] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-500 border',
               activeNight
                 ? 'bg-[#FAF6EE] border-[#DDD2C2] focus:bg-[#FAF6EE]'
                 : 'bg-[#FAF7F2] border-[#EAE3D5] focus:bg-[#FFFDF9]'
             )}
           />
-          <button
-            type="button"
-            disabled={isSavingLink}
-            onClick={async () => {
-              try {
-                const text = await navigator.clipboard.readText();
-                if (text) {
-                  setQuickUrl(text);
-                }
-              } catch {
-                // Clipboard read blocked by permissions
-              }
-            }}
-            className="absolute right-1.5 w-10 h-10 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] hover:bg-black/5 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95"
-            title="Tempel dari Clipboard"
-            aria-label="Tempel tautan dari clipboard"
-          >
-            <Clipboard className="w-4.5 h-4.5" />
-          </button>
+
+          {/* Dynamic Action Button: Paste when empty, Send when has text */}
+          {quickUrl.trim().length > 0 ? (
+            <button
+              type="submit"
+              disabled={isSavingLink}
+              className="absolute right-1.5 sm:right-2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#D97736] hover:bg-[#BA5218] text-white shadow-xs cursor-pointer active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]"
+              title="Kirim dan simpan ke Vault"
+              aria-label={isSavingLink ? 'Menyimpan tautan...' : 'Kirim dan simpan tautan ke Vault'}
+            >
+              {isSavingLink ? (
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <ArrowUp className="w-5 h-5 stroke-[2.5]" />
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handlePasteToInput}
+              className="absolute right-1.5 sm:right-2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-[#7A6E60] hover:text-[#BA5218] hover:bg-black/5 cursor-pointer active:scale-90 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+              title="Tempel link dari Clipboard"
+              aria-label="Tempel tautan dari clipboard"
+            >
+              <Clipboard className="w-5 h-5" />
+            </button>
+          )}
         </form>
       </div>
 
@@ -1092,14 +1139,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 />
                 <button
                   type="button"
-                  onClick={async () => {
-                    try {
-                      const text = await navigator.clipboard.readText();
-                      if (text) setQuickUrl(text);
-                    } catch {
-                      // blocked
-                    }
-                  }}
+                  onClick={handlePasteToInput}
                   className="absolute right-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#9E410E]"
                   title="Tempel dari clipboard"
                   aria-label="Tempel tautan dari clipboard"
