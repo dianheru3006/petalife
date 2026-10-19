@@ -1008,18 +1008,18 @@ export const PetRoom: FC<PetRoomProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="wardrobe-sheet-title"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 anim-modal-backdrop"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 anim-modal-backdrop pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsWardrobeOpen(false);
           }}
         >
           <div
             ref={wardrobeModalRef}
-            className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 anim-modal-sheet pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]"
+            className="w-full max-w-md bg-[#FAF7F2] rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] p-5 relative space-y-4 anim-modal-sheet"
           >
             {/* Top Pull Handle Indicator */}
             <div className="pt-0.5 pb-2 flex justify-center sm:hidden">
-              <div className="w-12 h-1.5 bg-[#DDD2C2] rounded-full" />
+              <div className="w-10 h-1 bg-[#DDD2C2] rounded-full" />
             </div>
 
             {/* Header */}

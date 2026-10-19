@@ -2,7 +2,7 @@ import type { FC, FormEvent } from 'react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { SavedLink } from '../../lib/types';
-import { ExternalLink, Play, Globe } from 'lucide-react';
+import { ExternalLink, Play, Globe, X } from 'lucide-react';
 
 export interface MochiNoteSheetProps {
   isOpen: boolean;
@@ -120,29 +120,39 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="mochi-sheet-title"
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 anim-modal-backdrop"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 anim-modal-backdrop pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#FAF7F2] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-[#EAE3D5] flex flex-col max-h-[92dvh] overflow-hidden anim-modal-sheet pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+        className="w-full max-w-md bg-[#FAF7F2] rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] flex flex-col max-h-[88dvh] overflow-hidden anim-modal-sheet"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Pull Handle Indicator */}
-        <div className="pt-3 pb-1 flex justify-center">
-          <div className="w-12 h-1.5 bg-[#DDD2C2] rounded-full" />
+        <div className="pt-2.5 pb-0.5 flex justify-center">
+          <div className="w-10 h-1 bg-[#DDD2C2] rounded-full" />
         </div>
 
-        {/* Header matching user's design */}
-        <div className="px-5 pt-2 pb-3">
-          <p className="text-[11px] font-bold tracking-widest text-[#8C8275] uppercase">
-            CATATAN {petName.toUpperCase()}
-          </p>
-          <h2
-            id="mochi-sheet-title"
-            className="text-2xl sm:text-[26px] font-black text-[#2E2E3A] tracking-tight mt-0.5"
+        {/* Header with Title & Close 'X' Button */}
+        <div className="px-5 pt-1.5 pb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold tracking-widest text-[#8C8275] uppercase">
+              CATATAN {petName.toUpperCase()}
+            </p>
+            <h2
+              id="mochi-sheet-title"
+              className="text-2xl sm:text-[25px] font-black text-[#2E2E3A] tracking-tight mt-0.5 leading-snug"
+            >
+              Cek dulu sebelum aku makan
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] active:scale-95 text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-all shrink-0 mt-0.5 focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+            aria-label="Tutup catatan"
           >
-            Cek dulu sebelum aku makan
-          </h2>
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Scrollable Content Body */}
@@ -232,7 +242,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-5 py-3.5 text-sm font-bold text-[#7E786D] hover:text-[#2E2E3A] hover:bg-black/5 rounded-full transition-all cursor-pointer disabled:opacity-50"
+              className="px-5 py-3.5 text-sm font-bold text-[#5A5044] bg-[#EFE9DF] hover:bg-[#E5DDD0] active:scale-95 rounded-full border border-[#D5CBBA] transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center shadow-2xs"
             >
               Batal
             </button>
