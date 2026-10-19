@@ -3,14 +3,15 @@ import type { MochiAction, GazeDirection, AutonomousFidget } from './MochiPet';
 
 describe('MochiPet Action & Movement Constants', () => {
   it('supports all defined interactive tap actions', () => {
-    const validActions: MochiAction[] = ['idle', 'hop', 'wiggle', 'spin', 'wink', 'dance', 'studying', 'dizzy', 'holding-note'];
-    expect(validActions).toHaveLength(9);
+    const validActions: MochiAction[] = ['idle', 'hop', 'wiggle', 'spin', 'wink', 'dance', 'studying', 'thinking', 'dizzy', 'holding-note'];
+    expect(validActions).toHaveLength(10);
     expect(validActions).toContain('hop');
     expect(validActions).toContain('wiggle');
     expect(validActions).toContain('spin');
     expect(validActions).toContain('wink');
     expect(validActions).toContain('dance');
     expect(validActions).toContain('studying');
+    expect(validActions).toContain('thinking');
     expect(validActions).toContain('dizzy');
     expect(validActions).toContain('holding-note');
   });
@@ -50,6 +51,7 @@ describe('MochiPet Action & Movement Constants', () => {
       wink: 700,
       dance: 1400,
       studying: 4200,
+      thinking: 0,
       dizzy: 2400,
       'holding-note': 0,
     };
@@ -60,6 +62,7 @@ describe('MochiPet Action & Movement Constants', () => {
     expect(actionDurations.wink).toBeGreaterThanOrEqual(600);
     expect(actionDurations.dance).toBeGreaterThanOrEqual(1000);
     expect(actionDurations.studying).toBeGreaterThanOrEqual(4000);
+    expect(actionDurations.thinking).toBe(0);
     expect(actionDurations.dizzy).toBeGreaterThanOrEqual(2000);
     expect(actionDurations['holding-note']).toBe(0);
   });

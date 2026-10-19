@@ -420,6 +420,16 @@
   transform-origin: bottom center;
 }
 
+@keyframes mochi-thinking {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-3px) rotate(2deg); }
+}
+
+.anim-mochi-thinking {
+  animation: mochi-thinking 1.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
 /* Dedicated Holding Large Note Paper Animation */
 @keyframes mochi-holding-note {
   0%, 100% {
@@ -1046,6 +1056,7 @@
   .anim-mochi-eating,
   .anim-mochi-sleeping,
   .anim-mochi-studying,
+  .anim-mochi-thinking,
   .anim-mochi-holding-note,
   .anim-paper-float,
   .anim-mochi-hop,

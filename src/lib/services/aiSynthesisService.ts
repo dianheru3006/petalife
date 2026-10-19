@@ -1,6 +1,7 @@
 import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod } from '../types';
 import { generateSmartVaultContent, type SmartVaultContent } from '../utils/noteGenerator';
 import { resolveLinkMetadata } from './linkMetadataService';
+import { getBrainGatewayUrl, DEFAULT_BRAIN_GATEWAY_URL } from './brainGatewaySettings';
 
 export interface AISynthesizeOptions {
   context?: string;
@@ -43,15 +44,17 @@ export async function synthesizeLink(
 
   // Tier 2: Check remote AI gateway (Asisten Heru / Gemini Flash / Groq)
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
+  const gatewayUrl = getBrainGatewayUrl() || envUrl || DEFAULT_BRAIN_GATEWAY_URL;
   const isStaticHost = typeof window !== 'undefined' && Boolean(window.location?.hostname?.endsWith('github.io'));
-  const apiUrl = envUrl
-    ? `${envUrl.replace(/\/$/, '')}/api/petalife/summarize-link`
+  const apiUrl = gatewayUrl
+    ? `${gatewayUrl.replace(/\/$/, '')}/api/petalife/summarize-link`
     : (!isStaticHost ? '/api/petalife/summarize-link' : null);
 
   if (apiUrl) {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), options.timeoutMs || 14000);
+      timeout = setTimeout(() => controller.abort(), options.timeoutMs || (platform === 'youtube' ? 60000 : 14000));
 
       const initData = typeof window !== 'undefined'
         ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
@@ -62,6 +65,8 @@ export async function synthesizeLink(
       };
       if (initData) {
         headers['X-Telegram-Init-Data'] = initData;
+      } else {
+        headers['X-API-Secret'] = '6116a98e96fc145b95df22582a254ed24dce6123ce8d74240b7d49a10e17e891';
       }
 
       const res = await fetch(apiUrl, {
@@ -73,8 +78,6 @@ export async function synthesizeLink(
         }),
         signal: controller.signal,
       });
-      clearTimeout(timeout);
-
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data && json.data.title) {
@@ -90,9 +93,12 @@ export async function synthesizeLink(
             d.reflectionPrompt ? `\n🌱 **Refleksi Diri:**\n${d.reflectionPrompt}` : ''
           ].filter(Boolean).join('\n\n');
 
-          const hasSubstantiveContent = Boolean(d.coreThesis && d.keyTakeaways?.length);
-          const evidenceLevel: EvidenceLevel = userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'full_text');
-          const qualityStatus: LinkQualityStatus = hasSubstantiveContent ? 'grounded' : 'needs_context';
+          const hasSubstantiveContent = Boolean(d.coreThesis && d.keyTakeaways?.length && d.actionableInsights?.length);
+          const evidenceLevel: EvidenceLevel = d.evidenceLevel === 'full_text' || d.evidenceLevel === 'excerpt'
+            ? d.evidenceLevel
+            : (userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'));
+          const qualityStatus: LinkQualityStatus = d.qualityStatus === 'grounded' && hasSubstantiveContent &&
+            (evidenceLevel === 'full_text' || evidenceLevel === 'excerpt') ? 'grounded' : 'needs_context';
 
           return {
             content: {
@@ -112,12 +118,14 @@ export async function synthesizeLink(
             qualityStatus,
             captureMethod,
             sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
-            synthesizedAt: Date.now(),
+            synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
           };
         }
       }
     } catch {
       // Graceful fallback to client-side ADR-001 synthesizer below
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
   }
 
@@ -131,7 +139,7 @@ export async function synthesizeLink(
     : (meta.isRealMetadata ? 'metadata_only' : 'url_only');
 
   const qualityStatus: LinkQualityStatus = userContext
-    ? 'grounded'
+    ? 'draft'
     : 'needs_context';
 
   return {

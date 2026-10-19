@@ -33,6 +33,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
     vault: { title: 'Content Vault 📚', subtitle: 'Shorts, Reels, and articles saved for your growth.' },
     notes: { title: 'Personal Notes 📝', subtitle: 'Quick takeaways, reflections, and recipe notes.' },
     assistant: { title: 'AI Study Assistant ✨', subtitle: 'Recall, summarize, and connect ideas across your materials.' },
+    settings: { title: 'Pengaturan ⚙️', subtitle: 'Hubungkan Mochi dengan Brain Gateway Asisten Heru.' },
   };
 
   const current = titles[currentTab] || titles.home;

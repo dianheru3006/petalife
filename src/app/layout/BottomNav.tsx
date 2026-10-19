@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import type { NavigationTab } from '../../lib/types';
-import { Home, Bookmark, FileText, MessageSquare } from 'lucide-react';
+import { Home, Bookmark, FileText, MessageSquare, Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface BottomNavProps {
@@ -19,6 +19,7 @@ export const BottomNav: FC<BottomNavProps> = ({
     { id: 'vault', label: 'Vault', icon: <Bookmark className="w-[18px] h-[18px]" /> },
     { id: 'notes', label: 'Notes', icon: <FileText className="w-[18px] h-[18px]" /> },
     { id: 'assistant', label: 'Asisten', icon: <MessageSquare className="w-[18px] h-[18px]" /> },
+    { id: 'settings', label: 'Pengaturan', icon: <Settings className="w-[18px] h-[18px]" /> },
   ];
 
   return (

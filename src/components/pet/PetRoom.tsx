@@ -77,11 +77,6 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [forcedAction, setForcedAction] = useState<{ id: number; action: MochiAction } | undefined>(undefined);
   const activeNight = isNightMode !== undefined ? isNightMode : localNight;
 
-  // When night mode is active, Mochi enters a calm, resting sleep state
-  const effectivePet: Pet = activeNight && !isFeeding
-    ? { ...pet, state: 'sleeping' }
-    : pet;
-
   const handleToggleNight = () => {
     const willBeNight = !activeNight;
     if (onToggleNightMode) {
@@ -102,6 +97,13 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
   const [isSavingLink, setIsSavingLink] = useState(false);
+  const [youtubeStage, setYouTubeStage] = useState<'capturing' | 'transcribing' | 'thinking' | 'ready' | null>(null);
+  const youtubeStageTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const actionSequenceRef = useRef(0);
+  // Keep Mochi awake while it processes a link, including during night mode.
+  const effectivePet: Pet = activeNight && !isFeeding && !isSavingLink
+    ? { ...pet, state: 'sleeping' }
+    : pet;
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isFabClosing, setIsFabClosing] = useState(false);
@@ -132,6 +134,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   useEffect(() => {
     return () => {
       if (fabCloseTimeoutRef.current) clearTimeout(fabCloseTimeoutRef.current);
+      youtubeStageTimersRef.current.forEach(clearTimeout);
     };
   }, []);
 
@@ -250,6 +253,33 @@ export const PetRoom: FC<PetRoomProps> = ({
     speechTimerRef.current = setTimeout(() => {
       setShowSpeech(false);
     }, durationMs);
+  };
+
+  const forceMochiAction = (action: MochiAction) => {
+    actionSequenceRef.current += 1;
+    setForcedAction({ id: Date.now() + actionSequenceRef.current, action });
+  };
+
+  const clearYouTubeStages = () => {
+    youtubeStageTimersRef.current.forEach(clearTimeout);
+    youtubeStageTimersRef.current = [];
+  };
+
+  const startYouTubeStages = () => {
+    clearYouTubeStages();
+    setYouTubeStage('capturing');
+    forceMochiAction('hop');
+    triggerSpeech('Nyam! Tautan YouTube tertangkap! 🎬', 1800);
+    youtubeStageTimersRef.current.push(setTimeout(() => {
+      setYouTubeStage('transcribing');
+      forceMochiAction('studying');
+      triggerSpeech('Mencari dan menyalin subtitle video... 🎧✍️', 3600);
+    }, 1500));
+    youtubeStageTimersRef.current.push(setTimeout(() => {
+      setYouTubeStage('thinking');
+      forceMochiAction('thinking');
+      triggerSpeech('Menyaring gagasan dan model mental... 🧠✨', 4200);
+    }, 5000));
   };
 
   // Occasional gentle whisper: Mochi speaks briefly every 45-60 seconds, then hides again
@@ -621,12 +651,15 @@ export const PetRoom: FC<PetRoomProps> = ({
       }
     }
 
-    if (!isValidUrl(trimmed)) {
+    const urlMatch = trimmed.match(/https?:\/\/[^\s]+/i);
+    const targetUrl = urlMatch ? urlMatch[0] : trimmed;
+    const userContext = urlMatch ? trimmed.replace(targetUrl, '').trim() : '';
+    if (!isValidUrl(targetUrl)) {
       setQuickError('Masukkan format URL valid (youtube.com, web) atau tempel JSON dari Sol.');
       return;
     }
 
-    const normalized = normalizeUrl(trimmed);
+    const normalized = normalizeUrl(targetUrl);
     const isDuplicate = savedLinks.some(l => normalizeUrl(l.url) === normalized);
     if (isDuplicate) {
       setQuickError('Tautan ini sudah tersimpan di Vault Anda!');
@@ -634,7 +667,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     setQuickError(null);
-    const { platform, domain } = detectPlatform(trimmed);
+    const { platform, domain } = detectPlatform(targetUrl);
     const now = Date.now();
 
     if (!onAddLink) {
@@ -642,21 +675,24 @@ export const PetRoom: FC<PetRoomProps> = ({
       return;
     }
 
+    setHoldingNoteLink(null);
     setIsSavingLink(true);
-
-    // 1. Trigger Mochi's dedicated studying & note-taking mode (Sol ADR-001: RESOLVING state)
-    setForcedAction({ id: Date.now(), action: 'studying' });
-    triggerSpeech('Aku cek teks yang bisa kubaca... 📖🔍', 3500);
+    const startedAt = Date.now();
+    if (platform === 'youtube') {
+      startYouTubeStages();
+    } else {
+      forceMochiAction('studying');
+      triggerSpeech('Aku cek teks yang bisa kubaca... 📖🔍', 3500);
+    }
 
     try {
-      // Extract URL and optional caption text pasted together
-      const urlMatch = trimmed.match(/(https?:\/\/[^\s]+)/i);
-      const targetUrl = urlMatch ? urlMatch[0] : trimmed;
-      const userContext = urlMatch ? trimmed.replace(targetUrl, '').trim() : '';
-
       // 2. Multi-tier AI Synthesis (Gemini/Groq via Asisten Heru with Sol ADR-001 contract)
       const res = await synthesizeLink(targetUrl, platform, domain, { context: userContext });
       const { content: smart, qualityStatus, evidenceLevel, captureMethod, sourceExcerpt, isFromRemoteAI } = res;
+      if (platform === 'youtube' && qualityStatus === 'grounded') {
+        const remaining = 5600 - (Date.now() - startedAt);
+        if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
+      }
 
       const newLink: SavedLink = {
         id: `link-${now}`,
@@ -686,22 +722,26 @@ export const PetRoom: FC<PetRoomProps> = ({
 
       const rewardRes = await onAddLink(newLink);
       const isAwarded = rewardRes ? rewardRes.awarded : false;
-      const countToday = rewardRes ? rewardRes.countToday : 0;
-
       if (isAwarded) {
-        setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+10 XP) [${countToday}/3 hari ini]`);
+        setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+${rewardRes?.xpAwarded || 0} XP)`);
       } else if (rewardRes?.reason === 'storage_error') {
         setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Penyimpanan reward offline)');
       } else if (rewardRes?.reason === 'already_claimed') {
         setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Tautan ini sudah diklaim hari ini)');
       } else {
-        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Batas 3 reward/hari tercapai)');
+        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Kuota reward harian tercapai)');
       }
       setQuickUrl('');
 
       // 3. Sol ADR-001 UX State Transition
+      clearYouTubeStages();
       setHoldingNoteLink(newLink);
-      setForcedAction({ id: Date.now(), action: 'holding-note' });
+      forceMochiAction('holding-note');
+      if (platform === 'youtube' && qualityStatus === 'grounded') {
+        setYouTubeStage('ready');
+      } else {
+        setYouTubeStage(null);
+      }
 
       let finishSpeech = 'Aku menemukan isi materinya. Ini catatan empat lapisnya! 📄✨';
       if (qualityStatus === 'needs_context') {
@@ -714,9 +754,14 @@ export const PetRoom: FC<PetRoomProps> = ({
       triggerSpeech(finishSpeech, 6000);
 
       setTimeout(() => setQuickSuccess(null), 3500);
+      if (platform === 'youtube' && qualityStatus === 'grounded') {
+        youtubeStageTimersRef.current.push(setTimeout(() => setYouTubeStage(null), 4000));
+      }
     } catch {
       setQuickError('Tautan gagal disimpan. Periksa penyimpanan lokal lalu coba lagi.');
-      setForcedAction({ id: Date.now(), action: 'idle' });
+      clearYouTubeStages();
+      setYouTubeStage(null);
+      forceMochiAction('idle');
     } finally {
       setIsSavingLink(false);
     }
@@ -1086,6 +1131,14 @@ export const PetRoom: FC<PetRoomProps> = ({
             </button>
           )}
         </form>
+        {youtubeStage && (
+          <div role="status" aria-live="polite" className="mt-2 rounded-xl border border-[#E8DFCF] bg-[#FFF9EF] px-3 py-2 text-xs font-semibold text-[#4A3C31]">
+            {youtubeStage === 'capturing' && '1/4 · Mochi menangkap tautan video 🎬'}
+            {youtubeStage === 'transcribing' && '2/4 · Mochi mencari subtitle video 🎧✍️'}
+            {youtubeStage === 'thinking' && '3/4 · Mochi menyaring gagasan dan model mental 🧠✨'}
+            {youtubeStage === 'ready' && '4/4 · Catatan emas siap dibuka 📄🌟'}
+          </div>
+        )}
       </div>
 
       {/* Modal Sheet: Lemari Kostum Mochi */}

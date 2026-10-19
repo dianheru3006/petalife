@@ -21,8 +21,9 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { VaultPage } from './features/vault/VaultPage';
 import { NotesPage } from './features/notes/NotesPage';
 import { AssistantPage } from './features/assistant/AssistantPage';
+import { SettingsPage } from './features/settings/SettingsPage';
 
-const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant'];
+const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant', 'settings'];
 
 function tabFromHash(): NavigationTab {
   const hash = window.location.hash.slice(1);
@@ -467,6 +468,7 @@ export function App() {
             isNightMode={isNightMode}
           />
         )}
+        {currentTab === 'settings' && <SettingsPage />}
       </div>
     </AppLayout>
   );

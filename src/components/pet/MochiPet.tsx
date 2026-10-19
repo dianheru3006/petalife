@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 
-export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying' | 'dizzy' | 'holding-note';
+export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying' | 'thinking' | 'dizzy' | 'holding-note';
 export type GazeDirection = 'center' | 'left' | 'right';
 export type AutonomousFidget = 'none' | 'tilt-left' | 'tilt-right' | 'humming' | 'stretch' | 'cute-wink' | 'sprout-joy';
 
@@ -15,6 +15,7 @@ const ACTION_DURATIONS: Record<MochiAction, number> = {
   wink: 700,
   dance: 1400,
   studying: 4200,
+  thinking: 0,
   dizzy: 2400,
   'holding-note': 0,
 };
@@ -162,7 +163,7 @@ export const MochiPet: FC<MochiPetProps> = ({
   useEffect(() => {
     if (!forcedAction || forcedAction.id === lastForcedIdRef.current) return;
     // If sleeping, only allow studying action (Mochi wakes up temporarily to record knowledge)
-    if (isSleeping && forcedAction.action !== 'studying') return;
+    if (isSleeping && !['hop', 'studying', 'thinking', 'holding-note'].includes(forcedAction.action)) return;
     lastForcedIdRef.current = forcedAction.id;
     const timer = setTimeout(() => {
       triggerAction(forcedAction.action);
@@ -204,6 +205,7 @@ export const MochiPet: FC<MochiPetProps> = ({
     if (isFeeding) return 'anim-mochi-eating';
     if (currentAction === 'holding-note' || holdingNote) return 'anim-mochi-holding-note';
     if (currentAction === 'studying') return 'anim-mochi-studying';
+    if (currentAction === 'thinking') return 'anim-mochi-thinking';
     if (isSleeping) return 'anim-mochi-sleeping';
 
     // Interactive actions triggered by user have top priority
@@ -259,7 +261,7 @@ export const MochiPet: FC<MochiPetProps> = ({
       )}
 
       {/* Dynamic Floating Particles based on Action & Fidgets */}
-      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink' || holdingNote) && (!isSleeping || currentAction === 'studying' || currentAction === 'dizzy' || currentAction === 'holding-note' || holdingNote) && (
+      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink' || holdingNote) && (!isSleeping || currentAction === 'studying' || currentAction === 'thinking' || currentAction === 'dizzy' || currentAction === 'holding-note' || holdingNote) && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
           {currentAction === 'holding-note' || holdingNote ? (
             <>
@@ -283,6 +285,12 @@ export const MochiPet: FC<MochiPetProps> = ({
             <>
               <span className="text-lg anim-float-heart">✨</span>
               <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>💖</span>
+            </>
+          ) : currentAction === 'thinking' ? (
+            <>
+              <span className="text-xl anim-float-note">🧠</span>
+              <span className="text-lg anim-float-note" style={{ animationDelay: '0.2s' }}>✨</span>
+              <span className="text-lg anim-float-note" style={{ animationDelay: '0.4s' }}>💡</span>
             </>
           ) : currentAction === 'studying' ? (
             <>

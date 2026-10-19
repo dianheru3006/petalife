@@ -1,4 +1,4 @@
-export type NavigationTab = 'home' | 'vault' | 'notes' | 'assistant';
+export type NavigationTab = 'home' | 'vault' | 'notes' | 'assistant' | 'settings';
 
 export interface Pet {
   name: string;
