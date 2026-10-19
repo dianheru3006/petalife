@@ -28,8 +28,7 @@ import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
 import { MochiNoteSheet } from './MochiNoteSheet';
-import { generateSmartVaultContent } from '../../lib/utils/noteGenerator';
-import { resolveLinkMetadata } from '../../lib/services/linkMetadataService';
+import { synthesizeLink } from '../../lib/services/aiSynthesisService';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
@@ -565,8 +564,65 @@ export const PetRoom: FC<PetRoomProps> = ({
     const trimmed = quickUrl.trim();
     if (!trimmed) return;
 
+    // Direct AI JSON import from ChatGPT / Sol Codex!
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.title) {
+          const now = Date.now();
+          const targetUrl = parsed.url || `https://vault.petalife.local/imported-${now}`;
+          const { platform, domain } = detectPlatform(targetUrl);
+          const newLink: SavedLink = {
+            id: `link-${now}`,
+            url: targetUrl,
+            title: parsed.title,
+            platform,
+            domain,
+            tags: Array.isArray(parsed.tags) ? parsed.tags : ['#ai', '#imported'],
+            status: 'to_review',
+            dateAdded: 'Baru saja',
+            createdAt: now,
+            updatedAt: now,
+            category: parsed.category,
+            coreThesis: parsed.coreThesis,
+            keyTakeaways: parsed.keyTakeaways,
+            actionableInsights: parsed.actionableInsights,
+            reflectionPrompt: parsed.reflectionPrompt,
+            notes: parsed.notes || parsed.coreThesis || 'Imported from AI Sol',
+            summary: parsed.coreThesis || parsed.title,
+          };
+
+          if (!onAddLink) {
+            setQuickError('Penyimpanan belum siap. Coba lagi sebentar.');
+            return;
+          }
+
+          setIsSavingLink(true);
+          try {
+            const rewardRes = await onAddLink(newLink);
+            const isAwarded = rewardRes ? rewardRes.awarded : false;
+            setQuickUrl('');
+            setHoldingNoteLink(newLink);
+            setForcedAction({ id: Date.now(), action: 'holding-note' });
+            triggerSpeech('Ringkasan Sol berhasil diimpor! Cek catatan Mochi yuk 📄✨', 6000);
+            if (isAwarded) {
+              setQuickSuccess(`🎉 Ringkasan AI berhasil disimpan! (+10 XP)`);
+            } else {
+              setQuickSuccess(`🎉 Ringkasan AI berhasil disimpan ke Vault!`);
+            }
+            setTimeout(() => setQuickSuccess(null), 3500);
+            return;
+          } finally {
+            setIsSavingLink(false);
+          }
+        }
+      } catch {
+        // Fall through to standard URL validation
+      }
+    }
+
     if (!isValidUrl(trimmed)) {
-      setQuickError('Masukkan format URL yang valid (misal: youtube.com, tiktok.com)');
+      setQuickError('Masukkan format URL valid (youtube.com, web) atau tempel JSON dari Sol.');
       return;
     }
 
@@ -593,9 +649,8 @@ export const PetRoom: FC<PetRoomProps> = ({
     triggerSpeech('Mochi rangkum intisari lengkapnya dulu ya... 📖✨', 3500);
 
     try {
-      // 2. Asynchronously resolve real metadata (e.g. YouTube oEmbed API)
-      const meta = await resolveLinkMetadata(trimmed, platform, domain);
-      const smart = generateSmartVaultContent(trimmed, platform, domain, meta.title, meta.author);
+      // 2. Multi-tier AI Synthesis (Gemini/Groq via Asisten Heru with offline fallback)
+      const { content: smart, isFromRemoteAI } = await synthesizeLink(trimmed, platform, domain);
 
       const newLink: SavedLink = {
         id: `link-${now}`,
@@ -636,7 +691,10 @@ export const PetRoom: FC<PetRoomProps> = ({
       // 3. When finished making vault, Mochi proudly lifts up the note paper!
       setHoldingNoteLink(newLink);
       setForcedAction({ id: Date.now(), action: 'holding-note' });
-      triggerSpeech('Selesai! Rangkuman komprehensif sudah siap! Cek yuk 📄✨', 6000);
+      const finishSpeech = isFromRemoteAI
+        ? 'Selesai! AI Gemini/Groq merangkumnya! Cek yuk 📄✨'
+        : 'Selesai! Rangkuman komprehensif sudah siap! Cek yuk 📄✨';
+      triggerSpeech(finishSpeech, 6000);
 
       setTimeout(() => setQuickSuccess(null), 3500);
     } catch {
@@ -975,7 +1033,7 @@ export const PetRoom: FC<PetRoomProps> = ({
               setQuickUrl(e.target.value);
               if (quickError) setQuickError(null);
             }}
-            placeholder="Tempel link YouTube, TikTok, artikel..."
+            placeholder="Tempel link atau JSON dari Sol..."
             className={cn(
               'w-full text-sm sm:text-base pl-11 pr-13 py-3.5 sm:py-4 rounded-full text-[#2E2E3A] placeholder-[#7E786D] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all duration-500 border',
               activeNight

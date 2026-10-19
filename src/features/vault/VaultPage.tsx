@@ -75,12 +75,61 @@ export const VaultPage: FC<VaultPageProps> = ({
     const trimmedUrl = urlInput.trim();
 
     if (!trimmedUrl) {
-      setUrlError('Please enter a valid link address (e.g. tiktok.com/..., youtube.com/shorts/...)');
+      setUrlError('Masukkan URL link atau tempel JSON dari Sol.');
       return;
     }
 
+    // Direct AI JSON import from ChatGPT / Sol Codex
+    if (trimmedUrl.startsWith('{') && trimmedUrl.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmedUrl);
+        if (parsed.title) {
+          const now = Date.now();
+          const targetUrl = parsed.url || `https://vault.petalife.local/imported-${now}`;
+          const { platform, domain } = detectPlatform(targetUrl);
+          const newLink: SavedLink = {
+            id: `link-${now}`,
+            url: targetUrl,
+            title: parsed.title,
+            platform,
+            domain,
+            tags: Array.isArray(parsed.tags) ? parsed.tags : ['#ai', '#imported'],
+            status: 'to_review',
+            dateAdded: 'Baru saja',
+            createdAt: now,
+            updatedAt: now,
+            category: parsed.category,
+            coreThesis: parsed.coreThesis,
+            keyTakeaways: parsed.keyTakeaways,
+            actionableInsights: parsed.actionableInsights,
+            reflectionPrompt: parsed.reflectionPrompt,
+            notes: parsed.notes || parsed.coreThesis || 'Imported from AI Sol',
+            summary: parsed.coreThesis || parsed.title,
+          };
+
+          setIsSavingLink(true);
+          try {
+            const rewardRes = await onAddLink(newLink);
+            const isAwarded = rewardRes ? rewardRes.awarded : false;
+            setUrlInput('');
+            setCustomTitle('');
+            setCustomNotes('');
+            setIsAddingOpen(false);
+            const rewardText = isAwarded ? ' (+10 XP)' : '';
+            setSuccessToast(`🎉 Berhasil mengimpor ringkasan AI: "${parsed.title}"${rewardText}`);
+            setTimeout(() => setSuccessToast(null), 3500);
+            return;
+          } finally {
+            setIsSavingLink(false);
+          }
+        }
+      } catch {
+        // Fall through to normal URL validation
+      }
+    }
+
     if (!isValidUrl(trimmedUrl)) {
-      setUrlError('Invalid URL format. Please include a domain name like tiktok.com or youtube.com');
+      setUrlError('Format tautan tidak valid atau JSON tidak lengkap. Masukkan URL (contoh: youtube.com) atau JSON AI.');
       return;
     }
 
@@ -237,7 +286,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                   setUrlInput(e.target.value);
                   if (urlError) setUrlError(null);
                 }}
-                placeholder="e.g. https://www.tiktok.com/@creator/video/123... or youtube.com/shorts/..."
+                placeholder="Tempel tautan (YouTube, Threads, web) atau tempel JSON dari Sol..."
                 className={`w-full text-xs sm:text-sm px-4 py-3 rounded-2xl border ${
                   isNightMode ? 'bg-[#F2EBE0]' : 'bg-[#FAF7F2]'
                 } text-[#2E2E3A] focus:outline-none focus:ring-2 transition-all ${
