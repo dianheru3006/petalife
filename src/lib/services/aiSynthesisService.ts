@@ -1,4 +1,4 @@
-import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod, GatewayErrorType } from '../types';
+import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod, GatewayErrorType, LinkProvenance } from '../types';
 import { generateSmartVaultContent, type SmartVaultContent } from '../utils/noteGenerator';
 import { resolveLinkMetadata } from './linkMetadataService';
 import { getBrainGatewayUrl, DEFAULT_BRAIN_GATEWAY_URL } from './brainGatewaySettings';
@@ -14,6 +14,7 @@ export interface SynthesizedLinkResult {
   isFromRemoteAI: boolean;
   evidenceLevel: EvidenceLevel;
   qualityStatus: LinkQualityStatus;
+  provenance?: LinkProvenance;
   captureMethod: CaptureMethod;
   sourceExcerpt?: string;
   synthesizedAt?: number;
@@ -64,7 +65,8 @@ export async function synthesizeLink(
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      timeout = setTimeout(() => controller.abort(), options.timeoutMs || (platform === 'youtube' ? 60000 : 14000));
+      const isVideoPlatform = platform === 'youtube' || platform === 'instagram' || platform === 'tiktok';
+      timeout = setTimeout(() => controller.abort(), options.timeoutMs || (isVideoPlatform ? 60000 : 14000));
 
       const initData = typeof window !== 'undefined'
         ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
@@ -120,6 +122,7 @@ export async function synthesizeLink(
                 isFromRemoteAI: true,
                 evidenceLevel: 'metadata_only',
                 qualityStatus: 'needs_context',
+                provenance: d.provenance || 'none',
                 captureMethod,
                 sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
                 gatewayErrorMessage,
@@ -146,6 +149,14 @@ export async function synthesizeLink(
             const qualityStatus: LinkQualityStatus = d.qualityStatus === 'grounded' && hasSubstantiveContent &&
               (evidenceLevel === 'full_text' || evidenceLevel === 'excerpt') ? 'grounded' : 'needs_context';
 
+            const provenance: LinkProvenance = d.provenance || (
+              platform === 'youtube'
+                ? 'youtube_transcript'
+                : (platform === 'instagram' || platform === 'tiktok'
+                    ? (d.qualityStatus === 'grounded' ? 'video_analysis' : 'none')
+                    : (userContext ? 'manual_context' : 'none'))
+            );
+
             return {
               content: {
                 title: d.title,
@@ -162,8 +173,9 @@ export async function synthesizeLink(
               isFromRemoteAI: true,
               evidenceLevel,
               qualityStatus,
+              provenance,
               captureMethod,
-              sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
+              sourceExcerpt: userContext ? userContext.slice(0, 300) : (d.sourceExcerpt || undefined),
               synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
               gatewayHttpStatus: res.status,
             };
@@ -237,6 +249,7 @@ export async function synthesizeLink(
     isFromRemoteAI: false,
     evidenceLevel,
     qualityStatus,
+    provenance: userContext ? 'manual_context' : 'none',
     captureMethod,
     sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
     synthesizedAt: userContext ? Date.now() : undefined,

@@ -42,6 +42,14 @@ export type GatewayErrorType =
 
 export type LinkQualityStatus = 'grounded' | 'needs_context' | 'bookmark_only' | 'draft' | 'gateway_error';
 
+export type LinkProvenance =
+  | 'video_analysis'
+  | 'caption_and_video'
+  | 'caption'
+  | 'manual_context'
+  | 'youtube_transcript'
+  | 'none';
+
 export interface SavedLink {
   id: string;
   url: string;
@@ -64,6 +72,7 @@ export interface SavedLink {
   captureMethod?: CaptureMethod;
   evidenceLevel?: EvidenceLevel;
   qualityStatus?: LinkQualityStatus;
+  provenance?: LinkProvenance;
   sourceExcerpt?: string;
   synthesizedAt?: number;
   gatewayErrorType?: GatewayErrorType;

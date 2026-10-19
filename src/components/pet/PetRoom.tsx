@@ -717,6 +717,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         captureMethod,
         evidenceLevel,
         qualityStatus,
+        provenance: res.provenance,
         sourceExcerpt,
         synthesizedAt: res.synthesizedAt,
         gatewayErrorType: res.gatewayErrorType,
@@ -725,49 +726,39 @@ export const PetRoom: FC<PetRoomProps> = ({
         gatewayHttpStatus: res.gatewayHttpStatus,
       };
 
-      const rewardRes = await onAddLink(newLink);
-      const isAwarded = rewardRes ? rewardRes.awarded : false;
-      if (isAwarded) {
-        setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+${rewardRes?.xpAwarded || 0} XP)`);
-      } else if (rewardRes?.reason === 'storage_error') {
-        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Penyimpanan reward offline)');
-      } else if (rewardRes?.reason === 'already_claimed') {
-        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Tautan ini sudah diklaim hari ini)');
-      } else {
-        setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Kuota reward harian tercapai)');
-      }
-      setQuickUrl('');
-
-      // 3. Sol ADR-001 UX State Transition
+      // Sol ADR-003: Review Draft Before Save Invariant
+      // Do NOT call onAddLink immediately. Open MochiNoteSheet draft directly.
       clearYouTubeStages();
       setHoldingNoteLink(newLink);
+      setIsNoteSheetOpen(true);
       forceMochiAction('holding-note');
+      setQuickUrl('');
+
       if (platform === 'youtube' && qualityStatus === 'grounded') {
         setYouTubeStage('ready');
       } else {
         setYouTubeStage(null);
       }
 
-      let finishSpeech = 'Aku menemukan isi materinya. Ini catatan empat lapisnya! 📄✨';
+      let finishSpeech = 'Draf catatan siap! Tinjau dan simpan ke Vault 📄✨';
       if (qualityStatus === 'gateway_error') {
         finishSpeech = res.gatewayErrorType === 'unauthorized'
-          ? 'Gateway AI butuh sesi Telegram. Tersimpan sebagai bookmark! 🔒'
-          : 'Gateway AI sedang offline. Tersimpan sebagai bookmark lokal! ☁️';
+          ? 'Gateway AI butuh sesi Telegram. Tinjau bookmark draf 🔒'
+          : 'Gateway AI sedang offline. Tinjau bookmark draf ☁️';
       } else if (qualityStatus === 'needs_context') {
-        finishSpeech = 'Aku baru dapat tautannya, belum isi post-nya. Mau tambahkan caption? 💬';
+        finishSpeech = 'Mochi butuh konteks post. Mau lengkapi catatan draf? 💬';
       } else if (qualityStatus === 'bookmark_only') {
-        finishSpeech = 'Tersimpan untuk dibaca nanti. Aku belum membuat ringkasan. 📌';
+        finishSpeech = 'Draf tersimpan sebagai bookmark. Mau tinjau sekarang? 📌';
       } else if (isFromRemoteAI) {
-        finishSpeech = 'Aku menemukan isi materinya via AI. Ini catatan empat lapisnya! 📄✨';
+        finishSpeech = 'Catatan berhasil dirangkum AI! Tinjau dan simpan ke Vault 📄✨';
       }
-      triggerSpeech(finishSpeech, 6000);
+      triggerSpeech(finishSpeech, 4500);
 
-      setTimeout(() => setQuickSuccess(null), 3500);
       if (platform === 'youtube' && qualityStatus === 'grounded') {
         youtubeStageTimersRef.current.push(setTimeout(() => setYouTubeStage(null), 4000));
       }
     } catch {
-      setQuickError('Tautan gagal disimpan. Periksa penyimpanan lokal lalu coba lagi.');
+      setQuickError('Gagal menyiapkan catatan. Periksa tautan lalu coba lagi.');
       clearYouTubeStages();
       setYouTubeStage(null);
       forceMochiAction('idle');
@@ -777,14 +768,35 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   const handleSaveAndFeed = async (updatedLink: SavedLink) => {
-    if (onUpdateLink) {
-      await onUpdateLink(updatedLink.id, updatedLink);
+    if (!onAddLink) return;
+    try {
+      const existing = savedLinks.some(l => l.id === updatedLink.id);
+      if (existing && onUpdateLink) {
+        await onUpdateLink(updatedLink.id, updatedLink);
+        setQuickSuccess('🎉 Catatan berhasil diperbarui di Vault!');
+      } else {
+        const rewardRes = await onAddLink(updatedLink);
+        const isAwarded = rewardRes ? rewardRes.awarded : false;
+        if (isAwarded) {
+          setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+${rewardRes?.xpAwarded || 0} XP)`);
+        } else if (rewardRes?.reason === 'storage_error') {
+          setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Penyimpanan reward offline)');
+        } else if (rewardRes?.reason === 'already_claimed') {
+          setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Tautan ini sudah diklaim hari ini)');
+        } else {
+          setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Kuota reward harian tercapai)');
+        }
+      }
+
+      handleFeedClick();
+      setHoldingNoteLink(null);
+      setIsNoteSheetOpen(false);
+      setForcedAction({ id: Date.now(), action: 'hop' });
+      triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar! 🎓✨`, 4500);
+      setTimeout(() => setQuickSuccess(null), 3500);
+    } catch {
+      setQuickError('Gagal menyimpan catatan ke Vault. Coba lagi.');
     }
-    handleFeedClick();
-    setHoldingNoteLink(null);
-    setIsNoteSheetOpen(false);
-    setForcedAction({ id: Date.now(), action: 'hop' });
-    triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar! 🎓✨`, 4500);
   };
 
   // Life stage name based on level
@@ -1270,7 +1282,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           setIsNoteSheetOpen(false);
           setHoldingNoteLink(null);
           setForcedAction({ id: Date.now(), action: 'idle' });
-          triggerSpeech('Catatan aman tersimpan di Vault! Kita baca lagi nanti ya 📚', 3500);
+          triggerSpeech('Draf ditutup tanpa disimpan ke Vault 🍃', 3000);
         }}
         link={holdingNoteLink}
         onSaveAndFeed={handleSaveAndFeed}

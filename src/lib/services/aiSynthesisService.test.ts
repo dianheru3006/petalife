@@ -157,4 +157,42 @@ describe('aiSynthesisService', () => {
     expect(result.qualityStatus).toBe('gateway_error');
     expect(result.gatewayErrorType).toBe('invalid_response');
   });
+
+  it('handles Instagram Reel with video_analysis provenance correctly', async () => {
+    const mockPayload = {
+      success: true,
+      data: {
+        title: 'System Justification Theory',
+        category: 'Psikologi',
+        tags: ['#psikologi', '#defense-mechanism'],
+        coreThesis: 'Orang mempertahankan sistem yang merugikan mereka demi kenyamanan psikologis.',
+        keyTakeaways: [
+          { concept: 'System Justification', explanation: 'Kebutuhan kognitif untuk mempertahankan status quo.' },
+        ],
+        actionableInsights: ['Sadari bias kepatuhan dalam pengambilan keputusan.'],
+        reflectionPrompt: 'Apakah ada aturan yang kamu ikuti hanya karena terbiasa?',
+        author: 'professor.stickman',
+        notes: '💡 Gagasan Utama: Rangkuman lengkap...',
+        summary: 'Ringkasan komprehensif...',
+        qualityStatus: 'grounded',
+        evidenceLevel: 'full_text',
+        provenance: 'video_analysis',
+      },
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => mockPayload,
+    });
+
+    const result = await synthesizeLink('https://www.instagram.com/reel/DdS24CWEzEb/', 'instagram', 'instagram.com');
+
+    expect(result.qualityStatus).toBe('grounded');
+    expect(result.evidenceLevel).toBe('full_text');
+    expect(result.provenance).toBe('video_analysis');
+    expect(result.isFromRemoteAI).toBe(true);
+  });
 });
+

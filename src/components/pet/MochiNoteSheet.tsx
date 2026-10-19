@@ -41,9 +41,11 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
     setIsSubmitting(true);
     try {
       const trimmedNotes = notes.trim();
-      const updatedStatus: LinkQualityStatus = trimmedNotes.length >= 10
+      // Sol ADR-003: Never falsely mark as 'grounded' just because user typed >=10 chars.
+      // Grounding strictly requires verified source evidence (video analysis, transcript, or excerpt).
+      const updatedStatus: LinkQualityStatus = link.qualityStatus === 'grounded'
         ? 'grounded'
-        : (link.qualityStatus === 'needs_context' ? 'bookmark_only' : (link.qualityStatus || 'draft'));
+        : (link.qualityStatus === 'needs_context' && !trimmedNotes ? 'bookmark_only' : (link.qualityStatus || 'draft'));
 
       const updatedLink: SavedLink = {
         ...link,
@@ -53,7 +55,8 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
         tags: tags.length > 0 ? tags : link.tags,
         updatedAt: Date.now(),
         qualityStatus: updatedStatus,
-        evidenceLevel: trimmedNotes.length >= 10 ? 'excerpt' : link.evidenceLevel,
+        evidenceLevel: link.evidenceLevel,
+        provenance: link.provenance || (trimmedNotes ? 'manual_context' : 'none'),
       };
       await onSaveAndFeed(updatedLink);
       onClose();
@@ -185,26 +188,49 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </a>
 
-                {/* Sol ADR-001: Quality Status Badge */}
-                {link.qualityStatus && (
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    {link.qualityStatus === 'grounded' && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EAF6EE] text-[#1E6B3B] border border-[#CCEBD6] flex items-center gap-1">
-                        <span>🌱</span> Grounded (Teks Terverifikasi)
-                      </span>
-                    )}
-                    {link.qualityStatus === 'needs_context' && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FFF4E5] text-[#9E5D0E] border border-[#FAD8A5] flex items-center gap-1">
-                        <span>💬</span> Butuh Konteks Post
-                      </span>
-                    )}
-                    {link.qualityStatus === 'bookmark_only' && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EFE9DF] text-[#6E6458] border border-[#D5CBBA] flex items-center gap-1">
-                        <span>📌</span> Bookmark Saja
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Sol ADR-001 & ADR-003: Quality Status & Provenance Badges */}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {link.qualityStatus === 'grounded' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EAF6EE] text-[#1E6B3B] border border-[#CCEBD6] flex items-center gap-1">
+                      <span>🌱</span> Grounded
+                    </span>
+                  )}
+                  {link.provenance === 'video_analysis' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EBF5FB] text-[#1B4F72] border border-[#AED6F1] flex items-center gap-1">
+                      <span>📹</span> Berdasarkan video
+                    </span>
+                  )}
+                  {link.provenance === 'caption_and_video' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EBF5FB] text-[#1B4F72] border border-[#AED6F1] flex items-center gap-1">
+                      <span>🎬</span> Ucapan video & caption
+                    </span>
+                  )}
+                  {link.provenance === 'caption' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF9E7] text-[#7D6608] border border-[#F9E79F] flex items-center gap-1">
+                      <span>📝</span> Berdasarkan caption
+                    </span>
+                  )}
+                  {link.provenance === 'youtube_transcript' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FDEDEC] text-[#78281F] border border-[#F5B7B1] flex items-center gap-1">
+                      <span>🎙️</span> Transkrip YouTube
+                    </span>
+                  )}
+                  {link.provenance === 'manual_context' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#F4ECF7] text-[#512E5F] border border-[#D7BDE2] flex items-center gap-1">
+                      <span>💬</span> Catatan pengguna
+                    </span>
+                  )}
+                  {link.qualityStatus === 'needs_context' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FFF4E5] text-[#9E5D0E] border border-[#FAD8A5] flex items-center gap-1">
+                      <span>💬</span> Butuh Konteks Post
+                    </span>
+                  )}
+                  {link.qualityStatus === 'bookmark_only' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EFE9DF] text-[#6E6458] border border-[#D5CBBA] flex items-center gap-1">
+                      <span>📌</span> Bookmark Saja
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
