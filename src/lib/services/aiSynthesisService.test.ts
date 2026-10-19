@@ -124,4 +124,37 @@ describe('aiSynthesisService', () => {
     expect(result.qualityStatus).toBe('needs_context');
     expect(result.isFromRemoteAI).toBe(true);
   });
+
+  it('handles HTTP 200 with success=false as gateway_error invalid_response (regression test)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        success: false,
+        fallbackText: 'Free form text without JSON',
+        message: 'AI menghasilkan teks bebas atau JSON tidak lengkap.'
+      }),
+    });
+
+    const result = await synthesizeLink('https://example.com/some-article', 'web', 'example.com');
+
+    expect(result.qualityStatus).toBe('gateway_error');
+    expect(result.gatewayErrorType).toBe('invalid_response');
+    expect(result.content.notes).toContain('AI menghasilkan teks bebas atau JSON tidak lengkap.');
+  });
+
+  it('handles HTTP 200 with malformed JSON body as gateway_error invalid_response', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => { throw new SyntaxError('Unexpected token < in JSON'); },
+    });
+
+    const result = await synthesizeLink('https://example.com/bad-json', 'web', 'example.com');
+
+    expect(result.qualityStatus).toBe('gateway_error');
+    expect(result.gatewayErrorType).toBe('invalid_response');
+  });
 });

@@ -90,74 +90,88 @@ export async function synthesizeLink(
       gatewayHttpStatus = res.status;
 
       if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data && json.data.title) {
-          const d = json.data;
+        let json: any = null;
+        try {
+          json = await res.json();
+        } catch {
+          gatewayErrorType = 'invalid_response';
+          gatewayErrorMessage = 'Respons Brain Gateway bukan JSON valid.';
+          gatewayErrorAction = 'Periksa respon backend lalu coba lagi.';
+        }
 
-          // Check if server indicated missing transcript
-          if (d.qualityStatus === 'needs_context' && !d.notes) {
-            gatewayErrorMessage = 'Transkrip video belum tersedia.';
-            gatewayErrorAction = 'Tambah caption atau cuplikan teks materi.';
-            const localSmart = generateSmartVaultContent(
-              cleanUrl,
-              platform,
-              domain,
-              d.title || meta.title,
-              meta.author || d.author,
-              userContext
-            );
+        if (json) {
+          if (json.success && json.data && json.data.title) {
+            const d = json.data;
+
+            // Check if server indicated missing transcript
+            if (d.qualityStatus === 'needs_context' && !d.notes) {
+              gatewayErrorMessage = 'Transkrip video belum tersedia.';
+              gatewayErrorAction = 'Tambah caption atau cuplikan teks materi.';
+              const localSmart = generateSmartVaultContent(
+                cleanUrl,
+                platform,
+                domain,
+                d.title || meta.title,
+                meta.author || d.author,
+                userContext
+              );
+              return {
+                content: localSmart,
+                isFromRemoteAI: true,
+                evidenceLevel: 'metadata_only',
+                qualityStatus: 'needs_context',
+                captureMethod,
+                sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
+                gatewayErrorMessage,
+                gatewayErrorAction,
+                gatewayHttpStatus: 200,
+              };
+            }
+
+            const formattedNotes = d.notes || [
+              `💡 **Gagasan Utama:**\n${d.coreThesis || ''}`,
+              d.keyTakeaways?.length
+                ? `\n🔍 **Analisis Mendalam & Poin Kunci:**\n${d.keyTakeaways.map((t: { concept: string; explanation: string }) => `* **${t.concept}**: ${t.explanation}`).join('\n\n')}`
+                : '',
+              d.actionableInsights?.length
+                ? `\n🎯 **Aksi Praktis:**\n${d.actionableInsights.map((a: string) => `* ${a}`).join('\n')}`
+                : '',
+              d.reflectionPrompt ? `\n🌱 **Refleksi Diri:**\n${d.reflectionPrompt}` : ''
+            ].filter(Boolean).join('\n\n');
+
+            const hasSubstantiveContent = Boolean(d.coreThesis && d.keyTakeaways?.length && d.actionableInsights?.length);
+            const evidenceLevel: EvidenceLevel = d.evidenceLevel === 'full_text' || d.evidenceLevel === 'excerpt'
+              ? d.evidenceLevel
+              : (userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'));
+            const qualityStatus: LinkQualityStatus = d.qualityStatus === 'grounded' && hasSubstantiveContent &&
+              (evidenceLevel === 'full_text' || evidenceLevel === 'excerpt') ? 'grounded' : 'needs_context';
+
             return {
-              content: localSmart,
+              content: {
+                title: d.title,
+                category: d.category || 'Umum',
+                coreThesis: d.coreThesis || d.summary || '',
+                keyTakeaways: Array.isArray(d.keyTakeaways) ? d.keyTakeaways : [],
+                actionableInsights: Array.isArray(d.actionableInsights) ? d.actionableInsights : [],
+                reflectionPrompt: d.reflectionPrompt || '',
+                notes: formattedNotes,
+                summary: d.coreThesis || d.summary || '',
+                tags: Array.isArray(d.tags) ? d.tags : ['#wawasan', '#vault'],
+                author: meta.author || d.author,
+              },
               isFromRemoteAI: true,
-              evidenceLevel: 'metadata_only',
-              qualityStatus: 'needs_context',
+              evidenceLevel,
+              qualityStatus,
               captureMethod,
               sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
-              gatewayErrorMessage,
-              gatewayErrorAction,
-              gatewayHttpStatus: 200,
+              synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
+              gatewayHttpStatus: res.status,
             };
+          } else {
+            gatewayErrorType = 'invalid_response';
+            gatewayErrorMessage = json.message || json.error || 'AI menghasilkan format respons yang tidak valid.';
+            gatewayErrorAction = 'Tekan Sintesis Ulang untuk mencoba kembali.';
           }
-
-          const formattedNotes = d.notes || [
-            `💡 **Gagasan Utama:**\n${d.coreThesis || ''}`,
-            d.keyTakeaways?.length
-              ? `\n🔍 **Analisis Mendalam & Poin Kunci:**\n${d.keyTakeaways.map((t: { concept: string; explanation: string }) => `* **${t.concept}**: ${t.explanation}`).join('\n\n')}`
-              : '',
-            d.actionableInsights?.length
-              ? `\n🎯 **Aksi Praktis:**\n${d.actionableInsights.map((a: string) => `* ${a}`).join('\n')}`
-              : '',
-            d.reflectionPrompt ? `\n🌱 **Refleksi Diri:**\n${d.reflectionPrompt}` : ''
-          ].filter(Boolean).join('\n\n');
-
-          const hasSubstantiveContent = Boolean(d.coreThesis && d.keyTakeaways?.length && d.actionableInsights?.length);
-          const evidenceLevel: EvidenceLevel = d.evidenceLevel === 'full_text' || d.evidenceLevel === 'excerpt'
-            ? d.evidenceLevel
-            : (userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'));
-          const qualityStatus: LinkQualityStatus = d.qualityStatus === 'grounded' && hasSubstantiveContent &&
-            (evidenceLevel === 'full_text' || evidenceLevel === 'excerpt') ? 'grounded' : 'needs_context';
-
-          return {
-            content: {
-              title: d.title,
-              category: d.category || 'Umum',
-              coreThesis: d.coreThesis || d.summary || '',
-              keyTakeaways: Array.isArray(d.keyTakeaways) ? d.keyTakeaways : [],
-              actionableInsights: Array.isArray(d.actionableInsights) ? d.actionableInsights : [],
-              reflectionPrompt: d.reflectionPrompt || '',
-              notes: formattedNotes,
-              summary: d.coreThesis || d.summary || '',
-              tags: Array.isArray(d.tags) ? d.tags : ['#wawasan', '#vault'],
-              author: meta.author || d.author,
-            },
-            isFromRemoteAI: true,
-            evidenceLevel,
-            qualityStatus,
-            captureMethod,
-            sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
-            synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
-            gatewayHttpStatus: res.status,
-          };
         }
       } else if (res.status === 401) {
         gatewayErrorType = 'unauthorized';

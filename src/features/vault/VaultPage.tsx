@@ -12,7 +12,7 @@ import { synthesizeLink } from '../../lib/services/aiSynthesisService';
 export interface VaultPageProps {
   links: SavedLink[];
   onAddLink: (link: SavedLink) => Promise<LinkRewardResult | void>;
-  onUpdateLink?: (id: string, updates: Partial<SavedLink>) => void;
+  onUpdateLink?: (id: string, updates: Partial<SavedLink>) => Promise<SavedLink | void>;
   onDeleteLink: (id: string) => void;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
   isNightMode?: boolean;
@@ -77,7 +77,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       const { platform, domain } = detectPlatform(link.url);
       const res = await synthesizeLink(link.url, platform, domain);
       if (onUpdateLink) {
-        onUpdateLink(link.id, {
+        await onUpdateLink(link.id, {
           title: res.content.title || link.title,
           category: res.content.category || link.category,
           coreThesis: res.content.coreThesis || link.coreThesis,

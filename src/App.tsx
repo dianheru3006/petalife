@@ -237,12 +237,14 @@ export function App() {
     }
   };
 
-  const handleUpdateLink = async (id: string, updates: Partial<SavedLink>) => {
+  const handleUpdateLink = async (id: string, updates: Partial<SavedLink>): Promise<SavedLink> => {
     try {
       const updated = await updateLink(id, updates);
       setSavedLinks(prev => prev.map(l => l.id === id ? updated : l));
+      return updated;
     } catch (err) {
       console.error('[App] Failed to update link:', err);
+      throw err;
     }
   };
 
