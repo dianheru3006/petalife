@@ -161,6 +161,20 @@ describe('Virtual Pet Engine - pure functions', () => {
       expect(result.reason).toContain('kenyang');
       expect(result.pet.exp).toBe(mockPet.exp);
     });
+
+    it('feeding never lowers energy above the 80 threshold', () => {
+      const pet: Pet = { ...mockPet, hunger: 50, energy: 95, lastFedAt: 0 };
+      const r = feedPet(pet, Date.now(), '2026-10-20');
+      expect(r.success).toBe(true);
+      expect(r.pet.energy).toBe(95);
+    });
+
+    it('feeding still tops energy up to 80 when below the threshold', () => {
+      const pet: Pet = { ...mockPet, hunger: 50, energy: 70, lastFedAt: 0 };
+      const r = feedPet(pet, Date.now(), '2026-10-20');
+      expect(r.success).toBe(true);
+      expect(r.pet.energy).toBe(80);
+    });
   });
 
   describe('calculateTimeDecay & Safe Haven (Sol SPK)', () => {

@@ -255,7 +255,11 @@ export function feedPet(pet: Pet, now = Date.now(), todayKey?: string): FeedResu
   const newHunger = Math.min(PET_CONSTANTS.MAX_STAT, pet.hunger + PET_CONSTANTS.FEED_HUNGER_GAIN);
   const newMood = Math.min(PET_CONSTANTS.MAX_STAT, pet.mood + PET_CONSTANTS.FEED_MOOD_GAIN);
   // Gentle energy perk-up from delicious snack (recovers up to 80, curing lethargy/sleepiness after eating)
-  const newEnergy = Math.min(80, Math.max(pet.energy, pet.energy + PET_CONSTANTS.FEED_ENERGY_GAIN));
+  // Camilan hanya menyegarkan hingga ambang 80; jika energi pet sudah >= 80,
+  // JANGAN potong energinya (regresi PET-01: 95 -> 80).
+  const newEnergy = pet.energy >= 80
+    ? pet.energy
+    : Math.min(80, pet.energy + PET_CONSTANTS.FEED_ENERGY_GAIN);
 
   const localToday = todayKey || new Date(now).toLocaleDateString('en-CA'); // YYYY-MM-DD
   const isFirstCareToday = pet.lastCareDate !== localToday;
