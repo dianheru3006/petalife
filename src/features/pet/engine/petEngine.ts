@@ -17,6 +17,7 @@ export const PET_CONSTANTS = {
   // Perawatan & Camilan:
   FEED_HUNGER_GAIN: 20,              // +20 kenyang per camilan
   FEED_MOOD_GAIN: 3,                 // +3 mood per camilan
+  FEED_ENERGY_GAIN: 10,              // +10 energi per camilan (sampai ambang 80 agar pulih setelah makan)
   FEED_XP_GAIN_FIRST_DAILY: 5,       // 5 XP untuk perawatan pertama hari itu
   FEED_XP_GAIN_REPEAT: 0,            // 0 XP untuk suapan berulang
   FEED_THRESHOLD_MAX: 80,            // Camilan hanya tersedia saat kenyang <= 80
@@ -157,18 +158,20 @@ export function calculateTimeDecay(pet: Pet, now = Date.now()): Pet {
   }
 
   const rawHours = (now - lastDecay) / (1000 * 60 * 60);
+  const isCapped = rawHours > PET_CONSTANTS.MAX_SIMULATION_HOURS;
   const totalHours = Math.min(PET_CONSTANTS.MAX_SIMULATION_HOURS, rawHours);
-  const effectiveEnd = lastDecay + totalHours * 3600 * 1000;
+  const startMs = Math.max(lastDecay, now - totalHours * 3600 * 1000);
+  const effectiveEnd = now;
 
   const schedule = pet.sleepSchedule ?? { startHour: 23, endHour: 7 };
   const isManualSleeping = Boolean(pet.isSleeping || pet.state === 'sleeping');
 
-  let currentHunger = pet.hunger;
-  let currentEnergy = pet.energy;
+  let currentHunger = isCapped ? Math.min(pet.hunger, PET_CONSTANTS.HUNGER_MIN_FLOOR) : pet.hunger;
+  let currentEnergy = isCapped ? Math.min(pet.energy, PET_CONSTANTS.ENERGY_MIN_FLOOR) : pet.energy;
 
   // Chronological integration over 15-minute segments for exact local boundary precision
   const stepMs = 15 * 60 * 1000;
-  let cursor = lastDecay;
+  let cursor = startMs;
 
   while (cursor < effectiveEnd) {
     const nextCursor = Math.min(effectiveEnd, cursor + stepMs);
@@ -251,6 +254,8 @@ export function feedPet(pet: Pet, now = Date.now(), todayKey?: string): FeedResu
 
   const newHunger = Math.min(PET_CONSTANTS.MAX_STAT, pet.hunger + PET_CONSTANTS.FEED_HUNGER_GAIN);
   const newMood = Math.min(PET_CONSTANTS.MAX_STAT, pet.mood + PET_CONSTANTS.FEED_MOOD_GAIN);
+  // Gentle energy perk-up from delicious snack (recovers up to 80, curing lethargy/sleepiness after eating)
+  const newEnergy = Math.min(80, Math.max(pet.energy, pet.energy + PET_CONSTANTS.FEED_ENERGY_GAIN));
 
   const localToday = todayKey || new Date(now).toLocaleDateString('en-CA'); // YYYY-MM-DD
   const isFirstCareToday = pet.lastCareDate !== localToday;
@@ -259,6 +264,7 @@ export function feedPet(pet: Pet, now = Date.now(), todayKey?: string): FeedResu
   const basePet: Pet = {
     ...pet,
     hunger: newHunger,
+    energy: newEnergy,
     mood: newMood,
     state: 'feeding',
     lastFedAt: now,

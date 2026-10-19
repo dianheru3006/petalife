@@ -494,14 +494,20 @@
 }
 
 @keyframes sleepy-blink {
-  0%, 75%, 100% {
-    transform: scaleY(0.7);
+  0%, 100% {
+    transform: scaleY(0.88);
   }
-  35%, 45% {
-    transform: scaleY(0.4);
+  25%, 35% {
+    transform: scaleY(0.65);
   }
-  88% {
+  42% {
     transform: scaleY(0.08);
+  }
+  50% {
+    transform: scaleY(0.75);
+  }
+  70%, 85% {
+    transform: scaleY(0.6);
   }
 }
 

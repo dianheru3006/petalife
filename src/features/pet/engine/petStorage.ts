@@ -101,7 +101,7 @@ export function loadStoredPet(
       const migratedPet: Pet = {
         ...parsed.pet,
         hunger: Math.max(50, parsed.pet.hunger),
-        energy: Math.max(35, parsed.pet.energy),
+        energy: Math.max(85, parsed.pet.energy),
         isSleeping: false,
         sleepSchedule: { startHour: 23, endHour: 7 },
         lastDecayAt: now,

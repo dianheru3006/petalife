@@ -108,6 +108,7 @@ describe('Virtual Pet Engine - pure functions', () => {
       expect(result.success).toBe(true);
       expect(result.pet.hunger).toBe(70); // 50 + 20
       expect(result.pet.mood).toBe(53);   // 50 + 3
+      expect(result.pet.energy).toBe(80); // Restores energy up to 80 (curing tiredness)
       expect(result.pet.exp).toBe(5);     // 0 + 5 (first care of the day)
       expect(result.isFirstCareToday).toBe(true);
       expect(result.pet.state).toBe('feeding');
@@ -339,5 +340,28 @@ describe('Pet Storage Adapter - localStorage persistence', () => {
 
     expect(result.hasDecayed).toBe(true);
     expect(result.pet.hunger).toBe(95);
+  });
+
+  it('migrates legacy v1 envelope to v2 with healthy 85 energy baseline', () => {
+    const legacyEnvelope = {
+      version: 1,
+      pet: {
+        ...mockPet,
+        level: 3,
+        exp: 80,
+        hunger: 40,
+        energy: 0, // Drained to 0 in legacy engine
+      },
+      savedAt: 1776500000000,
+    };
+
+    getStorage().setItem(PET_STORAGE_KEY, JSON.stringify(legacyEnvelope));
+    const result = loadStoredPet(mockPet, 1776500000000);
+
+    expect(result.pet.version).toBe(2);
+    expect(result.pet.level).toBe(3);
+    expect(result.pet.exp).toBe(80);
+    expect(result.pet.hunger).toBe(50); // Safe Haven floor
+    expect(result.pet.energy).toBe(85); // Healthy baseline prevents sleepy shock
   });
 });

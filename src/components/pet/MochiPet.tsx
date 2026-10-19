@@ -61,7 +61,7 @@ export const MochiPet: FC<MochiPetProps> = ({
   const effectiveGaze: GazeDirection = isSleeping || isFeeding ? 'center' : gaze;
 
   // Stat-driven contextual states for dynamic baseline expressions
-  const isTired = pet.energy < 45 && !isSleeping;
+  const isTired = pet.energy <= 40 && !isSleeping;
   const isHungry = pet.hunger < 60 && !isFeeding;
   const isFullAndHappy = pet.hunger >= 80 && pet.energy >= 70 && (pet.mood ?? 70) >= 70;
 
@@ -623,13 +623,15 @@ export const MochiPet: FC<MochiPetProps> = ({
                 transition: 'transform 0.35s cubic-bezier(0.2, 0.8, 0.4, 1)',
               }}
             >
-              <ellipse cx="78" cy="104" rx="8" ry="7.5" fill="#2C1A14" />
-              <circle cx="76" cy="101" r="2.4" fill="#FFFFFF" />
-              <path d="M68 98 Q78 103 88 98" stroke="#E99F37" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+              <ellipse cx="78" cy="103" rx="8" ry="9" fill="#2C1A14" />
+              <circle cx="76" cy="99" r="2.8" fill="#FFFFFF" />
+              <circle cx="81" cy="105.5" r="1.3" fill="#FFFFFF" opacity="0.75" />
+              <path d="M70 98 Q78 103 86 98" stroke="#D58327" strokeWidth="2.2" strokeLinecap="round" fill="none" />
 
-              <ellipse cx="122" cy="104" rx="8" ry="7.5" fill="#2C1A14" />
-              <circle cx="120" cy="101" r="2.4" fill="#FFFFFF" />
-              <path d="M112 98 Q122 103 132 98" stroke="#E99F37" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+              <ellipse cx="122" cy="103" rx="8" ry="9" fill="#2C1A14" />
+              <circle cx="120" cy="99" r="2.8" fill="#FFFFFF" />
+              <circle cx="125" cy="105.5" r="1.3" fill="#FFFFFF" opacity="0.75" />
+              <path d="M114 98 Q122 103 130 98" stroke="#D58327" strokeWidth="2.2" strokeLinecap="round" fill="none" />
             </g>
           ) : isHungry ? (
             /* Hungry Puppy Eyes Looking Subtly Towards Food Tray */
