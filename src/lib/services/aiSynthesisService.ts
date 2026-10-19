@@ -1,34 +1,53 @@
-import type { PlatformType } from '../types';
+import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod } from '../types';
 import { generateSmartVaultContent, type SmartVaultContent } from '../utils/noteGenerator';
 import { resolveLinkMetadata } from './linkMetadataService';
 
 export interface AISynthesizeOptions {
   context?: string;
   timeoutMs?: number;
+  captureMethod?: CaptureMethod;
+}
+
+export interface SynthesizedLinkResult {
+  content: SmartVaultContent;
+  isFromRemoteAI: boolean;
+  evidenceLevel: EvidenceLevel;
+  qualityStatus: LinkQualityStatus;
+  captureMethod: CaptureMethod;
+  sourceExcerpt?: string;
+  synthesizedAt?: number;
 }
 
 /**
- * Mochi Second Brain Comprehensive AI Synthesizer Service.
+ * Mochi Second Brain Comprehensive AI Synthesizer Service (Sol ADR-001).
  *
- * Multi-tier execution pipeline:
+ * Evidence-based ingestion pipeline:
  * 1. Resolves YouTube oEmbed metadata for real author & title.
- * 2. Calls remote Asisten Heru AI Gateway (/api/petalife/summarize-link) powered by Gemini & Groq.
- * 3. Gracefully and seamlessly falls back to client-side heuristic Second Brain synthesizer
- *    if offline, unauthenticated, or server is unreachable.
+ * 2. If genuine text evidence (user context, caption, or readable article) is present,
+ *    calls remote Asisten Heru AI Gateway (/api/petalife/summarize-link) powered by Gemini & Groq.
+ * 3. Never hallucinates fake 4-layer notes if source text is not genuinely available.
+ *    Honors Sol's ADR-001 contract: grounded, needs_context, or bookmark_only.
  */
 export async function synthesizeLink(
   url: string,
   platform: PlatformType,
   domain: string,
   options: AISynthesizeOptions = {}
-): Promise<{
-  content: SmartVaultContent;
-  isFromRemoteAI: boolean;
-}> {
+): Promise<SynthesizedLinkResult> {
   const cleanUrl = url.trim();
+  const captureMethod: CaptureMethod = options.captureMethod || 'manual_paste';
+  const userContext = options.context?.trim() || '';
 
   // Tier 1: Client-side metadata resolution (e.g. YouTube oEmbed)
   const meta = await resolveLinkMetadata(cleanUrl, platform, domain);
+
+  const isClosedSocial =
+    platform === 'instagram' ||
+    platform === 'tiktok' ||
+    domain.includes('threads.net') ||
+    domain.includes('x.com') ||
+    domain.includes('twitter') ||
+    domain.includes('facebook');
 
   // Tier 2: Check remote AI gateway (Asisten Heru / Gemini Flash / Groq)
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
@@ -58,7 +77,7 @@ export async function synthesizeLink(
         headers,
         body: JSON.stringify({
           url: cleanUrl,
-          context: options.context || (meta.isRealMetadata ? `Judul asli video: ${meta.title} oleh ${meta.author || ''}` : '')
+          context: userContext || (meta.isRealMetadata ? `Judul asli: ${meta.title} oleh ${meta.author || ''}` : '')
         }),
         signal: controller.signal,
       });
@@ -79,6 +98,10 @@ export async function synthesizeLink(
             d.reflectionPrompt ? `\n🌱 **Refleksi Diri:**\n${d.reflectionPrompt}` : ''
           ].filter(Boolean).join('\n\n');
 
+          const hasSubstantiveContent = Boolean(d.coreThesis && d.keyTakeaways?.length);
+          const evidenceLevel: EvidenceLevel = userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'full_text');
+          const qualityStatus: LinkQualityStatus = hasSubstantiveContent ? 'grounded' : 'needs_context';
+
           return {
             content: {
               title: d.title,
@@ -93,18 +116,41 @@ export async function synthesizeLink(
               author: meta.author || d.author,
             },
             isFromRemoteAI: true,
+            evidenceLevel,
+            qualityStatus,
+            captureMethod,
+            sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
+            synthesizedAt: Date.now(),
           };
         }
       }
     } catch {
-      // Graceful fallback to client-side synthesizer
+      // Graceful fallback to client-side ADR-001 synthesizer below
     }
   }
 
-  // Tier 3: Client-side heuristic Second Brain synthesizer
-  const localSmart = generateSmartVaultContent(cleanUrl, platform, domain, meta.title, meta.author);
+  // Tier 3: Client-side ADR-001 compliant synthesizer
+  const localSmart = generateSmartVaultContent(cleanUrl, platform, domain, meta.title, meta.author, userContext);
+  
+  if (isClosedSocial && !userContext && !meta.isRealMetadata) {
+    return {
+      content: localSmart,
+      isFromRemoteAI: false,
+      evidenceLevel: 'url_only',
+      qualityStatus: 'needs_context',
+      captureMethod,
+      sourceExcerpt: undefined,
+    };
+  }
+
+  const hasGroundedContent = Boolean(userContext || meta.isRealMetadata);
   return {
     content: localSmart,
     isFromRemoteAI: false,
+    evidenceLevel: userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'),
+    qualityStatus: hasGroundedContent ? 'grounded' : 'needs_context',
+    captureMethod,
+    sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
+    synthesizedAt: hasGroundedContent ? Date.now() : undefined,
   };
 }

@@ -30,6 +30,10 @@ export interface KeyTakeaway {
   explanation: string;
 }
 
+export type CaptureMethod = 'share_sheet' | 'bot_chat' | 'manual_paste' | 'import_json';
+export type EvidenceLevel = 'full_text' | 'excerpt' | 'metadata_only' | 'url_only';
+export type LinkQualityStatus = 'grounded' | 'needs_context' | 'bookmark_only' | 'draft';
+
 export interface SavedLink {
   id: string;
   url: string;
@@ -49,6 +53,11 @@ export interface SavedLink {
   actionableInsights?: string[];
   reflectionPrompt?: string;
   author?: string;
+  captureMethod?: CaptureMethod;
+  evidenceLevel?: EvidenceLevel;
+  qualityStatus?: LinkQualityStatus;
+  sourceExcerpt?: string;
+  synthesizedAt?: number;
 }
 
 export interface QuizQuestion {

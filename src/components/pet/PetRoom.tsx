@@ -644,17 +644,23 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     setIsSavingLink(true);
 
-    // 1. Trigger Mochi's dedicated studying & note-taking mode!
+    // 1. Trigger Mochi's dedicated studying & note-taking mode (Sol ADR-001: RESOLVING state)
     setForcedAction({ id: Date.now(), action: 'studying' });
-    triggerSpeech('Mochi rangkum intisari lengkapnya dulu ya... 📖✨', 3500);
+    triggerSpeech('Aku cek teks yang bisa kubaca... 📖🔍', 3500);
 
     try {
-      // 2. Multi-tier AI Synthesis (Gemini/Groq via Asisten Heru with offline fallback)
-      const { content: smart, isFromRemoteAI } = await synthesizeLink(trimmed, platform, domain);
+      // Extract URL and optional caption text pasted together
+      const urlMatch = trimmed.match(/(https?:\/\/[^\s]+)/i);
+      const targetUrl = urlMatch ? urlMatch[0] : trimmed;
+      const userContext = urlMatch ? trimmed.replace(targetUrl, '').trim() : '';
+
+      // 2. Multi-tier AI Synthesis (Gemini/Groq via Asisten Heru with Sol ADR-001 contract)
+      const res = await synthesizeLink(targetUrl, platform, domain, { context: userContext });
+      const { content: smart, qualityStatus, evidenceLevel, captureMethod, sourceExcerpt, isFromRemoteAI } = res;
 
       const newLink: SavedLink = {
         id: `link-${now}`,
-        url: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,
+        url: targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`,
         title: smart.title,
         platform,
         domain,
@@ -671,6 +677,11 @@ export const PetRoom: FC<PetRoomProps> = ({
         actionableInsights: smart.actionableInsights,
         reflectionPrompt: smart.reflectionPrompt,
         author: smart.author,
+        captureMethod,
+        evidenceLevel,
+        qualityStatus,
+        sourceExcerpt,
+        synthesizedAt: res.synthesizedAt,
       };
 
       const rewardRes = await onAddLink(newLink);
@@ -688,12 +699,18 @@ export const PetRoom: FC<PetRoomProps> = ({
       }
       setQuickUrl('');
 
-      // 3. When finished making vault, Mochi proudly lifts up the note paper!
+      // 3. Sol ADR-001 UX State Transition
       setHoldingNoteLink(newLink);
       setForcedAction({ id: Date.now(), action: 'holding-note' });
-      const finishSpeech = isFromRemoteAI
-        ? 'Selesai! AI Gemini/Groq merangkumnya! Cek yuk 📄✨'
-        : 'Selesai! Rangkuman komprehensif sudah siap! Cek yuk 📄✨';
+
+      let finishSpeech = 'Aku menemukan isi materinya. Ini catatan empat lapisnya! 📄✨';
+      if (qualityStatus === 'needs_context') {
+        finishSpeech = 'Aku baru dapat tautannya, belum isi post-nya. Mau tambahkan caption? 💬';
+      } else if (qualityStatus === 'bookmark_only') {
+        finishSpeech = 'Tersimpan untuk dibaca nanti. Aku belum membuat ringkasan. 📌';
+      } else if (isFromRemoteAI) {
+        finishSpeech = 'Aku menemukan isi materinya via AI. Ini catatan empat lapisnya! 📄✨';
+      }
       triggerSpeech(finishSpeech, 6000);
 
       setTimeout(() => setQuickSuccess(null), 3500);

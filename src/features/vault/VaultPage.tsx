@@ -491,7 +491,24 @@ export const VaultPage: FC<VaultPageProps> = ({
               >
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2.5">
-                    {getPlatformBadge(link.platform, link.domain)}
+                    <div className="flex items-center gap-2">
+                      {getPlatformBadge(link.platform, link.domain)}
+                      {link.qualityStatus === 'grounded' && (
+                        <span className="text-[9px] font-bold text-[#1E6B3B] bg-[#EAF6EE] px-2 py-0.5 rounded-full border border-[#CCEBD6]">
+                          🌱 Grounded
+                        </span>
+                      )}
+                      {link.qualityStatus === 'needs_context' && (
+                        <span className="text-[9px] font-bold text-[#9E5D0E] bg-[#FFF4E5] px-2 py-0.5 rounded-full border border-[#FAD8A5]">
+                          💬 Butuh Konteks
+                        </span>
+                      )}
+                      {link.qualityStatus === 'bookmark_only' && (
+                        <span className="text-[9px] font-bold text-[#6E6458] bg-[#EFE9DF] px-2 py-0.5 rounded-full border border-[#D5CBBA]">
+                          📌 Bookmark Saja
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-[#525266] font-medium">{link.dateAdded}</span>
                   </div>
 

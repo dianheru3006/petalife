@@ -24,9 +24,38 @@ export function generateSmartVaultContent(
   platform: PlatformType,
   domain: string,
   rawTitle?: string,
-  author?: string
+  author?: string,
+  userContext?: string
 ): SmartVaultContent {
-  const lowerUrl = (url + ' ' + (rawTitle || '')).toLowerCase();
+  const isClosedSocial =
+    platform === 'instagram' ||
+    platform === 'tiktok' ||
+    domain.includes('threads.net') ||
+    domain.includes('x.com') ||
+    domain.includes('twitter') ||
+    domain.includes('facebook');
+
+  // ADR-001: For closed social media without user context or real metadata, do NOT hallucinate takeaways!
+  if (isClosedSocial && !userContext && !rawTitle) {
+    const title = `Bookmark ${platform.charAt(0).toUpperCase() + platform.slice(1)} (${domain})`;
+    const coreThesis = `Tautan ${platform} tersimpan sebagai bookmark. Menunggu cuplikan teks atau caption pengguna untuk dirangkum.`;
+    const formattedNotes = `📌 **Tautan Tersimpan sebagai Bookmark**\n\nMochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login.\n\n💡 **Tips Mochi:** Tempelkan caption atau 1–2 kalimat intisari agar Mochi dapat membuatkan ringkasan komprehensif!`;
+
+    return {
+      title,
+      category: 'Umum',
+      coreThesis,
+      keyTakeaways: [],
+      actionableInsights: [],
+      reflectionPrompt: 'Apa gagasan atau alasan utama kamu menyimpan postingan ini?',
+      notes: formattedNotes,
+      summary: coreThesis,
+      tags: [`#${platform}`, '#bookmark'],
+      author,
+    };
+  }
+
+  const lowerUrl = (url + ' ' + (rawTitle || '') + ' ' + (userContext || '')).toLowerCase();
 
   // 1. Tech, AI, Coding, Software Architecture
   if (

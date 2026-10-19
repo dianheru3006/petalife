@@ -1,7 +1,7 @@
 import type { FC, FormEvent } from 'react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { SavedLink } from '../../lib/types';
+import type { SavedLink, LinkQualityStatus } from '../../lib/types';
 import { ExternalLink, Play, Globe, X } from 'lucide-react';
 
 export interface MochiNoteSheetProps {
@@ -40,13 +40,20 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
 
     setIsSubmitting(true);
     try {
+      const trimmedNotes = notes.trim();
+      const updatedStatus: LinkQualityStatus = trimmedNotes.length >= 10
+        ? 'grounded'
+        : (link.qualityStatus === 'needs_context' ? 'bookmark_only' : (link.qualityStatus || 'draft'));
+
       const updatedLink: SavedLink = {
         ...link,
         title: title.trim() || link.title,
-        notes: notes.trim() || link.notes,
-        summary: notes.trim() || link.summary,
+        notes: trimmedNotes || link.notes,
+        summary: trimmedNotes ? trimmedNotes.slice(0, 150) : link.summary,
         tags: tags.length > 0 ? tags : link.tags,
         updatedAt: Date.now(),
+        qualityStatus: updatedStatus,
+        evidenceLevel: trimmedNotes.length >= 10 ? 'excerpt' : link.evidenceLevel,
       };
       await onSaveAndFeed(updatedLink);
       onClose();
@@ -177,8 +184,46 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   <span className="truncate">{link.domain}</span>
                   <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </a>
+
+                {/* Sol ADR-001: Quality Status Badge */}
+                {link.qualityStatus && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    {link.qualityStatus === 'grounded' && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EAF6EE] text-[#1E6B3B] border border-[#CCEBD6] flex items-center gap-1">
+                        <span>🌱</span> Grounded (Teks Terverifikasi)
+                      </span>
+                    )}
+                    {link.qualityStatus === 'needs_context' && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FFF4E5] text-[#9E5D0E] border border-[#FAD8A5] flex items-center gap-1">
+                        <span>💬</span> Butuh Konteks Post
+                      </span>
+                    )}
+                    {link.qualityStatus === 'bookmark_only' && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EFE9DF] text-[#6E6458] border border-[#D5CBBA] flex items-center gap-1">
+                        <span>📌</span> Bookmark Saja
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Sol ADR-001: Context Capture Banner for Needs Context */}
+            {link.qualityStatus === 'needs_context' && (
+              <div className="bg-[#FFF8EE] border border-[#F4DCB7] rounded-2xl p-3.5 space-y-1.5 shadow-2xs">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl">💬</span>
+                  <div className="text-xs text-[#6B4B18] leading-relaxed">
+                    <p className="font-extrabold text-[13px] text-[#54380E]">
+                      Mochi baru mendapat tautannya
+                    </p>
+                    <p className="text-[11px] text-[#7A5B28] mt-0.5">
+                      Platform membatasi akses tanpa login. Tempelkan caption atau 1–2 kalimat intisari di bawah agar Mochi membuatkan ringkasan komprehensif.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Section 2: JUDUL (OPSIONAL) */}
             <div className="space-y-1.5">
