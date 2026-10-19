@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 
-export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying' | 'dizzy';
+export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying' | 'dizzy' | 'holding-note';
 export type GazeDirection = 'center' | 'left' | 'right';
 export type AutonomousFidget = 'none' | 'tilt-left' | 'tilt-right' | 'humming' | 'stretch' | 'cute-wink' | 'sprout-joy';
 
@@ -16,6 +16,7 @@ const ACTION_DURATIONS: Record<MochiAction, number> = {
   dance: 1400,
   studying: 4200,
   dizzy: 2400,
+  'holding-note': 0,
 };
 
 const FIDGET_DURATIONS: Record<AutonomousFidget, number> = {
@@ -35,6 +36,8 @@ export interface MochiPetProps {
   speechText?: string;
   showBubble?: boolean;
   forcedAction?: { id: number; action: MochiAction };
+  holdingNote?: boolean;
+  onNotePaperClick?: () => void;
 }
 
 export const MochiPet: FC<MochiPetProps> = ({
@@ -44,6 +47,8 @@ export const MochiPet: FC<MochiPetProps> = ({
   speechText,
   showBubble = false,
   forcedAction,
+  holdingNote = false,
+  onNotePaperClick,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [currentAction, setCurrentAction] = useState<MochiAction>('idle');
@@ -146,9 +151,11 @@ export const MochiPet: FC<MochiPetProps> = ({
 
     setCurrentAction(action);
     if (actionTimerRef.current) clearTimeout(actionTimerRef.current);
-    actionTimerRef.current = setTimeout(() => {
-      setCurrentAction('idle');
-    }, ACTION_DURATIONS[action]);
+    if (ACTION_DURATIONS[action] > 0) {
+      actionTimerRef.current = setTimeout(() => {
+        setCurrentAction('idle');
+      }, ACTION_DURATIONS[action]);
+    }
   }, []);
 
   // Listen for externally forced actions (e.g. user clicked "Ajak Menari 🎵" or link quick-capture studying)
@@ -165,6 +172,16 @@ export const MochiPet: FC<MochiPetProps> = ({
 
   // Handle interactive clicks on Mochi with random animations
   const handleClick = () => {
+    // If Mochi is currently holding a note, clicking Mochi opens the note directly!
+    if (holdingNote || currentAction === 'holding-note') {
+      if (onNotePaperClick) {
+        onNotePaperClick();
+      } else {
+        onPetClick?.('holding-note');
+      }
+      return;
+    }
+
     // Clear any active autonomous fidget instantly so user click has immediate priority
     setFidget('none');
     if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
@@ -185,6 +202,7 @@ export const MochiPet: FC<MochiPetProps> = ({
 
   const getAnimationClass = () => {
     if (isFeeding) return 'anim-mochi-eating';
+    if (currentAction === 'holding-note' || holdingNote) return 'anim-mochi-holding-note';
     if (currentAction === 'studying') return 'anim-mochi-studying';
     if (isSleeping) return 'anim-mochi-sleeping';
 
@@ -241,9 +259,15 @@ export const MochiPet: FC<MochiPetProps> = ({
       )}
 
       {/* Dynamic Floating Particles based on Action & Fidgets */}
-      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink') && (!isSleeping || currentAction === 'studying' || currentAction === 'dizzy') && (
+      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink' || holdingNote) && (!isSleeping || currentAction === 'studying' || currentAction === 'dizzy' || currentAction === 'holding-note' || holdingNote) && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
-          {currentAction === 'dizzy' ? (
+          {currentAction === 'holding-note' || holdingNote ? (
+            <>
+              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0s' }}>📄</span>
+              <span className="text-lg anim-float-note drop-shadow-xs" style={{ animationDelay: '0.2s' }}>✨</span>
+              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0.4s' }}>💡</span>
+            </>
+          ) : currentAction === 'dizzy' ? (
             <>
               <span className="text-xl animate-spin drop-shadow-xs" style={{ animationDuration: '1.2s' }}>💫</span>
               <span className="text-lg animate-bounce drop-shadow-xs" style={{ animationDuration: '0.8s' }}>⭐</span>
@@ -309,6 +333,30 @@ export const MochiPet: FC<MochiPetProps> = ({
           <span className="text-sm font-black text-[#7161BF] anim-float-zzz drop-shadow-xs -mr-3" style={{ animationDelay: '0.9s' }}>Z</span>
           <span className="text-base font-black text-[#5844A8] anim-float-zzz drop-shadow-xs -mr-6" style={{ animationDelay: '1.8s' }}>Z</span>
         </div>
+      )}
+
+      {/* Floating Interactive Pill Button when holding note */}
+      {(currentAction === 'holding-note' || holdingNote) && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onNotePaperClick) {
+              onNotePaperClick();
+            } else {
+              onPetClick?.('holding-note');
+            }
+          }}
+          className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap z-40 animate-bounce cursor-pointer group"
+          title="Klik untuk membuka catatan"
+          aria-label="Cek Catatan Mochi"
+        >
+          <div className="bg-[#2E2E3A] hover:bg-[#1E1E28] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20 transition-all group-hover:scale-105 active:scale-95">
+            <span>📄</span>
+            <span>Cek Catatan Mochi</span>
+            <span className="text-[#FED7C5] animate-pulse">✨</span>
+          </div>
+        </button>
       )}
 
       {/* Pet Interactive Body Area — Proportional Sizing with Room */}
@@ -450,40 +498,44 @@ export const MochiPet: FC<MochiPetProps> = ({
           <ellipse cx="82" cy="74" rx="38" ry="24" fill="url(#topGleam3D)" transform="rotate(-15 82 74)" />
 
           {/* 5. 3D Rounded Little Paws (Wave up joyfully during dance / balance during dizzy) */}
-          <ellipse
-            cx="54"
-            cy={currentAction === 'dance' ? 130 : currentAction === 'dizzy' ? 126 : 138}
-            rx="10"
-            ry="8"
-            fill="url(#clayPaw)"
-            stroke="#C87A22"
-            strokeWidth="1.2"
-            transform={
-              currentAction === 'dance'
-                ? 'rotate(-28 54 130)'
-                : currentAction === 'dizzy'
-                ? 'rotate(-32 54 126)'
-                : 'rotate(-12 54 138)'
-            }
-            style={{ transition: 'all 0.25s ease' }}
-          />
-          <ellipse
-            cx="146"
-            cy={currentAction === 'dance' ? 130 : currentAction === 'dizzy' ? 126 : 138}
-            rx="10"
-            ry="8"
-            fill="url(#clayPaw)"
-            stroke="#C87A22"
-            strokeWidth="1.2"
-            transform={
-              currentAction === 'dance'
-                ? 'rotate(28 146 130)'
-                : currentAction === 'dizzy'
-                ? 'rotate(32 146 126)'
-                : 'rotate(12 146 138)'
-            }
-            style={{ transition: 'all 0.25s ease' }}
-          />
+          {currentAction !== 'studying' && currentAction !== 'holding-note' && !holdingNote && (
+            <>
+              <ellipse
+                cx="54"
+                cy={currentAction === 'dance' ? 130 : currentAction === 'dizzy' ? 126 : 138}
+                rx="10"
+                ry="8"
+                fill="url(#clayPaw)"
+                stroke="#C87A22"
+                strokeWidth="1.2"
+                transform={
+                  currentAction === 'dance'
+                    ? 'rotate(-28 54 130)'
+                    : currentAction === 'dizzy'
+                    ? 'rotate(-32 54 126)'
+                    : 'rotate(-12 54 138)'
+                }
+                style={{ transition: 'all 0.25s ease' }}
+              />
+              <ellipse
+                cx="146"
+                cy={currentAction === 'dance' ? 130 : currentAction === 'dizzy' ? 126 : 138}
+                rx="10"
+                ry="8"
+                fill="url(#clayPaw)"
+                stroke="#C87A22"
+                strokeWidth="1.2"
+                transform={
+                  currentAction === 'dance'
+                    ? 'rotate(28 146 130)'
+                    : currentAction === 'dizzy'
+                    ? 'rotate(32 146 126)'
+                    : 'rotate(12 146 138)'
+                }
+                style={{ transition: 'all 0.25s ease' }}
+              />
+            </>
+          )}
 
           {/* 6. Soft Rosy Blushing Cheeks (Dynamically responsive to mood & stamina) */}
           <ellipse
@@ -535,6 +587,21 @@ export const MochiPet: FC<MochiPetProps> = ({
                   style={{ transformOrigin: '0 0', animationDuration: '1.4s', animationDirection: 'reverse' }}
                 />
               </g>
+            </g>
+          ) : currentAction === 'holding-note' || holdingNote ? (
+            /* Proud Sparkling Scholarly Eyes (◕ ◕) */
+            <g>
+              {/* Left Eye */}
+              <ellipse cx="78" cy="98" rx="8.5" ry="10" fill="#2C1A14" />
+              <circle cx="75.5" cy="93.5" r="3.5" fill="#FFFFFF" />
+              <circle cx="81" cy="101" r="1.6" fill="#FFFFFF" />
+              <polygon points="78,89 79.5,91.5 82,92 80,94 80.5,96.5 78,95 75.5,96.5 76,94 74,92 76.5,91.5" fill="#F4A261" />
+
+              {/* Right Eye */}
+              <ellipse cx="122" cy="98" rx="8.5" ry="10" fill="#2C1A14" />
+              <circle cx="119.5" cy="93.5" r="3.5" fill="#FFFFFF" />
+              <circle cx="125" cy="101" r="1.6" fill="#FFFFFF" />
+              <polygon points="122,89 123.5,91.5 126,92 124,94 124.5,96.5 122,95 119.5,96.5 120,94 118,92 120.5,91.5" fill="#F4A261" />
             </g>
           ) : currentAction === 'studying' ? (
             /* Focused Scholarly Eyes with Sparkles (◕ ◕) */
@@ -721,6 +788,15 @@ export const MochiPet: FC<MochiPetProps> = ({
               strokeWidth="2.2"
               strokeLinejoin="round"
             />
+          ) : currentAction === 'holding-note' || holdingNote ? (
+            /* Cheerful Proud Smile (◡) */
+            <path
+              d="M93 111 Q100 118 107 111"
+              stroke="#2C1A14"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              fill="none"
+            />
           ) : currentAction === 'studying' ? (
             /* Cheerful focused study smile (◡) */
             <path
@@ -887,6 +963,80 @@ export const MochiPet: FC<MochiPetProps> = ({
                 {/* Right Paw gripping pencil */}
                 <ellipse cx="132" cy="142" rx="7" ry="5.5" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
               </g>
+            </g>
+          )}
+
+          {/* 11. Large Note Paper held aloft by Mochi */}
+          {(currentAction === 'holding-note' || holdingNote) && (
+            <g
+              className="anim-paper-float cursor-pointer group"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onNotePaperClick) {
+                  onNotePaperClick();
+                } else {
+                  onPetClick?.('holding-note');
+                }
+              }}
+            >
+              {/* Paper Soft Shadow */}
+              <rect x="42" y="86" width="116" height="78" rx="7" fill="#000000" opacity="0.14" transform="translate(0, 4)" />
+
+              {/* Paper Sheet Base */}
+              <rect
+                x="42"
+                y="86"
+                width="116"
+                height="78"
+                rx="7"
+                fill="#FFFDF8"
+                stroke="#DECDB5"
+                strokeWidth="1.8"
+                className="transition-all duration-200 group-hover:stroke-[#D97736]"
+              />
+
+              {/* Folded Top-Right Corner */}
+              <polygon points="146,86 158,98 146,98" fill="#F4EAD4" stroke="#DECDB5" strokeWidth="1" />
+              <line x1="146" y1="86" x2="146" y2="98" stroke="#DECDB5" strokeWidth="1.2" />
+              <line x1="146" y1="98" x2="158" y2="98" stroke="#DECDB5" strokeWidth="1.2" />
+
+              {/* Cute Top Washi Tape Clip */}
+              <rect x="88" y="82" width="24" height="8" rx="2" fill="#FED7C5" stroke="#F4A261" strokeWidth="0.8" opacity="0.95" />
+              <circle cx="100" cy="86" r="1.5" fill="#D97736" />
+
+              {/* Eyebrow Label: CATATAN */}
+              <rect x="50" y="94" width="34" height="7" rx="3.5" fill="#FFEFE8" />
+              <text x="67" y="99.2" fontSize="4.2" fill="#BA5218" fontWeight="800" textAnchor="middle" letterSpacing="0.3">CATATAN</text>
+
+              {/* Main Title bar / text preview */}
+              <rect x="50" y="104" width="80" height="5" rx="2" fill="#2E2E3A" />
+
+              {/* Horizontal Written Note Lines */}
+              <line x1="50" y1="114" x2="146" y2="114" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" />
+              <line x1="50" y1="121" x2="140" y2="121" stroke="#94A3B8" strokeWidth="2.2" strokeLinecap="round" />
+
+              {/* Bullet Point 1 */}
+              <circle cx="53" cy="129" r="1.8" fill="#D97736" />
+              <line x1="58" y1="129" x2="136" y2="129" stroke="#94A3B8" strokeWidth="2.0" strokeLinecap="round" />
+
+              {/* Bullet Point 2 */}
+              <circle cx="53" cy="136" r="1.8" fill="#D97736" />
+              <line x1="58" y1="136" x2="130" y2="136" stroke="#94A3B8" strokeWidth="2.0" strokeLinecap="round" />
+
+              <line x1="50" y1="144" x2="112" y2="144" stroke="#CBD5E1" strokeWidth="1.8" strokeLinecap="round" />
+
+              {/* Mochi Paw Seal at bottom right */}
+              <circle cx="142" cy="144" r="5.5" fill="#FFE5D9" stroke="#F4A261" strokeWidth="0.8" />
+              <text x="142" y="146.5" fontSize="6.5" textAnchor="middle">🐾</text>
+
+              {/* Left Paw Gripping Paper Edge */}
+              <ellipse cx="44" cy="122" rx="7.5" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
+
+              {/* Right Paw Gripping Paper Edge */}
+              <ellipse cx="156" cy="122" rx="7.5" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
+
+              {/* Sparkle Glint on Paper */}
+              <text x="148" y="82" fontSize="11" className="animate-pulse">✨</text>
             </g>
           )}
         </svg>

@@ -420,6 +420,36 @@
   transform-origin: bottom center;
 }
 
+/* Dedicated Holding Large Note Paper Animation */
+@keyframes mochi-holding-note {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.015, 0.985);
+  }
+}
+
+.anim-mochi-holding-note {
+  animation: mochi-holding-note 2.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes paper-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(0.5deg);
+  }
+}
+
+.anim-paper-float {
+  animation: paper-float 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center center;
+}
+
 @keyframes mochi-pencil-scribble {
   0%, 100% {
     transform: rotate(0deg) translate(0, 0);
@@ -1016,6 +1046,8 @@
   .anim-mochi-eating,
   .anim-mochi-sleeping,
   .anim-mochi-studying,
+  .anim-mochi-holding-note,
+  .anim-paper-float,
   .anim-mochi-hop,
   .anim-mochi-wiggle,
   .anim-mochi-spin,

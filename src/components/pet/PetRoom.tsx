@@ -27,6 +27,8 @@ import { SNACK_VARIANTS } from './snackData';
 import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
+import { MochiNoteSheet } from './MochiNoteSheet';
+import { generateSmartVaultContent } from '../../lib/utils/noteGenerator';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
@@ -35,6 +37,7 @@ export interface PetRoomProps {
   onNavigate: (tab: NavigationTab) => void;
   savedLinks?: SavedLink[];
   onAddLink?: (newLink: SavedLink) => Promise<LinkRewardResult | void>;
+  onUpdateLink?: (id: string, updates: Partial<SavedLink>) => void;
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;
@@ -46,6 +49,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   onNavigate,
   savedLinks = [],
   onAddLink,
+  onUpdateLink,
   notesCount: _notesCount,
   isNightMode,
   onToggleNightMode,
@@ -58,6 +62,10 @@ export const PetRoom: FC<PetRoomProps> = ({
   // Dynamic Snack Variety (cycles through Onigiri, Cake, Dango, Baozi, Pancake, Cookie, Pudding, Peach)
   const [snackIndex, setSnackIndex] = useState(0);
   const currentSnack = SNACK_VARIANTS[snackIndex];
+
+  // Note Sheet & Large Paper Presentation State
+  const [holdingNoteLink, setHoldingNoteLink] = useState<SavedLink | null>(null);
+  const [isNoteSheetOpen, setIsNoteSheetOpen] = useState<boolean>(false);
 
   // Speech Bubble State: Hidden by default; only appears on direct interaction or occasional whisper
   const [speech, setSpeech] = useState<string>('Kenyang dan senang ✨');
@@ -370,6 +378,11 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   const handlePetTap = (action?: MochiAction) => {
+    if (holdingNoteLink) {
+      setIsNoteSheetOpen(true);
+      return;
+    }
+
     if (activeNight) {
       triggerSpeech('Ssst... Mochi sedang mimpi indah... 🌙💤', 3500);
       return;
@@ -621,19 +634,20 @@ export const PetRoom: FC<PetRoomProps> = ({
     setQuickError(null);
     const { platform, domain } = detectPlatform(trimmed);
     const now = Date.now();
+    const smart = generateSmartVaultContent(trimmed, platform, domain);
     const newLink: SavedLink = {
       id: `link-${now}`,
       url: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,
-      title: `Saved ${domain} Video Clip #${savedLinks.length + 1}`,
+      title: smart.title,
       platform,
       domain,
-      tags: [platform === 'youtube' || platform === 'tiktok' || platform === 'instagram' ? 'shorts' : 'article', 'new'],
+      tags: smart.tags,
       status: 'to_review',
       dateAdded: 'Baru saja',
       createdAt: now,
       updatedAt: now,
-      notes: 'Disimpan dari Quick Capture Beranda.',
-      summary: 'Siap untuk dipelajari dan refleksi pribadi.'
+      notes: smart.notes,
+      summary: smart.summary,
     };
 
     if (!onAddLink) {
@@ -668,27 +682,16 @@ export const PetRoom: FC<PetRoomProps> = ({
         }, 1200);
       }
 
-      // Trigger Mochi's dedicated studying & note-taking mode!
+      // 1. Trigger Mochi's dedicated studying & note-taking mode!
       setForcedAction({ id: Date.now(), action: 'studying' });
+      triggerSpeech('Mochi rangkum materinya dulu ya! 📖✏️', 2600);
 
-      let studySpeech = isAwarded
-        ? `Materi baru dari ${domain}! Tersimpan rapi di Vault untuk kita pelajari bareng! 📚✨ (+10 XP)`
-        : `Materi baru dari ${domain}! Tersimpan rapi di Vault untuk kita pelajari bareng! 📚✨`;
-
-      if (activeNight) {
-        studySpeech = isAwarded
-          ? 'Hoaamm... Mochi simpan di rak buku ya, walau sudah malam 🌙📚 (+10 XP)'
-          : 'Hoaamm... Mochi simpan di rak buku ya 🌙📚';
-      } else if (platform === 'youtube') {
-        studySpeech = isAwarded
-          ? 'Video YouTube baru tersimpan di Vault! Siap kita tonton dan pelajari bareng! 🎬📚 (+10 XP)'
-          : 'Video YouTube baru tersimpan di Vault! Siap kita pelajari bareng! 🎬📚';
-      } else if (platform === 'tiktok' || platform === 'instagram') {
-        studySpeech = isAwarded
-          ? 'Tersimpan rapi di Vault untuk kita pelajari bareng! 📱📚 (+10 XP)'
-          : 'Tersimpan rapi di Vault untuk referensi belajar kita! 📱✨';
-      }
-      triggerSpeech(studySpeech, 4500);
+      // 2. When finished making vault, Mochi proudly lifts up the large note paper!
+      setTimeout(() => {
+        setHoldingNoteLink(newLink);
+        setForcedAction({ id: Date.now(), action: 'holding-note' });
+        triggerSpeech('Selesai! Cek dulu catatannya sebelum Mochi makan 🍪📄', 6000);
+      }, 2600);
 
       setTimeout(() => setQuickSuccess(null), 3500);
     } catch {
@@ -696,6 +699,17 @@ export const PetRoom: FC<PetRoomProps> = ({
     } finally {
       setIsSavingLink(false);
     }
+  };
+
+  const handleSaveAndFeed = async (updatedLink: SavedLink) => {
+    if (onUpdateLink) {
+      await onUpdateLink(updatedLink.id, updatedLink);
+    }
+    handleFeedClick();
+    setHoldingNoteLink(null);
+    setIsNoteSheetOpen(false);
+    setForcedAction({ id: Date.now(), action: 'hop' });
+    triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar! 🎓✨`, 4500);
   };
 
   // Life stage name based on level
@@ -942,6 +956,8 @@ export const PetRoom: FC<PetRoomProps> = ({
             pet={effectivePet}
             onPetClick={handlePetTap}
             forcedAction={forcedAction}
+            holdingNote={Boolean(holdingNoteLink)}
+            onNotePaperClick={() => setIsNoteSheetOpen(true)}
             showBubble={false}
           />
         </div>
@@ -1265,6 +1281,20 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         </div>
       )}
+
+      {/* 8. Mochi Note Sheet Modal matching reference design */}
+      <MochiNoteSheet
+        isOpen={isNoteSheetOpen}
+        onClose={() => {
+          setIsNoteSheetOpen(false);
+          setHoldingNoteLink(null);
+          setForcedAction({ id: Date.now(), action: 'idle' });
+          triggerSpeech('Catatan aman tersimpan di Vault! Kita baca lagi nanti ya 📚', 3500);
+        }}
+        link={holdingNoteLink}
+        onSaveAndFeed={handleSaveAndFeed}
+        petName={pet.name || 'Mochi'}
+      />
     </div>
   );
 };

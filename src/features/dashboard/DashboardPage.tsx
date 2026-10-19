@@ -11,6 +11,7 @@ export interface DashboardPageProps {
   onToggleGoal?: (id: string) => void;
   onNavigate: (tab: NavigationTab) => void;
   onAddLink?: (newLink: SavedLink) => Promise<LinkRewardResult | void>;
+  onUpdateLink?: (id: string, updates: Partial<SavedLink>) => void;
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;
@@ -22,6 +23,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
   onFeedPet,
   onNavigate,
   onAddLink,
+  onUpdateLink,
   notesCount,
   isNightMode = false,
   onToggleNightMode,
@@ -35,6 +37,7 @@ export const DashboardPage: FC<DashboardPageProps> = ({
         onFeed={onFeedPet}
         onNavigate={onNavigate}
         onAddLink={onAddLink}
+        onUpdateLink={onUpdateLink}
         notesCount={notesCount}
         isNightMode={isNightMode}
         onToggleNightMode={onToggleNightMode}

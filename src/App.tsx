@@ -431,6 +431,7 @@ export function App() {
             onToggleGoal={handleToggleGoal}
             onNavigate={handleSelectTab}
             onAddLink={handleAddLink}
+            onUpdateLink={handleUpdateLink}
             notesCount={notes.length}
             isNightMode={isNightMode}
             onToggleNightMode={handleToggleNightMode}
