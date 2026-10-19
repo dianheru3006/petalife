@@ -13,7 +13,6 @@ import {
   Shirt,
   Info,
   Music,
-  BookmarkPlus,
   X,
   ArrowRight,
   PawPrint,
@@ -102,7 +101,6 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickSuccess, setQuickSuccess] = useState<string | null>(null);
   const [isSavingLink, setIsSavingLink] = useState(false);
-  const [isLinkSheetOpen, setIsLinkSheetOpen] = useState(false);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isFabClosing, setIsFabClosing] = useState(false);
@@ -137,10 +135,6 @@ export const PetRoom: FC<PetRoomProps> = ({
   }, []);
 
   // Accessible Modal & FAB Focus Trap & Restoration Refs
-  const linkInputRef = useRef<HTMLInputElement>(null);
-  const linkModalRef = useRef<HTMLDivElement>(null);
-  const linkSheetTriggerRef = useRef<HTMLButtonElement>(null);
-
   const wardrobeModalRef = useRef<HTMLDivElement>(null);
   const wardrobeCloseBtnRef = useRef<HTMLButtonElement>(null);
   const wardrobeTriggerRef = useRef<HTMLButtonElement>(null);
@@ -176,56 +170,6 @@ export const PetRoom: FC<PetRoomProps> = ({
       document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isFabOpen, isFabClosing]);
-
-  // Focus trap, Escape key, and focus restoration for Quick Link Capture Modal
-  useEffect(() => {
-    if (!isLinkSheetOpen) return;
-
-    const focusTimer = setTimeout(() => {
-      linkInputRef.current?.focus();
-    }, 50);
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setIsLinkSheetOpen(false);
-        return;
-      }
-
-      if (e.key === 'Tab') {
-        const modal = linkModalRef.current;
-        if (!modal) return;
-        const focusable = modal.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (!focusable.length) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === first || !modal.contains(document.activeElement)) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last || !modal.contains(document.activeElement)) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearTimeout(focusTimer);
-      window.removeEventListener('keydown', handleKeyDown);
-      requestAnimationFrame(() => {
-        fabTriggerRef.current?.focus();
-      });
-    };
-  }, [isLinkSheetOpen]);
 
   // Focus trap, Escape key, and focus restoration for Wardrobe Modal
   useEffect(() => {
@@ -672,16 +616,6 @@ export const PetRoom: FC<PetRoomProps> = ({
       }
       setQuickUrl('');
 
-      // Auto-close sheet after successful save so user sees confirmation
-      if (isLinkSheetOpen) {
-        setTimeout(() => {
-          setIsLinkSheetOpen(false);
-          requestAnimationFrame(() => {
-            fabTriggerRef.current?.focus();
-          });
-        }, 1200);
-      }
-
       // 1. Trigger Mochi's dedicated studying & note-taking mode!
       setForcedAction({ id: Date.now(), action: 'studying' });
       triggerSpeech('Mochi rangkum materinya dulu ya! 📖✏️', 2600);
@@ -838,25 +772,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Speed Dial Action Icons (Smooth Cascading Bloom & Collapse Animation) */}
           {isFabOpen && (
             <div className="flex flex-col items-center gap-2 pt-0.5">
-              {/* 1. Quick Capture Sheet Trigger */}
-              <button
-                ref={linkSheetTriggerRef}
-                type="button"
-                onClick={() => {
-                  closeFab();
-                  setIsLinkSheetOpen(true);
-                }}
-                className={cn(
-                  isFabClosing ? 'anim-fab-exit-1' : 'anim-fab-item-1',
-                  'w-11 h-11 rounded-full bg-[#BA5218] text-white shadow-md flex items-center justify-center hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]'
-                )}
-                title="Simpan Link Cepat ke Vault"
-                aria-label="Simpan link belajar ke Vault"
-              >
-                <BookmarkPlus className="w-5 h-5" />
-              </button>
-
-              {/* 2. Night / Day Sleep Mode Toggle */}
+              {/* 1. Night / Day Sleep Mode Toggle */}
               <button
                 type="button"
                 onClick={() => {
@@ -864,7 +780,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   closeFab();
                 }}
                 className={cn(
-                  isFabClosing ? 'anim-fab-exit-2' : 'anim-fab-item-2',
+                  isFabClosing ? 'anim-fab-exit-1' : 'anim-fab-item-1',
                   'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#483696]'
                 )}
                 title={activeNight ? 'Bangunkan Mochi (Pagi Hari)' : 'Tidurkan Mochi / Istirahat Malam'}
@@ -873,7 +789,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 {activeNight ? <Moon className="w-5 h-5 text-[#483696]" /> : <Sun className="w-5 h-5 text-[#9E410E]" />}
               </button>
 
-              {/* 3. Dance Action */}
+              {/* 2. Dance Action */}
               <button
                 type="button"
                 onClick={() => {
@@ -881,7 +797,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   closeFab();
                 }}
                 className={cn(
-                  isFabClosing ? 'anim-fab-exit-3' : 'anim-fab-item-3',
+                  isFabClosing ? 'anim-fab-exit-2' : 'anim-fab-item-2',
                   'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#9E410E] hover:text-[#BA5218] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E]'
                 )}
                 title="Ajak Mochi Menari 🎵"
@@ -890,7 +806,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 <Music className="w-5 h-5" />
               </button>
 
-              {/* 4. Wardrobe Modal Sheet Trigger */}
+              {/* 3. Wardrobe Modal Sheet Trigger */}
               <button
                 ref={wardrobeTriggerRef}
                 type="button"
@@ -899,7 +815,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                   setIsWardrobeOpen(true);
                 }}
                 className={cn(
-                  isFabClosing ? 'anim-fab-exit-4' : 'anim-fab-item-4',
+                  isFabClosing ? 'anim-fab-exit-3' : 'anim-fab-item-3',
                   'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#4A4A5A] hover:text-[#2E2E3A] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4A4A5A]'
                 )}
                 title="Buka Lemari Kostum Mochi"
@@ -1084,100 +1000,6 @@ export const PetRoom: FC<PetRoomProps> = ({
           )}
         </form>
       </div>
-
-
-      {/* Modal Sheet: Quick Link Capture (Direct access on short screens) */}
-      {isLinkSheetOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="link-sheet-title"
-          className="fixed inset-0 z-50 bg-black/45 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 anim-modal-backdrop"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsLinkSheetOpen(false);
-          }}
-        >
-          <div ref={linkModalRef} className="bg-[#FAF7F2] border-t sm:border border-[#EAE3D5] rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl relative space-y-4 anim-modal-sheet">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#FFEFE8] flex items-center justify-center text-[#BA5218]">
-                  <BookmarkPlus className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 id="link-sheet-title" className="text-base font-black text-[#2E2E3A]">
-                    Simpan Materi Belajar
-                  </h2>
-                  <p className="text-xs text-[#4E4E5E]">
-                    Simpan video YouTube, TikTok, atau artikel ke Vault
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsLinkSheetOpen(false)}
-                className="w-11 h-11 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#BA5218]"
-                aria-label="Tutup form simpan materi"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Notifications inside sheet */}
-            {quickSuccess && (
-              <div role="status" className="p-2.5 rounded-xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-[#1E6B3B] shrink-0" />
-                <span>{quickSuccess}</span>
-              </div>
-            )}
-            {quickError && (
-              <div role="alert" className="p-2.5 rounded-xl bg-[#FDF0F4] border border-[#FED7C5] text-xs font-semibold text-[#A82B53]">
-                ⚠️ {quickError}
-              </div>
-            )}
-
-            {/* Input Form */}
-            <form onSubmit={handleQuickAddLink} className="space-y-3">
-              <div className="relative flex items-center">
-                <input
-                  ref={linkInputRef}
-                  type="text"
-                  inputMode="url"
-                  autoComplete="url"
-                  aria-label="URL materi untuk disimpan"
-                  value={quickUrl}
-                  onChange={(e) => {
-                    setQuickUrl(e.target.value);
-                    if (quickError) setQuickError(null);
-                  }}
-                  placeholder="Tempel tautan (youtube.com, tiktok.com, web)..."
-                  className="w-full text-sm pl-4 pr-12 py-3 rounded-2xl bg-white border border-[#EAE3D5] text-[#2E2E3A] placeholder-[#8A857A] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#BA5218]"
-                />
-                <button
-                  type="button"
-                  onClick={handlePasteToInput}
-                  className="absolute right-1 w-11 h-11 flex items-center justify-center rounded-full text-[#4A4A5A] hover:text-[#9E410E] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#9E410E]"
-                  title="Tempel dari clipboard"
-                  aria-label="Tempel tautan dari clipboard"
-                >
-                  <Clipboard className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="submit"
-                  disabled={isSavingLink}
-                  className="flex-1 h-12 bg-[#BA5218] hover:bg-[#A34310] disabled:opacity-50 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
-                >
-                  <BookmarkPlus className="w-4 h-4" />
-                  <span>{isSavingLink ? 'Menyimpan...' : 'Simpan ke Vault'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Modal Sheet: Lemari Kostum Mochi */}
       {isWardrobeOpen && (
