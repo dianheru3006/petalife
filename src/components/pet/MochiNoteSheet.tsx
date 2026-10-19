@@ -1,5 +1,6 @@
 import type { FC, FormEvent } from 'react';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { SavedLink } from '../../lib/types';
 import { ExternalLink, Play, Globe } from 'lucide-react';
 
@@ -112,16 +113,18 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="mochi-sheet-title"
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 anim-modal-backdrop"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#FAF7F2] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-[#EAE3D5] flex flex-col max-h-[92vh] overflow-hidden animate-slide-up"
+        className="w-full max-w-lg bg-[#FAF7F2] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-[#EAE3D5] flex flex-col max-h-[92dvh] overflow-hidden anim-modal-sheet pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Pull Handle Indicator */}
@@ -247,6 +250,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
