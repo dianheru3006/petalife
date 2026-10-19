@@ -29,6 +29,7 @@ import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
 import { MochiNoteSheet } from './MochiNoteSheet';
 import { generateSmartVaultContent } from '../../lib/utils/noteGenerator';
+import { resolveLinkMetadata } from '../../lib/services/linkMetadataService';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
@@ -579,21 +580,6 @@ export const PetRoom: FC<PetRoomProps> = ({
     setQuickError(null);
     const { platform, domain } = detectPlatform(trimmed);
     const now = Date.now();
-    const smart = generateSmartVaultContent(trimmed, platform, domain);
-    const newLink: SavedLink = {
-      id: `link-${now}`,
-      url: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,
-      title: smart.title,
-      platform,
-      domain,
-      tags: smart.tags,
-      status: 'to_review',
-      dateAdded: 'Baru saja',
-      createdAt: now,
-      updatedAt: now,
-      notes: smart.notes,
-      summary: smart.summary,
-    };
 
     if (!onAddLink) {
       setQuickError('Penyimpanan belum siap. Coba lagi sebentar.');
@@ -601,7 +587,31 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     setIsSavingLink(true);
+
+    // 1. Trigger Mochi's dedicated studying & note-taking mode!
+    setForcedAction({ id: Date.now(), action: 'studying' });
+    triggerSpeech('Mochi ekstrak intisari aslinya dulu ya... 📖🔍', 3500);
+
     try {
+      // 2. Asynchronously resolve real metadata (e.g. YouTube oEmbed API)
+      const meta = await resolveLinkMetadata(trimmed, platform, domain);
+      const smart = generateSmartVaultContent(trimmed, platform, domain, meta.title, meta.author);
+
+      const newLink: SavedLink = {
+        id: `link-${now}`,
+        url: trimmed.startsWith('http') ? trimmed : `https://${trimmed}`,
+        title: smart.title,
+        platform,
+        domain,
+        tags: smart.tags,
+        status: 'to_review',
+        dateAdded: 'Baru saja',
+        createdAt: now,
+        updatedAt: now,
+        notes: smart.notes,
+        summary: smart.summary,
+      };
+
       const rewardRes = await onAddLink(newLink);
       const isAwarded = rewardRes ? rewardRes.awarded : false;
       const countToday = rewardRes ? rewardRes.countToday : 0;
@@ -617,20 +627,15 @@ export const PetRoom: FC<PetRoomProps> = ({
       }
       setQuickUrl('');
 
-      // 1. Trigger Mochi's dedicated studying & note-taking mode!
-      setForcedAction({ id: Date.now(), action: 'studying' });
-      triggerSpeech('Mochi rangkum materinya dulu ya! 📖✏️', 2600);
-
-      // 2. When finished making vault, Mochi proudly lifts up the large note paper!
-      setTimeout(() => {
-        setHoldingNoteLink(newLink);
-        setForcedAction({ id: Date.now(), action: 'holding-note' });
-        triggerSpeech('Selesai! Cek dulu catatannya sebelum Mochi makan 🍪📄', 6000);
-      }, 2600);
+      // 3. When finished making vault, Mochi proudly lifts up the large note paper!
+      setHoldingNoteLink(newLink);
+      setForcedAction({ id: Date.now(), action: 'holding-note' });
+      triggerSpeech('Selesai! Catatan 5-Layer sudah siap! Cek yuk 📄🍪', 6000);
 
       setTimeout(() => setQuickSuccess(null), 3500);
     } catch {
       setQuickError('Tautan gagal disimpan. Periksa penyimpanan lokal lalu coba lagi.');
+      setForcedAction({ id: Date.now(), action: 'idle' });
     } finally {
       setIsSavingLink(false);
     }
