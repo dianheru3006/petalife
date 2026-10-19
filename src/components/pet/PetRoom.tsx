@@ -1087,14 +1087,6 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        {/* Clean, Cozy Section Header */}
-        <div className="flex items-center justify-between px-2.5 mb-2 text-xs select-none">
-          <span className="font-bold text-[#5A5043] flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#D97736]" />
-            <span>Simpan Materi Belajar</span>
-          </span>
-          <span className="text-[11px] font-semibold text-[#8C8275]">YouTube & Artikel</span>
-        </div>
 
         <form onSubmit={handleQuickAddLink} className="relative flex items-center">
           {/* Subtle Decorative Link Icon on Left */}
