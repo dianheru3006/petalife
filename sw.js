@@ -1,6 +1,6 @@
 // Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
 const CACHE_PREFIX = 'petalife-shell-';
-const BUILD_ID = 'mvf8jbi1';
+const BUILD_ID = 'mvf8rkxs';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 
 // 1. Static Web App Shell Assets
