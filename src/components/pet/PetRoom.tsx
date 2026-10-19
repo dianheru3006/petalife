@@ -1020,22 +1020,6 @@ export const PetRoom: FC<PetRoomProps> = ({
             <Clipboard className="w-4.5 h-4.5" />
           </button>
         </form>
-
-        {/* Subtle Inspiration Platform Pills: Visually balances screen void without adding clutter */}
-        <div className="flex items-center justify-center gap-1.5 pt-2.5 px-1 select-none flex-wrap">
-          <span className="text-[11px] font-semibold text-[#8C8276] flex items-center gap-1">
-            <span>💡 Cepat simpan:</span>
-          </span>
-          <span className="text-[10px] font-extrabold text-[#7A6A58] bg-[#F2ECE0] border border-[#E2D8C6] px-2.5 py-0.5 rounded-full">
-            🎬 YouTube
-          </span>
-          <span className="text-[10px] font-extrabold text-[#7A6A58] bg-[#F2ECE0] border border-[#E2D8C6] px-2.5 py-0.5 rounded-full">
-            📱 Shorts & Reels
-          </span>
-          <span className="text-[10px] font-extrabold text-[#7A6A58] bg-[#F2ECE0] border border-[#E2D8C6] px-2.5 py-0.5 rounded-full">
-            📖 Artikel Web
-          </span>
-        </div>
       </div>
 
 
