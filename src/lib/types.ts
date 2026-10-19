@@ -25,6 +25,11 @@ export interface Pet {
 export type PlatformType = 'youtube' | 'tiktok' | 'instagram' | 'web';
 export type LinkStatus = 'to_review' | 'in_progress' | 'completed';
 
+export interface KeyTakeaway {
+  concept: string;
+  explanation: string;
+}
+
 export interface SavedLink {
   id: string;
   url: string;
@@ -38,6 +43,12 @@ export interface SavedLink {
   updatedAt: number;
   notes?: string;
   summary?: string;
+  category?: string;
+  coreThesis?: string;
+  keyTakeaways?: KeyTakeaway[];
+  actionableInsights?: string[];
+  reflectionPrompt?: string;
+  author?: string;
 }
 
 export interface QuizQuestion {

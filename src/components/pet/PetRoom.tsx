@@ -590,7 +590,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     // 1. Trigger Mochi's dedicated studying & note-taking mode!
     setForcedAction({ id: Date.now(), action: 'studying' });
-    triggerSpeech('Mochi ekstrak intisari aslinya dulu ya... 📖🔍', 3500);
+    triggerSpeech('Mochi rangkum intisari lengkapnya dulu ya... 📖✨', 3500);
 
     try {
       // 2. Asynchronously resolve real metadata (e.g. YouTube oEmbed API)
@@ -610,6 +610,12 @@ export const PetRoom: FC<PetRoomProps> = ({
         updatedAt: now,
         notes: smart.notes,
         summary: smart.summary,
+        category: smart.category,
+        coreThesis: smart.coreThesis,
+        keyTakeaways: smart.keyTakeaways,
+        actionableInsights: smart.actionableInsights,
+        reflectionPrompt: smart.reflectionPrompt,
+        author: smart.author,
       };
 
       const rewardRes = await onAddLink(newLink);
@@ -627,10 +633,10 @@ export const PetRoom: FC<PetRoomProps> = ({
       }
       setQuickUrl('');
 
-      // 3. When finished making vault, Mochi proudly lifts up the large note paper!
+      // 3. When finished making vault, Mochi proudly lifts up the note paper!
       setHoldingNoteLink(newLink);
       setForcedAction({ id: Date.now(), action: 'holding-note' });
-      triggerSpeech('Selesai! Catatan 5-Layer sudah siap! Cek yuk 📄🍪', 6000);
+      triggerSpeech('Selesai! Rangkuman komprehensif sudah siap! Cek yuk 📄✨', 6000);
 
       setTimeout(() => setQuickSuccess(null), 3500);
     } catch {

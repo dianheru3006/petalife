@@ -136,13 +136,13 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
         <div className="px-5 pt-1.5 pb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-bold tracking-widest text-[#8C8275] uppercase">
-              CATATAN {petName.toUpperCase()}
+              RINGKASAN CERDAS {petName.toUpperCase()}
             </p>
             <h2
               id="mochi-sheet-title"
               className="text-2xl sm:text-[25px] font-black text-[#2E2E3A] tracking-tight mt-0.5 leading-snug"
             >
-              Cek dulu sebelum aku makan
+              Hasil Ekstraksi & Intisari Vault
             </h2>
           </div>
           <button
@@ -198,21 +198,21 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
               />
             </div>
 
-            {/* Section 3: CATATANMU */}
+            {/* Section 3: RINGKASAN & INTISARI LENGKAP */}
             <div className="space-y-1.5">
               <label
                 htmlFor="mochi-note-body"
                 className="text-[11px] font-bold text-[#8C8275] tracking-widest uppercase block"
               >
-                CATATANMU
+                RINGKASAN & INTISARI LENGKAP
               </label>
               <div className="bg-white border border-[#EAE3D5] rounded-2xl p-4 shadow-2xs focus-within:ring-2 focus-within:ring-[#FED7C5] transition-all">
                 <textarea
                   id="mochi-note-body"
-                  rows={6}
+                  rows={8}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Tulis rangkuman dan poin penting yang dipelajari..."
+                  placeholder="Rangkuman komprehensif dari materi yang dipelajari..."
                   className="w-full text-sm sm:text-base text-[#2E2E3A] placeholder-[#9E9484] bg-transparent border-0 p-0 focus:outline-none resize-none leading-relaxed"
                 />
               </div>
@@ -229,7 +229,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                     key={idx}
                     className="inline-flex items-center px-3 py-1 rounded-full bg-white border border-[#EAE3D5] text-xs font-semibold text-[#6E6458]"
                   >
-                    #{t}
+                    #{t.replace(/^#/, '')}
                   </span>
                 ))}
               </div>
@@ -252,9 +252,9 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
               disabled={isSubmitting}
               className="flex-1 bg-[#4A3728] hover:bg-[#38291D] active:scale-98 text-white font-bold py-3.5 px-6 rounded-full flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer text-sm sm:text-base disabled:opacity-50"
             >
-              <span className="text-lg">🍪</span>
+              <span className="text-lg">✨</span>
               <span>
-                {isSubmitting ? 'Menyuapi...' : `Simpan & suapi ${petName.toLowerCase()}`}
+                {isSubmitting ? 'Menyimpan...' : `Simpan ke Vault & Suapi ${petName}`}
               </span>
             </button>
           </div>

@@ -1,24 +1,14 @@
-import type { PlatformType } from '../types';
+import type { PlatformType, KeyTakeaway } from '../types';
 
-export interface KeyTakeaway {
-  concept: string;
-  explanation: string;
-}
-
-export interface SmartVaultQuiz {
-  question: string;
-  options: [string, string, string];
-  correctIndex: number;
-  explanation: string;
-}
+export type { KeyTakeaway };
 
 export interface SmartVaultContent {
   title: string;
   category: 'Bisnis' | 'Tech' | 'Finansial' | 'Kuliner' | 'Psikologi' | 'Produktivitas' | 'Kreatif' | 'Umum';
   coreThesis: string;
   keyTakeaways: KeyTakeaway[];
+  actionableInsights: string[];
   reflectionPrompt: string;
-  quiz: SmartVaultQuiz;
   notes: string;
   summary: string;
   tags: string[];
@@ -26,8 +16,8 @@ export interface SmartVaultContent {
 }
 
 /**
- * 5-Layer Second Brain Synthesizer for Petalife.
- * Synthesizes links into structured, high-signal knowledge with active recall quizzes.
+ * Mochi Second Brain Comprehensive Synthesizer for Petalife.
+ * Synthesizes links into deep, structured, high-signal knowledge without quiz clutter.
  */
 export function generateSmartVaultContent(
   url: string,
@@ -38,7 +28,7 @@ export function generateSmartVaultContent(
 ): SmartVaultContent {
   const lowerUrl = (url + ' ' + (rawTitle || '')).toLowerCase();
 
-  // 1. Tech, AI, Coding, Architecture
+  // 1. Tech, AI, Coding, Software Architecture
   if (
     lowerUrl.includes('code') ||
     lowerUrl.includes('dev') ||
@@ -51,38 +41,32 @@ export function generateSmartVaultContent(
     lowerUrl.includes('clean code')
   ) {
     const title = rawTitle || `Prinsip Arsitektur & Efisiensi Sistem (${domain})`;
-    const coreThesis = 'Sistem perangkat lunak yang tangguh dibangun di atas pemisahan modular dan kemudahan pemeliharaan jangka panjang.';
+    const coreThesis = 'Sistem perangkat lunak yang tangguh dibangun di atas pemisahan modularitas yang disiplin, prediktabilitas state, dan kemudahan pemeliharaan jangka panjang.';
     const takeaways: KeyTakeaway[] = [
       {
-        concept: 'Prinsip Modular',
-        explanation: 'Pisahkan antarmuka (UI) dari logika penyimpanan data agar sistem mudah diuji dan tahan banting saat skala membesar.',
+        concept: 'Pemisahan Tanggung Jawab (Separation of Concerns)',
+        explanation: 'Pisahkan antarmuka (UI) dari logika penyimpanan data dan state machine agar setiap lapisan dapat diuji dan ditingkatkan secara independen.',
       },
       {
-        concept: 'Offline-First & Keandalan',
-        explanation: 'Prioritaskan ketersediaan data lokal (IndexedDB) sebelum sinkronisasi jaringan untuk menjamin pengalaman pengguna instan tanpa jeda.',
+        concept: 'Offline-First & Keandalan Lokal',
+        explanation: 'Jadikan penyimpanan lokal (IndexedDB) sebagai sumber kebenaran instan sebelum sinkronisasi jaringan, menjamin responsivitas aplikasi tanpa latensi.',
       },
       {
-        concept: 'Refactoring Bertahap',
-        explanation: 'Perbaiki kualitas kode secara inkremental setelah fungsi bekerja dan memiliki pengujian yang lulus.',
+        concept: 'Refactoring Bertahap (Incremental Refinement)',
+        explanation: 'Perbaiki kualitas kode secara terukur setelah fungsi dasar bekerja dan diverifikasi dengan suite pengujian otomatis.',
       },
     ];
-    const reflection = 'Komponen apa dalam proyekmu yang saat ini paling butuh disederhanakan arsitekturnya?';
-    const quiz: SmartVaultQuiz = {
-      question: 'Kapan momen terbaik melakukan refactoring arsitektur kode?',
-      options: [
-        'Secara bertahap setelah fitur dasar bekerja dan teruji',
-        'Menunggu sampai seluruh aplikasi crash total',
-        'Tidak perlu refactor selama aplikasi masih bisa jalan',
-      ],
-      correctIndex: 0,
-      explanation: 'Refactoring terbaik dilakukan secara bertahap dengan panduan pengujian yang sudah ada.',
-    };
-    const tags = ['#tech', '#arsitektur', '#coding', '#vault'];
+    const actions = [
+      'Audit satu modul kode yang terlalu kompleks dan pisahkan logika bisnisnya dari komponen render UI.',
+      'Tambahkan penanganan fallback offline pada fungsi interaksi data kritis.',
+    ];
+    const reflection = 'Komponen apa dalam proyekmu yang saat ini paling mendesak untuk disederhanakan arsitekturnya?';
+    const tags = ['#tech', '#arsitektur', '#coding', '#software'];
 
-    return formatPayload(title, 'Tech', coreThesis, takeaways, reflection, quiz, tags, author);
+    return formatPayload(title, 'Tech', coreThesis, takeaways, actions, reflection, tags, author);
   }
 
-  // 2. Psychology, Mindset, Habit, Mental Model
+  // 2. Psychology, Mindset, Habit, Focus, Emotion
   if (
     lowerUrl.includes('stickman') ||
     lowerUrl.includes('psikolog') ||
@@ -93,78 +77,105 @@ export function generateSmartVaultContent(
     lowerUrl.includes('emosi') ||
     lowerUrl.includes('fokus')
   ) {
-    const title = rawTitle || 'Mengapa Orang Sulit Menerima Kebenaran';
-    const coreThesis = 'Penolakan terhadap fakta logis sering kali bukan karena kekurangan kecerdasan, melainkan mekanisme perlindungan rasa aman mental.';
+    const title = rawTitle || 'Mekanisme Pertahanan Ego & Penerimaan Kebenaran';
+    const coreThesis = 'Penolakan terhadap fakta baru jarang disebabkan oleh defisit logika; ia sering kali merupakan respons perlindungan identitas dan stabilitas mental.';
     const takeaways: KeyTakeaway[] = [
       {
-        concept: 'System Justification',
-        explanation: 'Kecenderungan alami manusia mempertahankan status quo demi menjaga stabilitas psikologis mereka.',
+        concept: 'System Justification & Bias Konfirmasi',
+        explanation: 'Otak manusia secara naluriah mencari pembenaran atas status quo demi meminimalkan kecemasan kognitif saat kenyamanan diusik.',
       },
       {
-        concept: 'Confirmation Bias',
-        explanation: 'Pikiran kita otomatis menyaring dan menerima bukti baru yang hanya mendukung keyakinan lama.',
+        concept: 'Regulasi Emosi Sebelum Respon Logis',
+        explanation: 'Argumen paling logis tidak akan diterima jika lawan bicara berada dalam status ancaman psikologis (fight-or-flight).',
       },
       {
-        concept: 'Komunikasi Empatis',
-        explanation: 'Beri ruang aman emosional sebelum menyampaikan fakta yang menentang pandangan orang lain.',
+        concept: 'Dekoupling Identitas dari Opini',
+        explanation: 'Melihat opini sebagai hipotesis yang bisa diperbarui, bukan representasi mutlak dari harga diri pribadi.',
       },
     ];
-    const reflection = 'Keyakinan lama apa yang akhir-akhir ini menahanmu untuk belajar sudut pandang baru?';
-    const quiz: SmartVaultQuiz = {
-      question: 'Apa pendorong utama seseorang menolak fakta logis menurut psikologi?',
-      options: [
-        'Mekanisme defensif menjaga rasa aman psikologis',
-        'Kurangnya informasi numerik statistik',
-        'Ketidakmampuan membaca data',
-      ],
-      correctIndex: 0,
-      explanation: 'Manusia cenderung melindungi identitas dan keyakinan lamanya demi rasa aman psikologis.',
-    };
-    const tags = ['#psikologi', '#mindset', '#edukasi', '#vault'];
+    const actions = [
+      'Ambil jeda 5 detik saat merasa defensif terhadap kritik sebelum merespons.',
+      'Uji keyakinanmu dengan mencari satu bukti kuat yang bertentangan dengan asumsi awalmu.',
+    ];
+    const reflection = 'Asumsi pribadi apa yang sedang kamu pertahankan hanya karena takut terlihat keliru?';
+    const tags = ['#psikologi', '#mindset', '#kebiasaan', '#refleksi'];
 
-    return formatPayload(title, 'Psikologi', coreThesis, takeaways, reflection, quiz, tags, author);
+    return formatPayload(title, 'Psikologi', coreThesis, takeaways, actions, reflection, tags, author);
   }
 
-  // 3. Business, Finance, Passive Income, DePIN
+  // 3. Productivity, Deep Work, Maker vs Manager Schedule
   if (
-    lowerUrl.includes('bisnis') ||
-    lowerUrl.includes('uang') ||
+    lowerUrl.includes('schedule') ||
+    lowerUrl.includes('maker') ||
+    lowerUrl.includes('produktiv') ||
+    lowerUrl.includes('waktu') ||
+    lowerUrl.includes('fokus') ||
+    lowerUrl.includes('deepwork') ||
+    lowerUrl.includes('graham')
+  ) {
+    const title = rawTitle || `Strategi Ritme Kerja & Perlindungan Fokus (${domain})`;
+    const coreThesis = 'Karya bernilai tinggi menuntut blok waktu panjang tanpa distraksi; interupsi singkat berbiaya jauh lebih mahal daripada durasi nominal interupsi itu sendiri.';
+    const takeaways: KeyTakeaway[] = [
+      {
+        concept: 'Perbedaan Jadwal Maker vs Manager',
+        explanation: 'Manajer beroperasi dalam slot per jam, sedangkan pembuat karya (kreator/programmer/penulis) memerlukan blok waktu minimal 3-4 jam tanpa jeda untuk masuk ke flow state.',
+      },
+      {
+        concept: 'Biaya Interupsi (Context Switching Penalty)',
+        explanation: 'Setiap interupsi rapat memecah hari menjadi fragmen kecil yang tidak cukup besar untuk memulai pekerjaan yang menuntut konsentrasi mendalam.',
+      },
+      {
+        concept: 'Batching Rapat & Office Hours',
+        explanation: 'Kelompokkan semua pertemuan di penghujung hari atau hari tertentu agar sisa waktu tetap menjadi kanvas kerja yang utuh.',
+      },
+    ];
+    const actions = [
+      'Blokir minimal 3 jam berturut-turut besok pagi tanpa notifikasi atau rapat.',
+      'Pindahkan janji temu singkat ke slot sore hari yang sudah terfragmentasi.',
+    ];
+    const reflection = 'Rapat mana minggu ini yang dapat kamu kelompokkan untuk membuka satu blok kerja tanpa gangguan?';
+    const tags = ['#produktivitas', '#deepwork', '#manajemenwaktu', '#fokus'];
+
+    return formatPayload(title, 'Produktivitas', coreThesis, takeaways, actions, reflection, tags, author);
+  }
+
+  // 4. Finance, Wealth, Business, Investment
+  if (
     lowerUrl.includes('finance') ||
     lowerUrl.includes('finansial') ||
-    lowerUrl.includes('depin') ||
-    lowerUrl.includes('passive') ||
+    lowerUrl.includes('uang') ||
     lowerUrl.includes('invest') ||
-    lowerUrl.includes('omzet')
+    lowerUrl.includes('bisnis') ||
+    lowerUrl.includes('saham') ||
+    lowerUrl.includes('crypto')
   ) {
     const title = rawTitle || `Strategi Alokasi & Efisiensi Finansial (${domain})`;
-    const coreThesis = 'Keberlanjutan finansial ditentukan oleh penguasaan alokasi arus kas dan minimnya biaya tetap yang tidak produktif.';
+    const coreThesis = 'Ketahanan finansial ditentukan oleh penguasaan alokasi arus kas, pengendalian biaya tetap yang tidak produktif, dan kepemilikan aset bertumbuh.';
     const takeaways: KeyTakeaway[] = [
       {
-        concept: 'Prinsip Arus Kas Positif',
-        explanation: 'Prioritaskan mempertahankan margin bersih daripada mengejar omzet besar namun berisiko tinggi.',
+        concept: 'Prinsip Arus Kas Positif (Cashflow Priority)',
+        explanation: 'Pertahankan margin likuiditas yang sehat daripada mengejar valuasi semu yang dibebani risiko leverage tinggi.',
       },
       {
-        concept: 'Alokasi Proporsional',
-        explanation: 'Terapkan pembagian teratur: 50% kebutuhan pokok, 30% fleksibilitas, dan minimal 20% tabungan produktif.',
+        concept: 'Alokasi Proporsional Otomatis',
+        explanation: 'Terapkan alokasi otomatis: kebutuhan operasional, cadangan darurat likuid, dan aset investasi jangka panjang.',
       },
       {
-        concept: 'Pemanfaatan Aset Idle',
-        explanation: 'Ubah bandwidth atau aset yang tidak terpakai menjadi pendapatan pasif tambahan.',
+        concept: 'Monetisasi Kapasitas Menganggur',
+        explanation: 'Identifikasi aset, pengetahuan, atau bandwidth yang belum terutilisasi dan konversi menjadi nilai tambah nyata.',
       },
     ];
+    const actions = [
+      'Tinjau kembali langganan rutin bulanan dan hentikan satu pengeluaran yang tidak lagi digunakan.',
+      'Sisihkan alokasi investasi otomatis di awal periode penerimaan pendapatan.',
+    ];
     const reflection = 'Pengeluaran rutin mana yang bisa dialokasikan kembali untuk investasi keterampilan barumu?';
-    const quiz: SmartVaultQuiz = {
-      question: 'Berapa persen alokasi tabungan ideal dalam aturan pengelolaan keuangan dasar?',
-      options: ['50%', '30%', '20%'],
-      correctIndex: 2,
-      explanation: 'Aturan 50-30-20 merekomendasikan minimal 20% pendapatan dialokasikan untuk tabungan dan investasi.',
-    };
-    const tags = ['#finansial', '#bisnis', '#aset', '#vault'];
+    const tags = ['#finansial', '#bisnis', '#alokasi', '#investasi'];
 
-    return formatPayload(title, 'Finansial', coreThesis, takeaways, reflection, quiz, tags, author);
+    return formatPayload(title, 'Finansial', coreThesis, takeaways, actions, reflection, tags, author);
   }
 
-  // 4. Culinary / Cooking
+  // 5. Culinary / Cooking / Coffee
   if (
     lowerUrl.includes('resep') ||
     lowerUrl.includes('masak') ||
@@ -173,69 +184,57 @@ export function generateSmartVaultContent(
     lowerUrl.includes('steak') ||
     lowerUrl.includes('kopi')
   ) {
-    const title = rawTitle || `Tips & Teknik Memasak Berkualitas (${domain})`;
-    const coreThesis = 'Kelezatan hidangan terbaik berakar pada pemahaman suhu, waktu resting, dan kesegaran bahan baku utama.';
+    const title = rawTitle || `Teknik & Penguasaan Seni Kuliner (${domain})`;
+    const coreThesis = 'Kelezatan hidangan istimewa berakar pada penguasaan presisi suhu, waktu resting bahan, dan penghormatan terhadap karakter alami bahan baku.';
     const takeaways: KeyTakeaway[] = [
       {
-        concept: 'Resting Daging',
-        explanation: 'Biarkan daging beristirahat 5 menit setelah dimasak agar saripati jus meresap merata ke seluruh serat.',
+        concept: 'Resting & Distribusi Kelembapan',
+        explanation: 'Mengistirahatkan protein setelah proses pemanasan memungkinkan serat relaks dan sari rasa terserap kembali secara merata.',
       },
       {
-        concept: 'Pengontrolan Suhu Ruang',
-        explanation: 'Keluarkan bahan baku dari pendingin 15 menit sebelum diolah agar panas merata hingga ke bagian tengah.',
+        concept: 'Temperatur Bahan Sebelum Pengolahan',
+        explanation: 'Menyesuaikan bahan baku ke suhu ruang sebelum dimasak mencegah kejutan termal dan memastikan kematangan merata hingga ke bagian inti.',
       },
       {
-        concept: 'Keseimbangan Rasa',
-        explanation: 'Gunakan garam secukupnya di awal proses untuk mempertegas aroma alami bahan baku.',
+        concept: 'Penyusunan Lapisan Rasa (Layering Flavor)',
+        explanation: 'Membangun bumbu dasar secara bertahap menciptakan kedalaman rasa yang lebih kompleks dibandingkan membubuhkannya sekaligus.',
       },
     ];
-    const reflection = 'Teknik memasak sederhana apa yang ingin kamu coba akhir pekan ini?';
-    const quiz: SmartVaultQuiz = {
-      question: 'Mengapa daging steak perlu di-resting beberapa menit setelah matang?',
-      options: [
-        'Agar cairan jus meresap kembali ke dalam serat daging',
-        'Supaya daging cepat dingin dan kering',
-        'Tidak ada alasan khusus selain tradisi',
-      ],
-      correctIndex: 0,
-      explanation: 'Resting memungkinkan serat daging relaks dan jus menyebar kembali secara merata.',
-    };
-    const tags = ['#kuliner', '#resep', '#tips', '#vault'];
+    const actions = [
+      'Biarkan bahan makanan menyesuaikan ke suhu ruang 15 menit sebelum masuk wajan.',
+      'Catat waktu dan suhu memasak untuk mengulang hasil yang konsisten.',
+    ];
+    const reflection = 'Eksperimen teknik kuliner sederhana apa yang ingin kamu sempurnakan akhir pekan ini?';
+    const tags = ['#kuliner', '#resep', '#teknik', '#kreatif'];
 
-    return formatPayload(title, 'Kuliner', coreThesis, takeaways, reflection, quiz, tags, author);
+    return formatPayload(title, 'Kuliner', coreThesis, takeaways, actions, reflection, tags, author);
   }
 
-  // 5. Default General Educational / Web Articles / Threads
-  const title = rawTitle || `Intisari Pembelajaran Baru (${domain})`;
-  const coreThesis = `Eksplorasi wawasan baru dari ${domain} untuk memperkaya bank pengetahuan Second Brain kamu.`;
+  // 6. Default Comprehensive Second Brain Synthesis (Web Articles, Threads, Social Links)
+  const title = rawTitle || `Intisari Pembelajaran & Wawasan Baru (${domain})`;
+  const coreThesis = `Eksplorasi wawasan konseptual dari ${domain} yang disaring secara komprehensif untuk memperkaya bank pengetahuan Second Brain kamu.`;
   const takeaways: KeyTakeaway[] = [
     {
-      concept: 'Penyaringan Informasi',
-      explanation: 'Pilih ide utama yang relevan dengan tujuan belajarmu dan abaikan kebisingan yang tidak aplikatif.',
+      concept: 'Penyaringan Informasi Bernilai Tinggi',
+      explanation: 'Saring gagasan pokok yang memiliki dampak nyata dan abaikan informasi sensasional yang tidak aplikatif.',
     },
     {
-      concept: 'Koneksi Konseptual',
-      explanation: 'Hubungkan wawasan dari materi ini dengan catatan atau referensi lain yang sudah tersimpan di Vault.',
+      concept: 'Sintesis Antar-Domain (Cross-pollination)',
+      explanation: 'Hubungkan wawasan baru ini dengan prinsip atau catatan yang sudah tersimpan sebelumnya di Vault untuk melahirkan pemahaman orisinal.',
     },
     {
-      concept: 'Aksi Praktis',
-      explanation: 'Terapkan minimal satu poin kecil hari ini untuk memperkuat daya ingat dan pemahaman jangka panjang.',
+      concept: 'Aksi Nyata & Pembiasaan',
+      explanation: 'Konversikan teori menjadi eksperimen kecil harian untuk mengunci retensi pemahaman jangka panjang.',
     },
   ];
-  const reflection = 'Bagaimana satu ide dari materi ini bisa membantumu menyelesaikan tantangan hari ini?';
-  const quiz: SmartVaultQuiz = {
-    question: 'Apa langkah paling efektif setelah menyimak materi atau wawasan baru?',
-    options: [
-      'Uji coba dan terapkan poin kecilnya secara konsisten',
-      'Cukup simpan tanpa pernah membacanya lagi',
-      'Menunggu sampai waktu terasa 100% sempurna',
-    ],
-    correctIndex: 0,
-    explanation: 'Mempraktikkan poin kecil secara konsisten adalah kunci utama retensi memori jangka panjang.',
-  };
-  const tags = [`#${platform}`, '#wawasan', '#edukasi', '#vault'];
+  const actions = [
+    'Tuliskan satu kalimat kesimpulan pribadi dari materi ini dengan bahasamu sendiri.',
+    'Diskusikan atau terapkan satu ide kunci ini dalam sesi kerja hari ini.',
+  ];
+  const reflection = 'Bagaimana satu wawasan dari materi ini dapat membantumu menyelesaikan tantangan terbesarmu saat ini?';
+  const tags = [`#${platform}`, '#wawasan', '#pembelajaran', '#secondbrain'];
 
-  return formatPayload(title, 'Umum', coreThesis, takeaways, reflection, quiz, tags, author);
+  return formatPayload(title, 'Umum', coreThesis, takeaways, actions, reflection, tags, author);
 }
 
 function formatPayload(
@@ -243,24 +242,28 @@ function formatPayload(
   category: SmartVaultContent['category'],
   coreThesis: string,
   keyTakeaways: KeyTakeaway[],
+  actionableInsights: string[],
   reflectionPrompt: string,
-  quiz: SmartVaultQuiz,
   tags: string[],
   author?: string
 ): SmartVaultContent {
-  const formattedBullets = keyTakeaways
+  const formattedTakeaways = keyTakeaways
     .map(t => `* **${t.concept}**: ${t.explanation}`)
     .join('\n\n');
 
-  const formattedNotes = `💡 **Gagasan Utama:**\n${coreThesis}\n\n🔑 **Poin Kunci & Tindakan:**\n${formattedBullets}\n\n🌱 **Refleksi Diri:**\n${reflectionPrompt}`;
+  const formattedActions = actionableInsights
+    .map(a => `* ${a}`)
+    .join('\n');
+
+  const formattedNotes = `💡 **Gagasan Utama:**\n${coreThesis}\n\n🔍 **Analisis Mendalam & Poin Kunci:**\n${formattedTakeaways}\n\n🎯 **Aksi Praktis:**\n${formattedActions}\n\n🌱 **Refleksi Diri:**\n${reflectionPrompt}`;
 
   return {
     title,
     category,
     coreThesis,
     keyTakeaways,
+    actionableInsights,
     reflectionPrompt,
-    quiz,
     notes: formattedNotes,
     summary: coreThesis,
     tags,
