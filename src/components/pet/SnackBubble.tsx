@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { Heart, Sprout, Utensils } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import type { SnackVariant } from './snackData';
 
 export interface CircularMeterProps {
@@ -12,8 +12,27 @@ export interface CircularMeterProps {
   showPercentage?: boolean;
 }
 
+/**
+ * Solid Filled Fork & Knife Vector (Zero hollow cutouts, bold filled silhouette)
+ */
 export const CuteForkKnifeIcon: FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
-  <Utensils className={className} />
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-8.03c2.09-.13 3.75-1.85 3.75-3.97V2h-2v7zm8.5-7c-2.48 0-4.5 2.02-4.5 4.5v6.5h2v9h2.5V2h-2z" />
+  </svg>
+);
+
+/**
+ * Solid Filled Sprout Vector (Zero hollow outlines, plump solid leaves and stalk)
+ */
+export const SolidSproutIcon: FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    {/* Left Leaf: solid curved leaf */}
+    <path d="M12 12C8 12 4.5 9.5 3.5 5.5C7.5 4.5 11 7.5 12 12Z" />
+    {/* Right Leaf: solid curved leaf */}
+    <path d="M12 10C13 6 16 3 20.5 3C20.5 7.5 17.5 11 12 10Z" />
+    {/* Stalk: solid curved stem */}
+    <path d="M11 10.5C11 15 11.2 18 11.2 21C11.2 21.55 11.65 22 12.2 22C12.75 22 13.2 21.55 13.2 21C13.2 18 13 14 13 10.5H11Z" />
+  </svg>
 );
 
 export const CircularMeter: FC<CircularMeterProps> = ({
@@ -33,11 +52,11 @@ export const CircularMeter: FC<CircularMeterProps> = ({
   const renderIcon = () => {
     switch (iconType) {
       case 'hunger':
-        return <Utensils className="w-3.5 h-3.5" />;
+        return <CuteForkKnifeIcon className="w-3.5 h-3.5" />;
       case 'mood':
         return <Heart className="w-3.5 h-3.5 fill-current" />;
       case 'energy':
-        return <Sprout className="w-3.5 h-3.5" />;
+        return <SolidSproutIcon className="w-3.5 h-3.5" />;
     }
   };
 
