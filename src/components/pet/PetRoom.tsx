@@ -29,7 +29,6 @@ import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
 import { MochiNoteSheet } from './MochiNoteSheet';
 import { synthesizeLink } from '../../lib/services/aiSynthesisService';
-import { testGatewayConnection, type GatewayDiagnostic } from '../../lib/services/brainGatewaySettings';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
@@ -139,32 +138,6 @@ export const PetRoom: FC<PetRoomProps> = ({
     };
   }, []);
 
-  // Brain Gateway Status Diagnostics (3s timeout on mount and on foreground tab resume)
-  const [gatewayDiag, setGatewayDiag] = useState<GatewayDiagnostic | null>(null);
-  const [isCheckingGateway, setIsCheckingGateway] = useState<boolean>(false);
-
-  const checkGateway = useCallback(async () => {
-    setIsCheckingGateway(true);
-    try {
-      const diag = await testGatewayConnection(undefined, 3000);
-      setGatewayDiag(diag);
-    } catch {
-      // Ignore background diagnostic error
-    } finally {
-      setIsCheckingGateway(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkGateway();
-    const handleVisibility = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        checkGateway();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [checkGateway]);
 
   // Accessible Modal & FAB Focus Trap & Restoration Refs
   const wardrobeModalRef = useRef<HTMLDivElement>(null);
@@ -1114,35 +1087,6 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        {/* Compact Brain Gateway Status Indicator */}
-        <div className="flex items-center justify-between px-2 mb-1.5 text-[11px] text-[#7A6E60]">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={cn(
-                'inline-block w-2 h-2 rounded-full transition-colors',
-                isCheckingGateway
-                  ? 'bg-amber-400 animate-pulse'
-                  : gatewayDiag?.reachable
-                  ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]'
-                  : 'bg-stone-300'
-              )}
-            />
-            <span className="font-semibold text-[#5A5043]">
-              {isCheckingGateway
-                ? 'Memeriksa Brain Gateway...'
-                : gatewayDiag?.reachable
-                ? `Brain Gateway Siap (${gatewayDiag.latencyMs}ms)`
-                : 'Brain Gateway Offline (Mode Simpan Lokal)'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('settings')}
-            className="text-[10px] text-[#BA5218] hover:underline font-bold cursor-pointer"
-          >
-            Pengaturan →
-          </button>
-        </div>
 
         <form onSubmit={handleQuickAddLink} className="relative flex items-center">
           {/* Subtle Decorative Link Icon on Left */}
