@@ -1,6 +1,6 @@
 // Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
 const CACHE_PREFIX = 'petalife-shell-';
-const BUILD_ID = 'mvg7332h';
+const BUILD_ID = 'mvg7a64k';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
 const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
@@ -28,7 +28,7 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/AssistantPage-3oDuCpy6.js","./assets/Button-DGg_W-sx.js","./assets/db-D1xEoOiV.js","./assets/icons-B7DPsROO.js","./assets/index-99FEQtds.js","./assets/index-ChqZVAMW.css","./assets/library-front-bg-C3O9-Ghf.jpg","./assets/NotesPage-Df5_vOWV.js","./assets/react-CaS005AF.js","./assets/rolldown-runtime-WkwZ5CU-.js","./assets/room-bg-B7tupBkv.jpg","./assets/SettingsPage-DWC5dcHf.js","./assets/VaultPage-DVbj0Eky.js"];
+const BUILD_ASSETS = ["./assets/AssistantPage-D-w0C8wW.js","./assets/Button-BhZFoPaB.js","./assets/db-D1xEoOiV.js","./assets/icons-B7DPsROO.js","./assets/index-ChqZVAMW.css","./assets/index-CSHGmy_5.js","./assets/library-front-bg-C3O9-Ghf.jpg","./assets/NotesPage-BUo75JlH.js","./assets/react-CaS005AF.js","./assets/rolldown-runtime-WkwZ5CU-.js","./assets/room-bg-B7tupBkv.jpg","./assets/SettingsPage-8g94-ZRR.js","./assets/VaultPage-Db1y-aqQ.js"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
 
