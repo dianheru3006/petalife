@@ -1,4 +1,5 @@
 import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod, GatewayErrorType, LinkProvenance } from '../types';
+import { detectPlatform } from '../utils';
 import { generateSmartVaultContent, type SmartVaultContent } from '../utils/noteGenerator';
 import { formatStructuredNotes } from '../utils/noteView';
 import { resolveLinkMetadata } from './linkMetadataService';
@@ -69,6 +70,26 @@ export function clearActiveJob(url: string): void {
   } catch (_) {}
 }
 
+export function getPendingActiveJobs(): ActiveJobRecord[] {
+  try {
+    if (typeof localStorage === 'undefined') return [];
+    const existing = getActiveJobs();
+    const now = Date.now();
+    const activeList: ActiveJobRecord[] = [];
+    for (const [url, record] of Object.entries(existing)) {
+      if (!record || typeof record !== 'object') continue;
+      if (now - (record.timestamp || 0) > 2 * 60 * 60 * 1000) {
+        clearActiveJob(url);
+      } else {
+        activeList.push(record);
+      }
+    }
+    return activeList;
+  } catch (_) {
+    return [];
+  }
+}
+
 function getActiveJobs(): Record<string, ActiveJobRecord> {
   try {
     const raw = localStorage.getItem(ACTIVE_JOB_STORAGE_KEY);
@@ -78,6 +99,100 @@ function getActiveJobs(): Record<string, ActiveJobRecord> {
   }
 }
 
+export function formatSynthesizedData(
+  d: any,
+  cleanUrl: string,
+  platform: PlatformType,
+  domain: string,
+  meta: { title?: string; author?: string; thumbnailUrl?: string; isRealMetadata?: boolean },
+  userContext: string = '',
+  captureMethod: CaptureMethod = 'manual_paste',
+  httpStatus: number = 200
+): SynthesizedLinkResult {
+  if (d.qualityStatus === 'needs_context' && !d.notes) {
+    const gatewayErrorMessage = 'Transkrip video belum tersedia.';
+    const gatewayErrorAction = 'Tambah caption atau cuplikan teks materi.';
+    const localSmart = generateSmartVaultContent(
+      cleanUrl,
+      platform,
+      domain,
+      d.title || meta.title,
+      meta.author || d.author,
+      userContext
+    );
+    return {
+      content: { ...localSmart, thumbnailUrl: meta.thumbnailUrl },
+      isFromRemoteAI: true,
+      evidenceLevel: 'metadata_only',
+      qualityStatus: 'needs_context',
+      provenance: d.provenance || 'none',
+      captureMethod,
+      sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
+      gatewayErrorMessage,
+      gatewayErrorAction,
+      gatewayHttpStatus: httpStatus,
+    };
+  }
+
+  const readableTakeaways = Array.isArray(d.keyTakeaways)
+    ? d.keyTakeaways.filter((item: unknown): item is { concept: string; explanation: string } =>
+        typeof item === 'object' && item !== null &&
+        typeof (item as { concept?: unknown }).concept === 'string' &&
+        typeof (item as { explanation?: unknown }).explanation === 'string')
+    : [];
+  const readableActions = Array.isArray(d.actionableInsights)
+    ? d.actionableInsights.filter((item: unknown): item is string => typeof item === 'string')
+    : [];
+  const hasSubstantiveContent = Boolean(typeof d.coreThesis === 'string' && d.coreThesis.trim() &&
+    readableTakeaways.length && readableActions.length);
+  const formattedNotes = hasSubstantiveContent
+    ? formatStructuredNotes({
+        coreThesis: d.coreThesis,
+        keyTakeaways: readableTakeaways,
+        actionableInsights: readableActions,
+        reflectionPrompt: d.reflectionPrompt,
+      })
+    : (typeof d.notes === 'string' ? d.notes : '');
+  const evidenceLevel: EvidenceLevel = d.evidenceLevel === 'full_text' || d.evidenceLevel === 'excerpt'
+    ? d.evidenceLevel
+    : (userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'));
+  const qualityStatus: LinkQualityStatus = d.qualityStatus === 'grounded' && hasSubstantiveContent &&
+    (evidenceLevel === 'full_text' || evidenceLevel === 'excerpt') ? 'grounded' : 'needs_context';
+
+  const provenance: LinkProvenance = d.provenance || (
+    platform === 'youtube'
+      ? 'youtube_transcript'
+      : (platform === 'instagram' || platform === 'tiktok'
+          ? (d.qualityStatus === 'grounded' ? 'video_analysis' : 'none')
+          : (userContext ? 'manual_context' : 'none'))
+  );
+
+  return {
+    content: {
+      title: d.title,
+      category: d.category || 'Umum',
+      coreThesis: d.coreThesis || d.summary || '',
+      keyTakeaways: readableTakeaways,
+      actionableInsights: readableActions,
+      reflectionPrompt: d.reflectionPrompt || '',
+      notes: formattedNotes,
+      summary: d.coreThesis || d.summary || '',
+      tags: Array.isArray(d.tags) ? d.tags : ['#wawasan', '#vault'],
+      author: meta.author || d.author,
+      thumbnailUrl: typeof d.thumbnailUrl === 'string' && /^https:\/\//i.test(d.thumbnailUrl)
+        ? d.thumbnailUrl : meta.thumbnailUrl,
+    },
+    isFromRemoteAI: true,
+    evidenceLevel,
+    qualityStatus,
+    provenance,
+    captureMethod,
+    sourceExcerpt: userContext ? userContext.slice(0, 300) : (d.sourceExcerpt || undefined),
+    synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
+    gatewayHttpStatus: httpStatus,
+  };
+}
+
 async function pollJobUntilFinished(
   pollUrl: string,
   headers: Record<string, string>,
@@ -85,7 +200,8 @@ async function pollJobUntilFinished(
   signal?: AbortSignal
 ): Promise<{ success: boolean; data?: any; error?: string; errorCode?: string; retryable?: boolean }> {
   const startTime = Date.now();
-  const MAX_POLL_DURATION_MS = 120000;
+  // 150s buffer to cover server 120s worker deadline + queue wait
+  const MAX_POLL_DURATION_MS = 150000;
 
   while (Date.now() - startTime < MAX_POLL_DURATION_MS) {
     if (signal?.aborted) {
@@ -104,11 +220,18 @@ async function pollJobUntilFinished(
       throw err;
     }
 
-    const pollRes = await fetch(pollUrl, {
-      method: 'GET',
-      headers,
-      signal
-    });
+    let pollRes: Response;
+    try {
+      pollRes = await fetch(pollUrl, {
+        method: 'GET',
+        headers,
+        signal
+      });
+    } catch (netErr: any) {
+      if (netErr?.name === 'AbortError') throw netErr;
+      // Temporary network drop: retry next loop
+      continue;
+    }
 
     if (!pollRes.ok) {
       if (pollRes.status === 401 || pollRes.status === 403) {
@@ -149,8 +272,45 @@ async function pollJobUntilFinished(
   return { success: false, error: 'Batas waktu pemantauan status terlampaui.', errorCode: 'POLL_TIMEOUT', retryable: true };
 }
 
+export async function resumeActiveJob(
+  record: ActiveJobRecord,
+  onProgress?: (stage: string, stageLabel: string) => void
+): Promise<{ success: boolean; result?: SynthesizedLinkResult; retryable?: boolean; error?: string }> {
+  const initData = typeof window !== 'undefined'
+    ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
+    : '';
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (initData) {
+    headers['X-Telegram-Init-Data'] = initData;
+  }
+
+  const pollResult = await pollJobUntilFinished(
+    record.pollUrl,
+    headers,
+    onProgress
+  );
+
+  if (pollResult.success && pollResult.data) {
+    clearActiveJob(record.url);
+    const { platform, domain } = detectPlatform(record.url);
+    const meta = await resolveLinkMetadata(record.url, platform, domain);
+    const result = formatSynthesizedData(pollResult.data, record.url, platform, domain, meta, '', 'manual_paste', 200);
+    return { success: true, result };
+  }
+
+  if (!pollResult.retryable) {
+    clearActiveJob(record.url);
+    return { success: false, retryable: false, error: pollResult.error };
+  }
+
+  return { success: false, retryable: true, error: pollResult.error };
+}
+
 /**
- * Mochi Second Brain Comprehensive AI Synthesizer Service (Sol ADR-001 / ADR-002).
+ * Mochi Second Brain Comprehensive AI Synthesizer Service (Sol ADR-001 / ADR-002 / ADR-003).
  *
  * Evidence-based ingestion pipeline:
  * 1. Resolves YouTube oEmbed metadata for real author & title.
@@ -190,8 +350,11 @@ export async function synthesizeLink(
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const controller = new AbortController();
-      const isVideoPlatform = platform === 'youtube' || platform === 'instagram' || platform === 'tiktok';
-      timeout = setTimeout(() => controller.abort(), options.timeoutMs || (isVideoPlatform ? 105000 : 14000));
+      const isShortVideo = platform === 'instagram' || platform === 'tiktok';
+      // P1: Client timeout >= 150s for async short videos to respect 120s worker deadline + queue
+      // YouTube uses 75s (synchronous server 65s deadline)
+      const defaultTimeout = isShortVideo ? 150000 : (platform === 'youtube' ? 75000 : 14000);
+      timeout = setTimeout(() => controller.abort(), options.timeoutMs || defaultTimeout);
 
       const initData = typeof window !== 'undefined'
         ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
@@ -219,12 +382,26 @@ export async function synthesizeLink(
             options.onProgress,
             controller.signal
           );
-          clearActiveJob(cleanUrl);
           if (pollResult.success && pollResult.data) {
+            clearActiveJob(cleanUrl);
             json = { success: true, data: pollResult.data };
+          } else if (!pollResult.retryable) {
+            clearActiveJob(cleanUrl);
+            gatewayErrorType = 'server_error';
+            gatewayErrorMessage = pollResult.error || 'Sintesis video belum berhasil.';
+            gatewayErrorAction = 'Tempelkan cuplikan teks materi.';
+          } else {
+            // Transient or timeout: do not clear, preserve active job for retry / auto-resume
+            gatewayErrorType = 'server_error';
+            gatewayErrorMessage = pollResult.error || 'Proses sedang berlangsung di latar belakang.';
+            gatewayErrorAction = 'Mochi masih melanjutkan proses ini. Kamu bisa menunggu atau coba lagi.';
           }
-        } catch (_) {
-          clearActiveJob(cleanUrl);
+        } catch (pollErr: any) {
+          // If aborted or network dropped, DO NOT clear active job!
+          if (pollErr?.name === 'AbortError') throw pollErr;
+          gatewayErrorType = 'server_error';
+          gatewayErrorMessage = 'Pemantauan status proses terputus.';
+          gatewayErrorAction = 'Proses tetap berjalan di backend. Buka kembali aplikasi untuk melihat hasil.';
         }
       }
 
@@ -235,7 +412,8 @@ export async function synthesizeLink(
           body: JSON.stringify({
             url: cleanUrl,
             context: userContext || (meta.isRealMetadata ? `Judul asli: ${meta.title} oleh ${meta.author || ''}` : ''),
-            async: isVideoPlatform
+            // P0: strictly only true for supported short video platforms!
+            async: isShortVideo
           }),
           signal: controller.signal,
         });
@@ -271,21 +449,27 @@ export async function synthesizeLink(
                 options.onProgress,
                 controller.signal
               );
-              clearActiveJob(cleanUrl);
 
               if (pollResult.success && pollResult.data) {
+                clearActiveJob(cleanUrl);
                 json = { success: true, data: pollResult.data };
-              } else {
+              } else if (!pollResult.retryable) {
+                clearActiveJob(cleanUrl);
                 gatewayErrorType = 'server_error';
                 gatewayErrorMessage = pollResult.error || 'Sintesis video belum berhasil.';
-                gatewayErrorAction = pollResult.retryable ? 'Tekan Sintesis Ulang untuk mencoba kembali.' : 'Tempelkan cuplikan teks materi.';
+                gatewayErrorAction = 'Tempelkan cuplikan teks materi.';
+              } else {
+                // P1: Transient error or timeout: DO NOT delete active job!
+                gatewayErrorType = 'server_error';
+                gatewayErrorMessage = pollResult.error || 'Sintesis video memerlukan waktu lebih lama.';
+                gatewayErrorAction = 'Mochi tetap memproses di latar belakang. Tekan Sintesis Ulang untuk memeriksa status.';
               }
             } catch (pollErr: any) {
-              clearActiveJob(cleanUrl);
+              // P1: Network disconnect or timeout: DO NOT delete active job!
               if (pollErr?.name === 'AbortError') throw pollErr;
               gatewayErrorType = 'server_error';
               gatewayErrorMessage = 'Pemantauan status proses terputus.';
-              gatewayErrorAction = 'Tekan Sintesis Ulang untuk memeriksa kembali.';
+              gatewayErrorAction = 'Proses tetap berjalan di backend. Buka kembali aplikasi untuk memeriksa status.';
             }
           }
         } else if (res.ok) {
@@ -316,93 +500,16 @@ export async function synthesizeLink(
 
         if (json) {
           if (json.success && json.data && json.data.title) {
-            const d = json.data;
-
-            // Check if server indicated missing transcript
-            if (d.qualityStatus === 'needs_context' && !d.notes) {
-              gatewayErrorMessage = 'Transkrip video belum tersedia.';
-              gatewayErrorAction = 'Tambah caption atau cuplikan teks materi.';
-              const localSmart = generateSmartVaultContent(
-                cleanUrl,
-                platform,
-                domain,
-                d.title || meta.title,
-                meta.author || d.author,
-                userContext
-              );
-              return {
-                content: { ...localSmart, thumbnailUrl: meta.thumbnailUrl },
-                isFromRemoteAI: true,
-                evidenceLevel: 'metadata_only',
-                qualityStatus: 'needs_context',
-                provenance: d.provenance || 'none',
-                captureMethod,
-                sourceExcerpt: userContext ? userContext.slice(0, 300) : undefined,
-                gatewayErrorMessage,
-                gatewayErrorAction,
-                gatewayHttpStatus: 200,
-              };
-            }
-
-            // Render from the verified structured fields. Backend freeform notes can
-            // contain duplicated headings, emoji and extra claims outside these fields.
-            const readableTakeaways = Array.isArray(d.keyTakeaways)
-              ? d.keyTakeaways.filter((item: unknown): item is { concept: string; explanation: string } =>
-                  typeof item === 'object' && item !== null &&
-                  typeof (item as { concept?: unknown }).concept === 'string' &&
-                  typeof (item as { explanation?: unknown }).explanation === 'string')
-              : [];
-            const readableActions = Array.isArray(d.actionableInsights)
-              ? d.actionableInsights.filter((item: unknown): item is string => typeof item === 'string')
-              : [];
-            const hasSubstantiveContent = Boolean(typeof d.coreThesis === 'string' && d.coreThesis.trim() &&
-              readableTakeaways.length && readableActions.length);
-            const formattedNotes = hasSubstantiveContent
-              ? formatStructuredNotes({
-                  coreThesis: d.coreThesis,
-                  keyTakeaways: readableTakeaways,
-                  actionableInsights: readableActions,
-                  reflectionPrompt: d.reflectionPrompt,
-                })
-              : (typeof d.notes === 'string' ? d.notes : '');
-            const evidenceLevel: EvidenceLevel = d.evidenceLevel === 'full_text' || d.evidenceLevel === 'excerpt'
-              ? d.evidenceLevel
-              : (userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'));
-            const qualityStatus: LinkQualityStatus = d.qualityStatus === 'grounded' && hasSubstantiveContent &&
-              (evidenceLevel === 'full_text' || evidenceLevel === 'excerpt') ? 'grounded' : 'needs_context';
-
-            const provenance: LinkProvenance = d.provenance || (
-              platform === 'youtube'
-                ? 'youtube_transcript'
-                : (platform === 'instagram' || platform === 'tiktok'
-                    ? (d.qualityStatus === 'grounded' ? 'video_analysis' : 'none')
-                    : (userContext ? 'manual_context' : 'none'))
-            );
-
-            return {
-              content: {
-                title: d.title,
-                category: d.category || 'Umum',
-                coreThesis: d.coreThesis || d.summary || '',
-                keyTakeaways: readableTakeaways,
-                actionableInsights: readableActions,
-                reflectionPrompt: d.reflectionPrompt || '',
-                notes: formattedNotes,
-                summary: d.coreThesis || d.summary || '',
-                tags: Array.isArray(d.tags) ? d.tags : ['#wawasan', '#vault'],
-                author: meta.author || d.author,
-                thumbnailUrl: typeof d.thumbnailUrl === 'string' && /^https:\/\//i.test(d.thumbnailUrl)
-                  ? d.thumbnailUrl : meta.thumbnailUrl,
-              },
-              isFromRemoteAI: true,
-              evidenceLevel,
-              qualityStatus,
-              provenance,
+            return formatSynthesizedData(
+              json.data,
+              cleanUrl,
+              platform,
+              domain,
+              meta,
+              userContext,
               captureMethod,
-              sourceExcerpt: userContext ? userContext.slice(0, 300) : (d.sourceExcerpt || undefined),
-              synthesizedAt: qualityStatus === 'grounded' ? Date.now() : undefined,
-              gatewayHttpStatus: res.status,
-            };
+              res?.status || 200
+            );
           } else {
             gatewayErrorType = 'invalid_response';
             gatewayErrorMessage = json.message || json.error || 'AI menghasilkan format respons yang tidak valid.';

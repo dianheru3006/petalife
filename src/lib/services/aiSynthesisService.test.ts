@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { synthesizeLink } from './aiSynthesisService';
+import {
+  synthesizeLink,
+  getPendingActiveJobs,
+  resumeActiveJob,
+  getActiveJobForUrl,
+  saveActiveJob
+} from './aiSynthesisService';
 
 describe('aiSynthesisService', () => {
   const originalFetch = globalThis.fetch;
@@ -269,6 +275,130 @@ describe('aiSynthesisService', () => {
     expect(result.content.title).toBe('Kebahagiaan Pikiran Tenang');
     expect(callCount).toBe(3);
     expect(stagesReported.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('P0: does NOT send async: true for YouTube, but sends async: true for Instagram/TikTok', async () => {
+    let capturedYouTubeBody: any = null;
+    let capturedInstagramBody: any = null;
+
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+      const parsedBody = init?.body ? JSON.parse(init.body as string) : {};
+      if (parsedBody.url?.includes('youtu')) {
+        capturedYouTubeBody = parsedBody;
+      } else if (parsedBody.url?.includes('instagram')) {
+        capturedInstagramBody = parsedBody;
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          success: true,
+          data: {
+            title: 'Mock Video',
+            category: 'Umum',
+            notes: 'Mock notes',
+            qualityStatus: 'grounded'
+          }
+        })
+      };
+    });
+
+    await synthesizeLink('https://youtu.be/test1234', 'youtube', 'youtu.be');
+    expect(capturedYouTubeBody.async).toBe(false);
+
+    await synthesizeLink('https://www.instagram.com/reel/test1234/', 'instagram', 'instagram.com');
+    expect(capturedInstagramBody.async).toBe(true);
+  });
+
+  it('P1: preserves active job in localStorage on temporary polling timeout/disruption', async () => {
+    let callCount = 0;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+      callCount += 1;
+      if (init?.method === 'POST') {
+        return {
+          ok: false,
+          status: 202,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({
+            success: true,
+            async: true,
+            jobId: 'job_timeout_123',
+            status: 'pending',
+            stage: 'queued',
+            stageLabel: 'Mochi mencatat antrean...',
+            pollUrl: '/api/petalife/job-status/job_timeout_123'
+          })
+        };
+      }
+
+      // Simulate network disruption or 503 while polling
+      return {
+        ok: false,
+        status: 503,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({ error: 'Service Unavailable' })
+      };
+    });
+
+    const testUrl = 'https://www.instagram.com/reel/TimeoutTestReel/';
+    const result = await synthesizeLink(testUrl, 'instagram', 'instagram.com', {
+      timeoutMs: 3000
+    });
+
+    // Gateway error due to timeout/disruption
+    expect(result.qualityStatus).toBe('gateway_error');
+
+    // Job MUST still be preserved in localStorage!
+    const preservedJob = getActiveJobForUrl(testUrl);
+    expect(preservedJob).not.toBeNull();
+    expect(preservedJob?.jobId).toBe('job_timeout_123');
+  });
+
+  it('P1: getPendingActiveJobs and resumeActiveJob can resume pending job across app reopenings', async () => {
+    const testUrl = 'https://www.instagram.com/reel/ResumeTestReel/';
+    saveActiveJob({
+      jobId: 'job_resume_999',
+      pollUrl: 'http://localhost:3000/api/petalife/job-status/job_resume_999',
+      url: testUrl,
+      timestamp: Date.now()
+    });
+
+    const pending = getPendingActiveJobs();
+    expect(pending.length).toBe(1);
+    expect(pending[0].jobId).toBe('job_resume_999');
+
+    // Simulate poll returning completed data on resume
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        success: true,
+        jobId: 'job_resume_999',
+        status: 'completed',
+        stage: 'completed',
+        data: {
+          title: 'Resumed Synthesis Note',
+          category: 'Psikologi',
+          coreThesis: 'Resumed thesis statement.',
+          keyTakeaways: [{ concept: 'C1', explanation: 'E1' }],
+          actionableInsights: ['Action 1'],
+          qualityStatus: 'grounded',
+          evidenceLevel: 'full_text',
+          provenance: 'caption_and_audio'
+        }
+      })
+    });
+
+    const resumeResult = await resumeActiveJob(pending[0]);
+    expect(resumeResult.success).toBe(true);
+    expect(resumeResult.result?.qualityStatus).toBe('grounded');
+    expect(resumeResult.result?.content.title).toBe('Resumed Synthesis Note');
+
+    // After success, it should be removed from localStorage
+    expect(getActiveJobForUrl(testUrl)).toBeNull();
+    expect(getPendingActiveJobs().length).toBe(0);
   });
 });
 

@@ -28,7 +28,7 @@ import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
 import { MochiNoteSheet } from './MochiNoteSheet';
-import { synthesizeLink } from '../../lib/services/aiSynthesisService';
+import { synthesizeLink, getPendingActiveJobs, resumeActiveJob } from '../../lib/services/aiSynthesisService';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
@@ -260,6 +260,71 @@ export const PetRoom: FC<PetRoomProps> = ({
     actionSequenceRef.current += 1;
     setForcedAction({ id: Date.now() + actionSequenceRef.current, action });
   };
+
+  // Sol ADR-003 / Tahap 4: Auto-resume pending async synthesis jobs on WebView launch
+  useEffect(() => {
+    const pendingJobs = getPendingActiveJobs();
+    if (!pendingJobs || pendingJobs.length === 0) return;
+
+    let isCancelled = false;
+    const active = pendingJobs[0];
+
+    forceMochiAction('studying');
+    triggerSpeech('Mochi melanjutkan intisari yang sempat tertunda... 🔍', 5000);
+
+    resumeActiveJob(active, (_stage, stageLabel) => {
+      if (!isCancelled) {
+        forceMochiAction('studying');
+        triggerSpeech(stageLabel, 6000);
+      }
+    }).then((res) => {
+      if (isCancelled || !res.success || !res.result) return;
+
+      const { content: smart, qualityStatus, evidenceLevel, captureMethod, sourceExcerpt } = res.result;
+      const now = Date.now();
+      const { platform, domain } = detectPlatform(active.url);
+
+      const restoredLink: SavedLink = {
+        id: `link-${now}`,
+        url: active.url.startsWith('http') ? active.url : `https://${active.url}`,
+        title: smart.title,
+        thumbnailUrl: smart.thumbnailUrl,
+        platform,
+        domain,
+        tags: smart.tags,
+        status: 'to_review',
+        dateAdded: 'Baru saja',
+        createdAt: now,
+        updatedAt: now,
+        notes: smart.notes,
+        summary: smart.summary,
+        category: smart.category,
+        coreThesis: smart.coreThesis,
+        keyTakeaways: smart.keyTakeaways,
+        actionableInsights: smart.actionableInsights,
+        reflectionPrompt: smart.reflectionPrompt,
+        author: smart.author,
+        captureMethod,
+        evidenceLevel,
+        qualityStatus,
+        provenance: res.result.provenance,
+        sourceExcerpt,
+        synthesizedAt: res.result.synthesizedAt,
+        gatewayHttpStatus: res.result.gatewayHttpStatus,
+      };
+
+      setHoldingNoteLink(restoredLink);
+      setIsNoteSheetOpen(true);
+      forceMochiAction('holding-note');
+      triggerSpeech('Mochi selesai menyusun intisari materi kamu! ✨', 7000);
+    }).catch(() => {
+      // Background auto-resume error ignored gracefully
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const clearYouTubeStages = () => {
     youtubeStageTimersRef.current.forEach(clearTimeout);
