@@ -38,6 +38,24 @@ describe('Mochi note reading view', () => {
     expect(draft).not.toMatch(/# 📺|Link Video|Draf Threads|\[\[/);
   });
 
+  it('cleans malformed wikilinks with stray colons and brackets seamlessly', () => {
+    const raw = [
+      '**Gagasan Utama:**',
+      'AI butuh contoh konkret.',
+      '',
+      '**Poin Kunci:**',
+      '- **[[Spesifikasi Berbasis Bukti (Evidence-Based PRD)]: ]** Menggunakan artefak nyata.',
+      '',
+      '**Refleksi Diri & Uji Asumsi:**',
+      'Apakah saya sudah memberi referensi konkret?'
+    ].join('\n');
+
+    const sections = getNoteViewSections(raw);
+    expect(sections.map(s => s.kind)).toEqual(['thesis', 'takeaways', 'reflection']);
+    expect(sections[1].lines[0].text).toBe('Spesifikasi Berbasis Bukti (Evidence-Based PRD): Menggunakan artefak nyata.');
+    expect(sections[1].lines[0].bullet).toBe(true);
+  });
+
   it('keeps plain manual notes editable without claiming four invented layers', () => {
     expect(getNoteViewSections('Catatan pribadi pengguna.')).toEqual([
       { kind: 'general', title: 'Catatan', lines: [{ text: 'Catatan pribadi pengguna.', bullet: false }] },

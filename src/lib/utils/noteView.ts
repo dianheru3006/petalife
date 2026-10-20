@@ -19,16 +19,20 @@ const SECTION_TITLES: Record<NoteSectionKind, string> = {
 function cleanInline(text: string): string {
   return text
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, concept: string, label: string | undefined) => label || concept)
+    .replace(/[\[\]]/g, '')
     .replace(/\*\*/g, '')
+    .replace(/\s*:\s*:\s*/g, ': ')
+    .replace(/\s*:\s*\]/g, ':')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
 function headingKind(line: string): NoteSectionKind | null {
   const heading = cleanInline(line).replace(/^[^\p{L}]+/u, '').replace(/:$/, '').trim().toLowerCase();
   if (heading === 'gagasan utama') return 'thesis';
-  if (heading === 'analisis mendalam & poin kunci' || heading === 'model mental & poin kunci') return 'takeaways';
+  if (heading === 'poin kunci' || heading === 'analisis mendalam & poin kunci' || heading === 'model mental & poin kunci') return 'takeaways';
   if (heading === 'aksi praktis' || heading === 'aksi praktis (24 jam)') return 'actions';
-  if (heading === 'refleksi diri') return 'reflection';
+  if (heading === 'refleksi diri' || heading === 'refleksi diri & uji asumsi') return 'reflection';
   return null;
 }
 
