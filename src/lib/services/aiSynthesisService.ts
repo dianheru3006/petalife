@@ -411,8 +411,7 @@ export async function synthesizeLink(
           headers,
           body: JSON.stringify({
             url: cleanUrl,
-            context: userContext || (meta.isRealMetadata ? `Judul asli: ${meta.title} oleh ${meta.author || ''}` : ''),
-            // P0: strictly only true for supported short video platforms!
+            context: userContext, // P0: strictly genuine user context only; never pass title metadata as evidence!
             async: isShortVideo
           }),
           signal: controller.signal,
@@ -459,17 +458,17 @@ export async function synthesizeLink(
                 gatewayErrorMessage = pollResult.error || 'Sintesis video belum berhasil.';
                 gatewayErrorAction = 'Tempelkan cuplikan teks materi.';
               } else {
-                // P1: Transient error or timeout: DO NOT delete active job!
-                gatewayErrorType = 'server_error';
-                gatewayErrorMessage = pollResult.error || 'Sintesis video memerlukan waktu lebih lama.';
-                gatewayErrorAction = 'Mochi tetap memproses di latar belakang. Tekan Sintesis Ulang untuk memeriksa status.';
+                // P1: Transient error or queue timeout: DO NOT delete active job!
+                gatewayErrorType = 'timeout';
+                gatewayErrorMessage = pollResult.error || 'Proses masih berjalan di antrean server.';
+                gatewayErrorAction = 'Job tetap tersimpan di latar belakang. Kamu bisa menutup aplikasi lalu kembali lagi nanti untuk melihat hasilnya.';
               }
             } catch (pollErr: any) {
               // P1: Network disconnect or timeout: DO NOT delete active job!
               if (pollErr?.name === 'AbortError') throw pollErr;
-              gatewayErrorType = 'server_error';
+              gatewayErrorType = 'timeout';
               gatewayErrorMessage = 'Pemantauan status proses terputus.';
-              gatewayErrorAction = 'Proses tetap berjalan di backend. Buka kembali aplikasi untuk memeriksa status.';
+              gatewayErrorAction = 'Proses tetap berjalan di backend. Buka kembali aplikasi untuk melihat hasilnya.';
             }
           }
         } else if (res.ok) {

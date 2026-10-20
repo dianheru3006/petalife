@@ -306,9 +306,11 @@ describe('aiSynthesisService', () => {
 
     await synthesizeLink('https://youtu.be/test1234', 'youtube', 'youtu.be');
     expect(capturedYouTubeBody.async).toBe(false);
+    expect(capturedYouTubeBody.context).toBe('');
 
     await synthesizeLink('https://www.instagram.com/reel/test1234/', 'instagram', 'instagram.com');
     expect(capturedInstagramBody.async).toBe(true);
+    expect(capturedInstagramBody.context).toBe(''); // P0: must NOT inject metadata title as context!
   });
 
   it('P1: preserves active job in localStorage on temporary polling timeout/disruption', async () => {

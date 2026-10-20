@@ -8,7 +8,8 @@
  * 2. Query Parameters:
  *    - Strips marketing/click-tracking noise:
  *      'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
- *      'fbclid', 'gclid', 'igshid', 'si', 'ref', 'ref_src', 'feature'.
+ *      'fbclid', 'gclid', 'igshid', 'igsh', 'si', 'ref', 'ref_src', 'feature',
+ *      'mibextid', 'rdid', 'rpxt', 'dlrf', 'mdxt', 'srtk', 'xtok', 'obrf', 'theme'.
  *    - PRESERVES content-defining query parameters:
  *      e.g. YouTube video identifier ('v'), timestamp ('t'), playlist ('list'),
  *      or generic content selectors ('id', 'p', 'article').
@@ -28,10 +29,20 @@ const TRACKING_QUERY_PARAMS = new Set([
   'fbclid',
   'gclid',
   'igshid',
+  'igsh',
   'si',
   'ref',
   'ref_src',
   'feature',
+  'mibextid',
+  'rdid',
+  'rpxt',
+  'dlrf',
+  'mdxt',
+  'srtk',
+  'xtok',
+  'obrf',
+  'theme'
 ]);
 
 /**

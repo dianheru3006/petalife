@@ -284,17 +284,21 @@ export const PetRoom: FC<PetRoomProps> = ({
       const now = Date.now();
       const { platform, domain } = detectPlatform(active.url);
 
+      // P1: Match existing bookmark by canonical URL to update in-place
+      const canonicalActive = normalizeUrl(active.url);
+      const existingSaved = savedLinks.find(l => normalizeUrl(l.url) === canonicalActive);
+
       const restoredLink: SavedLink = {
-        id: `link-${now}`,
+        id: existingSaved ? existingSaved.id : `link-${now}`,
         url: active.url.startsWith('http') ? active.url : `https://${active.url}`,
         title: smart.title,
         thumbnailUrl: smart.thumbnailUrl,
         platform,
         domain,
         tags: smart.tags,
-        status: 'to_review',
-        dateAdded: 'Baru saja',
-        createdAt: now,
+        status: existingSaved ? existingSaved.status : 'to_review',
+        dateAdded: existingSaved ? existingSaved.dateAdded : 'Baru saja',
+        createdAt: existingSaved ? existingSaved.createdAt : now,
         updatedAt: now,
         notes: smart.notes,
         summary: smart.summary,
@@ -849,9 +853,16 @@ export const PetRoom: FC<PetRoomProps> = ({
   const handleSaveAndFeed = async (updatedLink: SavedLink) => {
     if (!onAddLink) return;
     try {
-      const existing = savedLinks.some(l => l.id === updatedLink.id);
-      if (existing && onUpdateLink) {
-        await onUpdateLink(updatedLink.id, updatedLink);
+      const canonicalTarget = normalizeUrl(updatedLink.url);
+      const existingMatch = savedLinks.find(l => l.id === updatedLink.id || normalizeUrl(l.url) === canonicalTarget);
+
+      if (existingMatch && onUpdateLink) {
+        // P1: Match existing bookmark by canonical URL or ID, update without 2nd XP!
+        await onUpdateLink(existingMatch.id, {
+          ...updatedLink,
+          id: existingMatch.id,
+          updatedAt: Date.now()
+        });
         setQuickSuccess('🎉 Catatan berhasil diperbarui di Pustaka!');
       } else {
         const rewardRes = await onAddLink(updatedLink);
@@ -865,13 +876,13 @@ export const PetRoom: FC<PetRoomProps> = ({
         } else {
           setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Kuota reward harian tercapai)');
         }
+        handleFeedClick();
       }
 
-      handleFeedClick();
       setHoldingNoteLink(null);
       setIsNoteSheetOpen(false);
       setForcedAction({ id: Date.now(), action: 'hop' });
-      triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar!`, 4500);
+      triggerSpeech(existingMatch ? 'Catatan Pustaka kamu sudah rapi! ✨' : 'Nyam! Mochi kenyang dan makin pintar belajar!', 4500);
     } catch (err) {
       setQuickError('Gagal menyimpan catatan ke Pustaka. Coba lagi.');
       throw err;
