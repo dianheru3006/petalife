@@ -200,8 +200,8 @@ async function pollJobUntilFinished(
   signal?: AbortSignal
 ): Promise<{ success: boolean; data?: any; error?: string; errorCode?: string; retryable?: boolean }> {
   const startTime = Date.now();
-  // 150s buffer to cover server 120s worker deadline + queue wait
-  const MAX_POLL_DURATION_MS = 150000;
+  // 280s buffer to cover queue backlog (up to 2 jobs @ 120s worker deadline + headroom)
+  const MAX_POLL_DURATION_MS = 280000;
 
   while (Date.now() - startTime < MAX_POLL_DURATION_MS) {
     if (signal?.aborted) {
@@ -211,7 +211,7 @@ async function pollJobUntilFinished(
     }
 
     const elapsed = Date.now() - startTime;
-    const intervalMs = elapsed < 20000 ? 2500 : 4000;
+    const intervalMs = elapsed < 20000 ? 2500 : (elapsed < 60000 ? 4000 : 5000);
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
 
     if (signal?.aborted) {
@@ -351,9 +351,9 @@ export async function synthesizeLink(
     try {
       const controller = new AbortController();
       const isShortVideo = platform === 'instagram' || platform === 'tiktok';
-      // P1: Client timeout >= 150s for async short videos to respect 120s worker deadline + queue
+      // P1: Client timeout 280s for async short videos to cover up to 2 queued jobs @ 120s worker deadline + headroom
       // YouTube uses 75s (synchronous server 65s deadline)
-      const defaultTimeout = isShortVideo ? 150000 : (platform === 'youtube' ? 75000 : 14000);
+      const defaultTimeout = isShortVideo ? 280000 : (platform === 'youtube' ? 75000 : 14000);
       timeout = setTimeout(() => controller.abort(), options.timeoutMs || defaultTimeout);
 
       const initData = typeof window !== 'undefined'
