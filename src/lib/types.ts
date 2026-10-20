@@ -22,7 +22,7 @@ export interface Pet {
   version?: number;
 }
 
-export type PlatformType = 'youtube' | 'tiktok' | 'instagram' | 'web';
+export type PlatformType = 'youtube' | 'tiktok' | 'instagram' | 'threads' | 'web';
 export type LinkStatus = 'to_review' | 'in_progress' | 'completed';
 
 export interface KeyTakeaway {
@@ -65,6 +65,7 @@ export interface SavedLink {
   updatedAt: number;
   notes?: string;
   summary?: string;
+  thumbnailUrl?: string;
   category?: string;
   coreThesis?: string;
   keyTakeaways?: KeyTakeaway[];

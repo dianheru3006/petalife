@@ -68,7 +68,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [isNoteSheetOpen, setIsNoteSheetOpen] = useState<boolean>(false);
 
   // Speech Bubble State: Hidden by default; only appears on direct interaction or occasional whisper
-  const [speech, setSpeech] = useState<string>('Kenyang dan senang ✨');
+  const [speech, setSpeech] = useState<string>('Kenyang dan senang.');
   const [showSpeech, setShowSpeech] = useState<boolean>(false);
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -86,9 +86,9 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     if (willBeNight) {
-      triggerSpeech(`Hoaaam... Selamat tidur & mimpi indah, ${getUserDisplayName()}! 🌙💤`, 4000);
+      triggerSpeech(`Hoaaam... Selamat tidur dan mimpi indah, ${getUserDisplayName()}!`, 4000);
     } else {
-      triggerSpeech('Selamat pagi! Semangat belajar lagi bareng Mochi! ☀️✨', 4000);
+      triggerSpeech('Selamat pagi! Semangat belajar lagi bareng Mochi!', 4000);
     }
   };
 
@@ -270,16 +270,16 @@ export const PetRoom: FC<PetRoomProps> = ({
     clearYouTubeStages();
     setYouTubeStage('capturing');
     forceMochiAction('hop');
-    triggerSpeech('Nyam! Tautan YouTube tertangkap! 🎬', 1800);
+    triggerSpeech('Nyam! Tautan YouTube tertangkap!', 1800);
     youtubeStageTimersRef.current.push(setTimeout(() => {
       setYouTubeStage('transcribing');
       forceMochiAction('studying');
-      triggerSpeech('Mencari dan menyalin subtitle video... 🎧✍️', 3600);
+      triggerSpeech('Mencari dan menyalin subtitle video...', 3600);
     }, 1500));
     youtubeStageTimersRef.current.push(setTimeout(() => {
       setYouTubeStage('thinking');
       forceMochiAction('thinking');
-      triggerSpeech('Menyaring gagasan dan model mental... 🧠✨', 4200);
+      triggerSpeech('Menyaring gagasan dan model mental...', 4200);
     }, 5000));
   };
 
@@ -288,18 +288,18 @@ export const PetRoom: FC<PetRoomProps> = ({
     const whisperInterval = setInterval(() => {
       if (!isFeeding) {
         if (activeNight) {
-          triggerSpeech('Zzz... mimpi manis... 🌙💤', 2800);
+          triggerSpeech('Zzz... mimpi manis...', 2800);
         } else {
           const whispers = [
-            'Kenyang dan senang ✨',
-            'Rumah Mochi hangat dan nyaman 🌸',
-            'Ada materi seru yang mau dipelajari? 🎬',
-            `Mochi senang bersama ${getUserDisplayName()}! 💖`,
+            'Kenyang dan senang.',
+            'Rumah Mochi hangat dan nyaman.',
+            'Ada materi seru yang mau dipelajari?',
+            `Mochi senang bersama ${getUserDisplayName()}!`,
           ];
           if (savedLinks.length > 0) {
             whispers.push(
-              `Ada ${savedLinks.length} materi di Vault! Mau pelajari 1 bareng Mochi? 📚✨`,
-              `Yuk buka Vault! Ada ${savedLinks.length} materi seru menunggumu 🎬`
+              `Ada ${savedLinks.length} materi di Pustaka! Mau pelajari satu bareng Mochi?`,
+              `Yuk buka Pustaka! Ada ${savedLinks.length} materi seru menunggumu.`
             );
           }
           const randomWhisper = whispers[Math.floor(Math.random() * whispers.length)];
@@ -324,15 +324,15 @@ export const PetRoom: FC<PetRoomProps> = ({
     setSnackIndex(nextIdx);
     const nextSnack = SNACK_VARIANTS[nextIdx];
     if (isFull) {
-      triggerSpeech(`Perut Mochi kenyang! Nanti kita coba ${nextSnack.name} ya! ✨`, 3500);
+      triggerSpeech(`Perut Mochi kenyang! Nanti kita coba ${nextSnack.name} ya.`, 3500);
     } else {
-      triggerSpeech(`Mochi mau coba ${nextSnack.name}! 😋✨`, 3500);
+      triggerSpeech(`Mochi mau coba ${nextSnack.name}!`, 3500);
     }
   };
 
   const handleFeedClick = () => {
     if (isFull) {
-      triggerSpeech('Perut Mochi sudah kenyang dan hatiku senang! ✨', 3500);
+      triggerSpeech('Perut Mochi sudah kenyang dan hatiku senang!', 3500);
       return;
     }
     if (isFeeding) {
@@ -360,15 +360,15 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     if (activeNight) {
-      triggerSpeech('Ssst... Mochi sedang mimpi indah... 🌙💤', 3500);
+      triggerSpeech('Ssst... Mochi sedang mimpi indah...', 3500);
       return;
     }
 
     if (action === 'wiggle') {
       const giggles = [
-        'Hehehe, geli! 🌸',
-        'Kikiki, geli banget! 😆',
-        'Geli tapi seru! Jangan berhenti elus ya! 🌸',
+        'Hehehe, geli!',
+        'Kikiki, geli banget!',
+        'Geli tapi seru! Jangan berhenti elus ya.',
       ];
       triggerSpeech(giggles[Math.floor(Math.random() * giggles.length)], 3600);
       return;
@@ -376,9 +376,9 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     if (action === 'spin') {
       const spins = [
-        'Wuuush! Putar-putar seru! 🌀✨',
-        'Tadaaa! Mochi bisa salto mini! 🌟',
-        `Penuh energi! Ayo belajar lagi bareng ${getUserDisplayName()}! 🌀`,
+        'Wuuush! Putar-putar seru!',
+        'Tadaaa! Mochi bisa salto mini!',
+        `Penuh energi! Ayo belajar lagi bareng ${getUserDisplayName()}!`,
       ];
       triggerSpeech(spins[Math.floor(Math.random() * spins.length)], 3600);
       return;
@@ -386,9 +386,9 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     if (action === 'wink') {
       const winks = [
-        `Mochi selalu siap menemani ${getUserDisplayName()}! 😉🍵`,
-        'Kedip manis buat kamu! Semangat belajarnya! ✨😉',
-        `Psst... ${getUserDisplayName()} rajin banget hari ini! 😉🌟`,
+        `Mochi selalu siap menemani ${getUserDisplayName()}!`,
+        'Kedip manis buat kamu! Semangat belajarnya!',
+        `Psst... ${getUserDisplayName()} rajin banget hari ini!`,
       ];
       triggerSpeech(winks[Math.floor(Math.random() * winks.length)], 3600);
       return;
@@ -396,10 +396,10 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     if (action === 'dance') {
       const danceLines = [
-        'La la la~ Mochi suka menari! 🎵💃',
-        `${getUserDisplayName()} lihat! Mochi punya gerakan tarian baru! 🎶✨`,
-        'Satu dua tiga, bergoyang gembira! 🎵',
-        'Musik membuat hati Mochi berbunga-bunga! 🌸🎶',
+        'La la la~ Mochi suka menari!',
+        `${getUserDisplayName()} lihat! Mochi punya gerakan tarian baru!`,
+        'Satu dua tiga, bergoyang gembira!',
+        'Musik membuat hati Mochi berbunga-bunga.',
       ];
       triggerSpeech(danceLines[Math.floor(Math.random() * danceLines.length)], 4000);
       return;
@@ -407,11 +407,11 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     if (action === 'dizzy') {
       const dizzyQuotes = [
-        'Whoaa! Gempa bumi kah? Pusing~ (@ o @) 💫',
-        'Aduh aduh... bumi bergoyang! Mataku muter-muter! 🌀',
-        'Hehe geli! Jangan kenceng-kenceng guncangnya ya! (*≧ω≦)',
-        'Waaah... kepalaku berputar-putar kayak gasing! 💫⭐',
-        'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet! 🌪️',
+        'Whoaa! Gempa bumi kah? Pusing~',
+        'Aduh aduh... bumi bergoyang! Mataku muter-muter!',
+        'Hehe geli! Jangan kencang-kencang guncangnya ya.',
+        'Waaah... kepalaku berputar-putar kayak gasing!',
+        'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet!',
       ];
       triggerSpeech(dizzyQuotes[Math.floor(Math.random() * dizzyQuotes.length)], 3800);
       return;
@@ -419,33 +419,33 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     if (action === 'studying') {
       const studyLines = [
-        'Ssst... Mochi lagi fokus mencatat materi baru! 📝✨',
-        'Kacamata Mochi pas banget buat belajar! 👓📖',
-        `Satu catatan lagi, biar makin pintar bareng ${getUserDisplayName()}! 💡📓`,
+        'Ssst... Mochi lagi fokus mencatat materi baru.',
+        'Kacamata Mochi pas banget buat belajar.',
+        `Satu catatan lagi, biar makin pintar bareng ${getUserDisplayName()}!`,
       ];
       triggerSpeech(studyLines[Math.floor(Math.random() * studyLines.length)], 4000);
       return;
     }
 
     if (isFull) {
-      triggerSpeech('Perut Mochi kenyang dan hatiku senang! ✨', 3500);
+      triggerSpeech('Perut Mochi kenyang dan hatiku senang!', 3500);
       return;
     }
     const cuteReplies = [
-      'Yaaay! Semangat belajar bareng kamu! ✨',
-      `Mochi siap menemani ${getUserDisplayName()}! 🍵`,
-      `Streak belajarmu ${pet.streakDays} hari berturut-turut! 🔥`,
+      'Yaaay! Semangat belajar bareng kamu!',
+      `Mochi siap menemani ${getUserDisplayName()}!`,
+      `Streak belajarmu ${pet.streakDays} hari berturut-turut!`,
       contextualStatus.speechText,
     ];
 
     if (savedLinks.length > 0) {
       cuteReplies.push(
-        `Ada ${savedLinks.length} materi di Vault nih! Mau review 1 bareng aku? 📚✨`,
-        `Mochi siap belajar! Ada ${savedLinks.length} materi tersimpan di Vault 📖`
+        `Ada ${savedLinks.length} materi di Pustaka nih! Mau review satu bareng aku?`,
+        `Mochi siap belajar! Ada ${savedLinks.length} materi tersimpan di Pustaka.`
       );
     } else {
       cuteReplies.push(
-        'Ada resep atau video baru yang seru? Tempel link di bawah ya! 🍳'
+        'Ada video atau materi baru yang seru? Tempel link di bawah ya.'
       );
     }
 
@@ -485,11 +485,11 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     // 4. Dizzy Speech Lines
     const dizzyQuotes = [
-      'Whoaa! Gempa bumi kah? Pusing~ (@ o @) 💫',
-      'Aduh aduh... bumi bergoyang! Mataku muter-muter! 🌀',
-      'Hehe geli! Jangan kenceng-kenceng guncangnya ya! (*≧ω≦)',
-      'Waaah... kepalaku berputar-putar kayak gasing! 💫⭐',
-      'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet! 🌪️',
+      'Whoaa! Gempa bumi kah? Pusing~',
+      'Aduh aduh... bumi bergoyang! Mataku muter-muter!',
+      'Hehe geli! Jangan kencang-kencang guncangnya ya.',
+      'Waaah... kepalaku berputar-putar kayak gasing!',
+      'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet!',
     ];
     triggerSpeech(dizzyQuotes[Math.floor(Math.random() * dizzyQuotes.length)], 3800);
   }, [triggerSpeech]);
@@ -635,11 +635,11 @@ export const PetRoom: FC<PetRoomProps> = ({
             setQuickUrl('');
             setHoldingNoteLink(newLink);
             setForcedAction({ id: Date.now(), action: 'holding-note' });
-            triggerSpeech('Catatan materi berhasil disimpan! Cek catatan Mochi yuk 📄✨', 6000);
+            triggerSpeech('Catatan materi berhasil disimpan! Cek catatan Mochi yuk.', 6000);
             if (isAwarded) {
               setQuickSuccess(`🎉 Ringkasan berhasil disimpan! (+10 XP)`);
             } else {
-              setQuickSuccess(`🎉 Ringkasan berhasil disimpan ke Vault!`);
+              setQuickSuccess(`🎉 Ringkasan berhasil disimpan ke Pustaka!`);
             }
             setTimeout(() => setQuickSuccess(null), 3500);
             return;
@@ -663,7 +663,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     const normalized = normalizeUrl(targetUrl);
     const isDuplicate = savedLinks.some(l => normalizeUrl(l.url) === normalized);
     if (isDuplicate) {
-      setQuickError('Tautan ini sudah tersimpan di Vault Anda!');
+      setQuickError('Tautan ini sudah tersimpan di Pustaka Anda!');
       return;
     }
 
@@ -683,14 +683,14 @@ export const PetRoom: FC<PetRoomProps> = ({
       startYouTubeStages();
     } else if (platform === 'instagram' || platform === 'tiktok') {
       forceMochiAction('studying');
-      triggerSpeech('Mochi sedang mengunduh & menyimak audio Reel... 📹✨', 6000);
+      triggerSpeech('Mochi sedang mengunduh dan menyimak audio Reel...', 6000);
       youtubeStageTimersRef.current.push(
-        setTimeout(() => triggerSpeech('Menganalisis intisari ucapan dengan Gemini... 🧠🔍', 8000), 6000),
-        setTimeout(() => triggerSpeech('Menyusun draf catatan empat lapis... 📄✨', 10000), 14000)
+        setTimeout(() => triggerSpeech('Menganalisis intisari ucapan...', 8000), 6000),
+        setTimeout(() => triggerSpeech('Menyusun draf catatan empat lapis...', 10000), 14000)
       );
     } else {
       forceMochiAction('studying');
-      triggerSpeech('Aku cek teks yang bisa kubaca... 📖🔍', 3500);
+      triggerSpeech('Aku cek teks yang bisa kubaca...', 3500);
     }
 
     try {
@@ -706,6 +706,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         id: `link-${now}`,
         url: targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`,
         title: smart.title,
+        thumbnailUrl: smart.thumbnailUrl,
         platform,
         domain,
         tags: smart.tags,
@@ -747,17 +748,17 @@ export const PetRoom: FC<PetRoomProps> = ({
         setYouTubeStage(null);
       }
 
-      let finishSpeech = 'Draf catatan siap! Tinjau dan simpan ke Vault 📄✨';
+      let finishSpeech = 'Draf catatan siap! Tinjau dan simpan ke Pustaka.';
       if (qualityStatus === 'gateway_error') {
         finishSpeech = res.gatewayErrorType === 'unauthorized'
           ? 'Gateway AI butuh sesi Telegram. Tinjau bookmark draf 🔒'
           : 'Gateway AI sedang offline. Tinjau bookmark draf ☁️';
       } else if (qualityStatus === 'needs_context') {
-        finishSpeech = 'Mochi butuh konteks post. Mau lengkapi catatan draf? 💬';
+        finishSpeech = 'Mochi butuh konteks post. Mau lengkapi catatan draf?';
       } else if (qualityStatus === 'bookmark_only') {
-        finishSpeech = 'Draf tersimpan sebagai bookmark. Mau tinjau sekarang? 📌';
+        finishSpeech = 'Draf tersimpan sebagai bookmark. Mau tinjau sekarang?';
       } else if (isFromRemoteAI) {
-        finishSpeech = 'Catatan berhasil dirangkum AI! Tinjau dan simpan ke Vault 📄✨';
+        finishSpeech = 'Catatan berhasil dirangkum AI! Tinjau dan simpan ke Pustaka.';
       }
       triggerSpeech(finishSpeech, 4500);
 
@@ -780,18 +781,18 @@ export const PetRoom: FC<PetRoomProps> = ({
       const existing = savedLinks.some(l => l.id === updatedLink.id);
       if (existing && onUpdateLink) {
         await onUpdateLink(updatedLink.id, updatedLink);
-        setQuickSuccess('🎉 Catatan berhasil diperbarui di Vault!');
+        setQuickSuccess('🎉 Catatan berhasil diperbarui di Pustaka!');
       } else {
         const rewardRes = await onAddLink(updatedLink);
         const isAwarded = rewardRes ? rewardRes.awarded : false;
         if (isAwarded) {
-          setQuickSuccess(`🎉 Berhasil disimpan ke Vault! (+${rewardRes?.xpAwarded || 0} XP)`);
+          setQuickSuccess(`🎉 Berhasil disimpan ke Pustaka! (+${rewardRes?.xpAwarded || 0} XP)`);
         } else if (rewardRes?.reason === 'storage_error') {
-          setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Penyimpanan reward offline)');
+          setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Penyimpanan reward offline)');
         } else if (rewardRes?.reason === 'already_claimed') {
-          setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Tautan ini sudah diklaim hari ini)');
+          setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Tautan ini sudah diklaim hari ini)');
         } else {
-          setQuickSuccess('🎉 Berhasil disimpan ke Vault! (Kuota reward harian tercapai)');
+          setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Kuota reward harian tercapai)');
         }
       }
 
@@ -799,9 +800,9 @@ export const PetRoom: FC<PetRoomProps> = ({
       setHoldingNoteLink(null);
       setIsNoteSheetOpen(false);
       setForcedAction({ id: Date.now(), action: 'hop' });
-      triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar! 🎓✨`, 4500);
+      triggerSpeech(`Nyam! Mochi kenyang dan makin pintar belajar!`, 4500);
     } catch (err) {
-      setQuickError('Gagal menyimpan catatan ke Vault. Coba lagi.');
+      setQuickError('Gagal menyimpan catatan ke Pustaka. Coba lagi.');
       throw err;
     }
   };
@@ -815,9 +816,9 @@ export const PetRoom: FC<PetRoomProps> = ({
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto space-y-3">
+    <div className="w-full max-w-md mx-auto space-y-4">
       {/* 1. Header: Greeting & Streak Pill */}
-      <div className="flex items-center justify-between px-2 pt-1 pb-1 select-none gap-2">
+      <div className="flex min-h-11 items-center justify-between gap-2 px-2 select-none">
         <div className="min-w-0 flex-1">
           <p className="text-xs text-[#4E4E5E] font-medium leading-none truncate">
             {greeting},
@@ -831,7 +832,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Minimalist EXP Pill: ✨ Lv.{pet.level} · {pet.exp}/{pet.expToNextLevel} */}
           <button
             type="button"
-            onClick={() => triggerSpeech(`Mochi Level ${pet.level}! Butuh ${pet.expToNextLevel - pet.exp} XP lagi untuk naik level berikutnya ✨`, 3500)}
+            onClick={() => triggerSpeech(`Mochi Level ${pet.level}! Butuh ${pet.expToNextLevel - pet.exp} XP lagi untuk naik level berikutnya.`, 3500)}
             className={cn(
               'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] active:scale-95 transition-colors duration-700 border',
               activeNight
@@ -849,7 +850,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           {/* Subtle streak pill */}
           <button
             type="button"
-            onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut! 🔥`, 3500)}
+            onClick={() => triggerSpeech(`Semangat belajar! Streak ${pet.streakDays} hari berturut-turut.`, 3500)}
             className={cn(
               'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold text-[#9E410E] shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9E410E] active:scale-95 transition-colors duration-700 border',
               activeNight
@@ -868,7 +869,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       {/* 2. Terrarium / Living Diorama Card (CRISP, NO FOG GRADIENT, BORDERED) */}
       <div
         className={cn(
-          'relative w-full aspect-[9/13] max-h-[560px] rounded-[32px] overflow-hidden select-none transition-all duration-700 ease-out border-2',
+          'relative w-full aspect-[9/13] max-h-[560px] rounded-[32px] overflow-hidden select-none transition-[border-color,background-color] duration-700 ease-out border-2',
           isTerrariumShaking && 'anim-terrarium-shake',
           activeNight
             ? 'border-[#DDD2C2] bg-[#E5D8C3] shadow-[0_16px_48px_rgba(100,80,60,0.12)]'
@@ -994,35 +995,37 @@ export const PetRoom: FC<PetRoomProps> = ({
           </div>
         )}
 
-        {/* Speech Bubble directly above Mochi (Wraps cleanly, interactive button when mentioning Vault) */}
+        {/* Speech Bubble directly above Mochi (WCAG: hidden from accessibility tree when invisible, semantic button for Pustaka) */}
         <div
+          aria-hidden={!showSpeech}
+          role="status"
+          aria-live="polite"
           className={cn(
-            'absolute bottom-[52%] sm:bottom-[53%] left-[49%] -translate-x-1/2 z-30 transition-all duration-300 ease-out transform',
+            'absolute bottom-[52%] sm:bottom-[53%] left-[49%] -translate-x-1/2 z-30 transition-[opacity,transform] duration-300 ease-out transform',
             showSpeech
               ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
               : 'opacity-0 scale-90 translate-y-2 pointer-events-none'
           )}
         >
           <div
-            onClick={() => {
-              if (speech.includes('Vault')) {
-                onNavigate('vault');
-              }
-            }}
-            className={cn(
-              'bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] max-w-[220px] sm:max-w-[280px] text-center leading-snug break-words whitespace-normal relative transition-all active:scale-95',
-              speech.includes('Vault') ? 'cursor-pointer hover:border-[#D97736] hover:shadow-lg' : ''
-            )}
-            title={speech.includes('Vault') ? 'Ketuk untuk langsung membuka Vault' : undefined}
+            className="bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] max-w-[220px] sm:max-w-[280px] text-center leading-snug break-words whitespace-normal relative select-none"
           >
-            <span>{isFeeding ? '✨ Nyam nyam! Enak!' : speech}</span>
-            {speech.includes('Vault') && (
-              <span className="flex items-center justify-center gap-1 text-[10px] font-black text-[#BA5218] mt-1 bg-[#FFEFE8] px-2 py-0.5 rounded-full border border-[#FED7C5]/60">
-                <span>Buka Vault yuk</span>
+            <span>{isFeeding ? 'Nyam nyam! Enak!' : speech}</span>
+            {speech.includes('Pustaka') && showSpeech && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('vault');
+                }}
+                className="flex items-center justify-center gap-1 text-[10px] font-black text-[#BA5218] mt-1.5 mx-auto bg-[#FFEFE8] hover:bg-[#FED7C5] px-2.5 py-1 rounded-full border border-[#FED7C5]/60 shadow-2xs active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                aria-label="Buka Pustaka sekarang"
+              >
+                <span>Buka Pustaka yuk</span>
                 <ArrowRight className="w-3 h-3" />
-              </span>
+              </button>
             )}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]" aria-hidden="true" />
           </div>
         </div>
 
@@ -1116,7 +1119,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             name="quick-url"
             inputMode="url"
             autoComplete="url"
-            aria-label="Tautan untuk disimpan ke Vault"
+            aria-label="Tautan untuk disimpan ke Pustaka"
             aria-invalid={Boolean(quickError)}
             aria-describedby={quickError ? 'quick-link-error' : undefined}
             value={quickUrl}
@@ -1139,8 +1142,8 @@ export const PetRoom: FC<PetRoomProps> = ({
               type="submit"
               disabled={isSavingLink}
               className="absolute right-1.5 sm:right-2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#D97736] hover:bg-[#BA5218] text-white shadow-xs cursor-pointer active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]"
-              title="Kirim dan simpan ke Vault"
-              aria-label={isSavingLink ? 'Menyimpan tautan...' : 'Kirim dan simpan tautan ke Vault'}
+              title="Kirim dan simpan ke Pustaka"
+              aria-label={isSavingLink ? 'Menyimpan tautan...' : 'Kirim dan simpan tautan ke Pustaka'}
             >
               {isSavingLink ? (
                 <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -1289,7 +1292,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           setIsNoteSheetOpen(false);
           setHoldingNoteLink(null);
           setForcedAction({ id: Date.now(), action: 'idle' });
-          triggerSpeech('Draf ditutup tanpa disimpan ke Vault 🍃', 3000);
+          triggerSpeech('Draf ditutup tanpa disimpan ke Pustaka.', 3000);
         }}
         link={holdingNoteLink}
         onSaveAndFeed={handleSaveAndFeed}

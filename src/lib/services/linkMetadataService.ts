@@ -51,15 +51,48 @@ export async function resolveLinkMetadata(
     }
   }
 
-  // 2. Intelligent Slug & Context Parser for Web, Threads, TikTok, Instagram
+  // 2. Intelligent Metadata & Thumbnail Resolver for Web, Articles, and Blogs
+  let fetchedThumbnail: string | undefined;
+  let fetchedTitle: string | undefined;
+  let fetchedAuthor: string | undefined;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    const metaUrl = `https://api.microlink.io?url=${encodeURIComponent(cleanUrl)}`;
+    const res = await fetch(metaUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.status === 'success' && data?.data) {
+        if (data.data.image?.url && /^https?:\/\//i.test(data.data.image.url)) {
+          fetchedThumbnail = data.data.image.url;
+        }
+        if (typeof data.data.title === 'string' && data.data.title.trim().length > 3) {
+          fetchedTitle = data.data.title.trim();
+        }
+        if (typeof data.data.author === 'string' && data.data.author.trim()) {
+          fetchedAuthor = data.data.author.trim();
+        }
+      }
+    }
+  } catch {
+    // Graceful fallback to slug title below
+  }
+
+  // 3. Fallback Slug & Context Parser
   const slugTitle = parseTitleFromUrl(cleanUrl, domain);
 
   return {
     url: cleanUrl,
-    title: slugTitle,
+    title: fetchedTitle || slugTitle,
+    author: fetchedAuthor,
     platform,
     domain,
-    isRealMetadata: false,
+    thumbnailUrl: fetchedThumbnail,
+    isRealMetadata: Boolean(fetchedTitle || fetchedThumbnail),
   };
 }
 

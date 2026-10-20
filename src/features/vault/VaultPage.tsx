@@ -1,50 +1,246 @@
-import type { FC, FormEvent } from 'react';
-import { useState } from 'react';
-import type { SavedLink, PlatformType, LinkStatus } from '../../lib/types';
-import { detectPlatform, isValidUrl, cn } from '../../lib/utils';
-import { normalizeUrl } from '../../lib/utils/urlUtils';
-import { Badge } from '../../components/ui/Badge';
+import type { FC } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { SavedLink, LinkStatus } from '../../lib/types';
+import { detectPlatform, getYouTubeThumbnail, cn } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
-import { Search, Plus, ExternalLink, Trash2, Bookmark, Pencil, Check, RefreshCw, AlertTriangle } from 'lucide-react';
+import {
+  Search,
+  ExternalLink,
+  Trash2,
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Pencil,
+  Check,
+  RefreshCw,
+  AlertTriangle,
+  BookOpen,
+  X,
+  CheckCircle2,
+  Clock,
+  ListFilter,
+} from 'lucide-react';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 import { synthesizeLink } from '../../lib/services/aiSynthesisService';
+import { formatStructuredNotes, getNoteViewSections, noteTextForDraft } from '../../lib/utils/noteView';
+import { VaultBookArtwork } from './VaultBookArtwork';
+import { VaultReadingSections } from './VaultReadingSections';
+import type { LibraryMochiActivity } from './LibraryMochi';
+import { LibraryMochi } from './LibraryMochi';
+import libraryBg from '../../assets/library-front-bg.jpg';
 
 export interface VaultPageProps {
   links: SavedLink[];
-  onAddLink: (link: SavedLink) => Promise<LinkRewardResult | void>;
+  onAddLink?: (link: SavedLink) => Promise<LinkRewardResult | void>;
   onUpdateLink?: (id: string, updates: Partial<SavedLink>) => Promise<SavedLink | void>;
   onDeleteLink: (id: string) => void;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
   isNightMode?: boolean;
 }
 
+const MOCHI_ACTIVITIES: LibraryMochiActivity[] = [
+  'reading',
+  'scribbling',
+  'adjusting-glasses',
+  'cheering',
+  'drowsy',
+];
+
+const MOCHI_SPEECH_POOLS: Record<LibraryMochiActivity, string[]> = {
+  reading: [
+    'Ssst... lagi asyik membaca intisari materi di rak buku.',
+    'Buku adalah jendela dunia... banyak wawasan baru tersimpan di sini.',
+    'Mochi senang sekali berada di perpustakaan yang hangat ini.',
+  ],
+  scribbling: [
+    'Catat poin pentingnya biar ilmunya nempel di kepala.',
+    'Mochi lagi merangkum gagasan kunci dari materi favoritmu.',
+    'Satu catatan kecil hari ini bisa jadi pemahaman besar besok.',
+  ],
+  'adjusting-glasses': [
+    'Hmm... kacamata pustakawan Mochi sudah kelihatan pas kan?',
+    'Analisis mendalam butuh ketelitian ekstra... sekarang Mochi paham.',
+    'Fokus membaca intisari empat lapis biar makin tercerahkan.',
+  ],
+  drowsy: [
+    'Hoaaam... membaca banyak lembaran bikin kelopak mata Mochi berat.',
+    'Zzz... istirahat lima menit ya, habis itu kita lanjut belajar lagi.',
+    'Suasana perpustakaan tenang begini memang bikin adem dan ngantuk.',
+  ],
+  cheering: [
+    'Semangat belajar! Otak kita makin kaya ilmu baru hari ini.',
+    'Mochi suka banget kalau kita rajin membaca dan menyerap ilmu.',
+  ],
+};
+
 export const VaultPage: FC<VaultPageProps> = ({
   links,
-  onAddLink,
+  onAddLink: _onAddLink,
   onUpdateLink,
   onDeleteLink,
   onUpdateStatus,
   isNightMode = false,
 }) => {
-  const [urlInput, setUrlInput] = useState('');
-  const [customTitle, setCustomTitle] = useState('');
-  const [customNotes, setCustomNotes] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
-  const [isSavingLink, setIsSavingLink] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
-  const [isAddingOpen, setIsAddingOpen] = useState(false);
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [retryingLinkId, setRetryingLinkId] = useState<string | null>(null);
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [currentDay, setCurrentDay] = useState(() => new Date().toDateString());
+
+  // Mochi interactive activities and speech in diorama
+  const [mochiActivity, setMochiActivity] = useState<LibraryMochiActivity>('reading');
+  const [mochiSpeech, setMochiSpeech] = useState<string | null>(null);
+  const [recommendedLink, setRecommendedLink] = useState<SavedLink | null>(null);
+  const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+    };
+  }, []);
+
+  // Idle gentle activity rotation every 14 seconds when shelf is viewed
+  const startIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearInterval(idleTimerRef.current);
+    if (selectedLinkId || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) {
+      return;
+    }
+
+    const idleSequence: LibraryMochiActivity[] = [
+      'reading',
+      'scribbling',
+      'reading',
+      'adjusting-glasses',
+      'reading',
+      'drowsy',
+    ];
+    let step = 0;
+    idleTimerRef.current = setInterval(() => {
+      step = (step + 1) % idleSequence.length;
+      setMochiActivity(idleSequence[step]);
+    }, 14_000);
+  }, [selectedLinkId]);
+
+  useEffect(() => {
+    startIdleTimer();
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        if (idleTimerRef.current) clearInterval(idleTimerRef.current);
+        idleTimerRef.current = null;
+      } else {
+        startIdleTimer();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    return () => {
+      if (idleTimerRef.current) clearInterval(idleTimerRef.current);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
+  }, [startIdleTimer]);
+
+  const handleMochiTap = () => {
+    // Pure activity transition calculation outside updater (React Strict Mode compliant)
+    const currentIndex = MOCHI_ACTIVITIES.indexOf(mochiActivity);
+    const next = MOCHI_ACTIVITIES[(currentIndex + 1) % MOCHI_ACTIVITIES.length];
+    setMochiActivity(next);
+
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+      speechTimeoutRef.current = null;
+    }
+
+    if (next === 'cheering' && links.length > 0) {
+      const randomLink = links[Math.floor(Math.random() * links.length)];
+      setRecommendedLink(randomLink);
+      setMochiSpeech('Yuk baca materi pilihan Mochi ini!');
+      speechTimeoutRef.current = setTimeout(() => {
+        setMochiSpeech(null);
+        setRecommendedLink(null);
+      }, 8500);
+    } else {
+      setRecommendedLink(null);
+      const pool = MOCHI_SPEECH_POOLS[next];
+      const line = pool[Math.floor(Math.random() * pool.length)];
+      setMochiSpeech(line);
+
+      speechTimeoutRef.current = setTimeout(() => {
+        setMochiSpeech(null);
+      }, 4200);
+    }
+
+    // Reset idle timer so it doesn't immediately overwrite the user's tapped pose
+    startIdleTimer();
+  };
+
+  useEffect(() => {
+    const refreshDay = () => setCurrentDay(new Date().toDateString());
+    const interval = window.setInterval(refreshDay, 60_000);
+    window.addEventListener('focus', refreshDay);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshDay);
+    };
+  }, []);
+
+  // Telegram Mini App Native BackButton Integration
+  useEffect(() => {
+    const tg = (window as unknown as {
+      Telegram?: {
+        WebApp?: {
+          BackButton?: {
+            show?: () => void;
+            hide?: () => void;
+            onClick?: (cb: () => void) => void;
+            offClick?: (cb: () => void) => void;
+          };
+        };
+      };
+    })?.Telegram?.WebApp;
+
+    const backButton = tg?.BackButton;
+    if (!backButton) return;
+
+    if (selectedLinkId) {
+      const handleBack = () => {
+        setSelectedLinkId(null);
+        setPlayingVideoId(null);
+        setEditingLinkId(null);
+        setConfirmDeleteId(null);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      };
+      backButton.show?.();
+      backButton.onClick?.(handleBack);
+      return () => {
+        backButton.offClick?.(handleBack);
+        backButton.hide?.();
+      };
+    } else {
+      backButton.hide?.();
+    }
+  }, [selectedLinkId]);
 
   // Card edit mode states
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editSummary, setEditSummary] = useState('');
-
-  const categories = ['All', 'Shorts & Reels', 'Tech', 'Cooking', 'Business', 'Design'];
+  const [editThumbnailUrl, setEditThumbnailUrl] = useState('');
 
   // Status counts for tabs
   const toReviewCount = links.filter(l => l.status === 'to_review').length;
@@ -54,20 +250,26 @@ export const VaultPage: FC<VaultPageProps> = ({
   const handleStartEdit = (link: SavedLink) => {
     setEditingLinkId(link.id);
     setEditTitle(link.title);
-    setEditNotes(link.notes || '');
+    setEditNotes(noteTextForDraft(link));
     setEditSummary(link.summary || '');
+    setEditThumbnailUrl(link.thumbnailUrl || '');
   };
 
-  const handleSaveEdit = (id: string) => {
+  const handleSaveEdit = async (id: string) => {
     if (onUpdateLink) {
-      onUpdateLink(id, {
-        title: editTitle.trim() || 'Saved Material',
-        notes: editNotes.trim(),
-        summary: editSummary.trim(),
-      });
-      setEditingLinkId(null);
-      setSuccessToast('✨ Study material updated successfully!');
-      setTimeout(() => setSuccessToast(null), 3000);
+      try {
+        await onUpdateLink(id, {
+          title: editTitle.trim() || 'Materi tersimpan',
+          notes: editNotes.trim(),
+          summary: editSummary.trim(),
+          thumbnailUrl: editThumbnailUrl.trim() || undefined,
+        });
+        setEditingLinkId(null);
+        setSuccessToast('Catatan berhasil diperbarui.');
+        setTimeout(() => setSuccessToast(null), 3000);
+      } catch {
+        setUrlError('Gagal menyimpan perubahan. Coba lagi.');
+      }
     }
   };
 
@@ -79,6 +281,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       if (onUpdateLink) {
         await onUpdateLink(link.id, {
           title: res.content.title || link.title,
+          thumbnailUrl: res.content.thumbnailUrl || link.thumbnailUrl,
           category: res.content.category || link.category,
           coreThesis: res.content.coreThesis || link.coreThesis,
           keyTakeaways: res.content.keyTakeaways || link.keyTakeaways,
@@ -113,590 +316,677 @@ export const VaultPage: FC<VaultPageProps> = ({
     }
   };
 
-  const handleAddSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (isSavingLink) return;
-    const trimmedUrl = urlInput.trim();
 
-    if (!trimmedUrl) {
-      setUrlError('Masukkan URL link atau tempel JSON dari Sol.');
-      return;
+
+  const tagCounts = new Map<string, number>();
+  for (const link of links) {
+    for (const tag of link.tags) {
+      const normalized = tag.replace(/^#/, '').toLowerCase();
+      if (normalized) tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
     }
+  }
+  const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-    // Direct AI JSON import from ChatGPT / Sol Codex
-    if (trimmedUrl.startsWith('{') && trimmedUrl.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(trimmedUrl);
-        if (parsed.title) {
-          const now = Date.now();
-          const targetUrl = parsed.url || `https://vault.petalife.local/imported-${now}`;
-          const { platform, domain } = detectPlatform(targetUrl);
-          const newLink: SavedLink = {
-            id: `link-${now}`,
-            url: targetUrl,
-            title: parsed.title,
-            platform,
-            domain,
-            tags: Array.isArray(parsed.tags) ? parsed.tags : ['#ai', '#imported'],
-            status: 'to_review',
-            dateAdded: 'Baru saja',
-            createdAt: now,
-            updatedAt: now,
-            category: parsed.category,
-            coreThesis: parsed.coreThesis,
-            keyTakeaways: parsed.keyTakeaways,
-            actionableInsights: parsed.actionableInsights,
-            reflectionPrompt: parsed.reflectionPrompt,
-            notes: parsed.notes || parsed.coreThesis || 'Imported from AI Sol',
-            summary: parsed.coreThesis || parsed.title,
-          };
+  const filteredLinks = links
+    .filter(link => {
+      const q = searchQuery.trim().toLowerCase();
+      const searchable = [link.title, link.domain, link.notes, link.summary, link.category, ...link.tags].join(' ').toLowerCase();
+      return (!q || searchable.includes(q))
+        && (selectedCategory === 'All' || link.tags.some(tag => tag.replace(/^#/, '').toLowerCase() === selectedCategory))
+        && (selectedStatusFilter === 'all' || link.status === selectedStatusFilter);
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
 
-          setIsSavingLink(true);
-          try {
-            const rewardRes = await onAddLink(newLink);
-            const isAwarded = rewardRes ? rewardRes.awarded : false;
-            setUrlInput('');
-            setCustomTitle('');
-            setCustomNotes('');
-            setIsAddingOpen(false);
-            const rewardText = isAwarded ? ' (+10 XP)' : '';
-            setSuccessToast(`🎉 Berhasil mengimpor ringkasan AI: "${parsed.title}"${rewardText}`);
-            setTimeout(() => setSuccessToast(null), 3500);
-            return;
-          } finally {
-            setIsSavingLink(false);
-          }
-        }
-      } catch {
-        // Fall through to normal URL validation
-      }
+  const selectedLink = links.find(link => link.id === selectedLinkId);
+  const youtubeVideoId = selectedLink?.platform === 'youtube'
+    ? getYouTubeThumbnail(selectedLink.url)?.match(/\/vi\/([A-Za-z0-9_-]{11})\//)?.[1]
+    : undefined;
+  const selectedIndex = selectedLink ? filteredLinks.findIndex(link => link.id === selectedLink.id) : -1;
+  const todayLinks = filteredLinks.filter(link => new Date(link.createdAt).toDateString() === currentDay);
+  const olderLinks = filteredLinks.filter(link => new Date(link.createdAt).toDateString() !== currentDay);
+
+  const noteSections = (() => {
+    if (!selectedLink) return [];
+    const rawNotes = selectedLink.notes ? noteTextForDraft(selectedLink) : '';
+    // A saved manual edit wins over older AI fields; only reconstruct when notes are absent.
+    if (rawNotes.trim()) {
+      return getNoteViewSections(rawNotes);
     }
+    return getNoteViewSections(formatStructuredNotes(selectedLink) || selectedLink.summary || '');
+  })();
 
-    if (!isValidUrl(trimmedUrl)) {
-      setUrlError('Format tautan tidak valid atau JSON tidak lengkap. Masukkan URL (contoh: youtube.com) atau JSON AI.');
-      return;
-    }
+  const renderShelf = (items: SavedLink[], label: string) => items.length > 0 && (
+    <section aria-label={label} className="space-y-3">
+      {/* Shelf Header */}
+      <div className="flex items-center gap-3 px-1">
+        <h2 className="shrink-0 text-sm font-bold text-[#5F5245]">
+          {label} <span className="text-[#947C62] font-semibold">{items.length}</span>
+        </h2>
+        <div className="h-px flex-1 bg-[#EAE3D5]" />
+      </div>
 
-    const targetNormalized = normalizeUrl(trimmedUrl);
-    const isDuplicate = links.some(l => normalizeUrl(l.url) === targetNormalized);
+      {/* 3-Column Cozy Book Grid */}
+      <div className="grid grid-cols-3 gap-3 px-0.5">
+        {items.map(link => (
+          <button
+            key={link.id}
+            type="button"
+            onClick={() => {
+              setSelectedLinkId(link.id);
+              setPlayingVideoId(null);
+              setEditingLinkId(null);
+              window.scrollTo({ top: 0, behavior: 'instant' });
+            }}
+            aria-label={`Buka materi: ${link.title}`}
+            className="group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-200 active:scale-[0.98] hover:-translate-y-0.5"
+          >
+            {/* Book Spine & Cover Container */}
+            <div className="relative w-full rounded-2xl overflow-hidden border border-[#CDBB9E] bg-[#E6D4B8] p-1 shadow-[2px_3px_0_#B79368,3px_5px_9px_#66503928]">
+              <VaultBookArtwork link={link} />
+            </div>
 
-    if (isDuplicate) {
-      setUrlError('This link is already saved in your Vault! Review it or take notes instead.');
-      return;
-    }
+            {/* Book Title & Platform Subtitle */}
+            <span
+              className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#8B451C] transition-colors leading-snug"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {link.title}
+            </span>
+            <span className="mt-0.5 max-w-full truncate text-[10px] font-medium text-[#73685E]">
+              {link.domain}
+            </span>
+          </button>
+        ))}
+      </div>
 
-    setUrlError(null);
-    const { platform, domain } = detectPlatform(trimmedUrl);
-
-    // Auto title if user left it blank
-    const title = customTitle.trim() || `Saved ${domain} Video Clip #${links.length + 1}`;
-    const now = Date.now();
-
-    const newLink: SavedLink = {
-      id: `link-${now}`,
-      url: trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`,
-      title,
-      platform,
-      domain,
-      tags: [platform === 'youtube' || platform === 'tiktok' || platform === 'instagram' ? 'shorts' : 'article', 'new'],
-      status: 'to_review',
-      dateAdded: 'Just now',
-      createdAt: now,
-      updatedAt: now,
-      notes: customNotes.trim() || 'Added from quick capture.',
-      summary: 'Ready for study and personal reflection.'
-    };
-
-    setIsSavingLink(true);
-    try {
-      const rewardRes = await onAddLink(newLink);
-      const isAwarded = rewardRes ? rewardRes.awarded : false;
-      setUrlInput('');
-      setCustomTitle('');
-      setCustomNotes('');
-      setIsAddingOpen(false);
-      let rewardNotice = ' (Daily 3-reward cap reached)';
-      if (isAwarded) {
-        rewardNotice = ` (+10 XP) [${rewardRes?.countToday ?? 1}/3 today]`;
-      } else if (rewardRes?.reason === 'storage_error') {
-        rewardNotice = ' (Reward storage offline)';
-      } else if (rewardRes?.reason === 'already_claimed') {
-        rewardNotice = ' (Reward already claimed today)';
-      }
-      setSuccessToast(`🎉 Saved to Vault: "${title}"${rewardNotice}`);
-      setTimeout(() => setSuccessToast(null), 3000);
-    } catch {
-      setUrlError('Could not save this link locally. Check storage and try again.');
-    } finally {
-      setIsSavingLink(false);
-    }
-  };
-
-  // Filter links by search, category, and learning status
-  const filteredLinks = links.filter(link => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      !q ||
-      link.title.toLowerCase().includes(q) ||
-      link.domain.toLowerCase().includes(q) ||
-      (link.notes && link.notes.toLowerCase().includes(q)) ||
-      (link.summary && link.summary.toLowerCase().includes(q)) ||
-      link.tags.some(t => t.toLowerCase().includes(q));
-
-    if (!matchesSearch) return false;
-
-    // Category filter
-    if (selectedCategory === 'Shorts & Reels') {
-      if (link.platform !== 'tiktok' && link.platform !== 'youtube' && link.platform !== 'instagram') {
-        return false;
-      }
-    } else if (selectedCategory !== 'All') {
-      const matchCat = link.tags.some(t => t.toLowerCase() === selectedCategory.toLowerCase());
-      if (!matchCat) return false;
-    }
-
-    // Status filter
-    if (selectedStatusFilter !== 'all' && link.status !== selectedStatusFilter) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const getPlatformBadge = (platform: PlatformType, domain: string) => {
-    switch (platform) {
-      case 'youtube':
-        return <Badge variant="peach" size="sm">▶️ {domain}</Badge>;
-      case 'tiktok':
-        return <Badge variant="pink" size="sm">🎵 {domain}</Badge>;
-      case 'instagram':
-        return <Badge variant="lavender" size="sm">📸 {domain}</Badge>;
-      default:
-        return <Badge variant="mint" size="sm">🌐 {domain}</Badge>;
-    }
-  };
+      {/* Tamagotchi/Animal Crossing Beech Wood Shelf Plank */}
+      <div className="relative pt-1 pb-2">
+        <div className="h-3.5 w-full rounded-md border-b-[3px] border-[#B98653] bg-gradient-to-b from-[#F2D5AC] to-[#D8AA76] shadow-[0_4px_7px_#77532D33]" aria-hidden="true" />
+      </div>
+    </section>
+  );
 
   return (
-    <div className="space-y-4 max-w-md mx-auto">
-      {/* Top Banner & Quick Add Card */}
-      <div
-        className={cn(
-          'rounded-3xl p-4 sm:p-5 shadow-xs border transition-colors duration-700',
-          isNightMode
-            ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-            : 'bg-[#FAF7F2] border-[#ECE6DB]'
-        )}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div>
-            <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-[#9E410E]" />
-              <span>Capture & Study Material Vault</span>
-            </h3>
-            <p className="text-xs sm:text-sm text-[#4A4A5A]">
-              Save links from YouTube, TikTok, Reels, or blogs to build your visual learning vault.
-            </p>
+    <div className="w-full max-w-md mx-auto space-y-4 pb-6">
+      {!selectedLink && (
+        <header className="flex min-h-11 items-center justify-between gap-2 px-2">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-[#5B5660]">Koleksi belajarmu</p>
+            <h1 className="font-display text-[20px] font-extrabold leading-tight text-[#2E2E3A]">Pustaka</h1>
           </div>
-          <Button
-            onClick={() => setIsAddingOpen(!isAddingOpen)}
-            variant={isAddingOpen ? 'outline' : 'peach'}
-            size="sm"
-            className="self-start sm:self-auto cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{isAddingOpen ? 'Close Form' : 'Add Link'}</span>
-          </Button>
-        </div>
+        </header>
+      )}
+      {selectedLink ? (
+        /* =========================================================================
+           READING VIEW (HALAMAN BACA MATERI) - HARMONIZED WITH PETALIFE SECOND BRAIN
+           ========================================================================= */
+        <div className="space-y-4 anim-page-enter pb-24">
+          {/* Top Bar: Back to Shelf & Counter */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedLinkId(null);
+                setPlayingVideoId(null);
+                setEditingLinkId(null);
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white border border-[#EAE3D5] px-4 py-2 text-xs font-bold text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-[#D97736] cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4 text-[#BA5218]" />
+              <span>Kembali ke Rak</span>
+            </button>
 
-        {/* Success Toast */}
-        {successToast && (
-          <div role="status" className="mb-4 p-3 rounded-2xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#36955E] flex items-center gap-2 animate-fade-in">
-            <span>✅</span>
-            <span>{successToast}</span>
+            <span className="text-xs font-semibold text-[#7A6E60]">
+              {selectedIndex >= 0 ? `Materi ${selectedIndex + 1} dari ${filteredLinks.length}` : 'Catatan Pustaka'}
+            </span>
           </div>
-        )}
 
-        {/* Input Form */}
-        {isAddingOpen && (
-          <form onSubmit={handleAddSubmit} className="space-y-3 pt-3 border-t border-[#F2ECE1]">
-            <div>
-              <label className="block text-xs font-bold text-[#4A4A5A] mb-1">
-                Link URL *
-              </label>
-              <input
-                type="text"
-                value={urlInput}
-                onChange={e => {
-                  setUrlInput(e.target.value);
-                  if (urlError) setUrlError(null);
-                }}
-                placeholder="Tempel tautan (YouTube, Threads, web) atau tempel JSON dari Sol..."
-                className={`w-full text-xs sm:text-sm px-4 py-3 rounded-2xl border ${
-                  isNightMode ? 'bg-[#F2EBE0]' : 'bg-[#FAF7F2]'
-                } text-[#2E2E3A] focus:outline-none focus:ring-2 transition-all ${
-                  urlError
-                    ? 'border-[#E57399] focus:ring-[#E57399]/30 bg-[#FDF0F4]'
-                    : isNightMode
-                      ? 'border-[#E2D8C9] focus:ring-[#FED7C5] focus:bg-[#FAF6EE]'
-                      : 'border-[#EAE6DF] focus:ring-[#FED7C5] focus:bg-[#FFFDF9]'
-                }`}
-              />
-              {urlError && (
-                <p role="alert" className="text-[11px] font-semibold text-[#C44A72] mt-1 pl-1">
-                  ⚠️ {urlError}
-                </p>
+          {/* Reading Card: Mochi Study Desk Card */}
+          <article className="relative overflow-hidden rounded-[32px] border border-[#E8DFCF] bg-[#FFFCF7] p-5 sm:p-6 shadow-[0_8px_24px_#70523914] space-y-5">
+            {/* Meta Header */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#EAE3D5]">
+              <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                <span className="rounded-full bg-white border border-[#EAE3D5] px-3 py-1 text-[#BA5218] shadow-2xs">
+                  {selectedLink.domain}
+                </span>
+                <span className="text-[#8C8275] text-[11px] font-medium">
+                  {new Date(selectedLink.createdAt).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+
+              {selectedLink.qualityStatus && (
+                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold bg-[#EBF1E6] text-[#1E6B3B] border border-[#D1E2C9]">
+                  {selectedLink.qualityStatus === 'grounded' ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Teks Terverifikasi</span>
+                    </>
+                  ) : selectedLink.qualityStatus === 'needs_context' ? (
+                    <>
+                      <Clock className="w-3.5 h-3.5 text-[#D97736]" />
+                      <span className="text-[#D97736]">Perlu Konteks</span>
+                    </>
+                  ) : selectedLink.qualityStatus === 'gateway_error' ? (
+                    <>
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#BA5218]" />
+                      <span className="text-[#BA5218]">Gateway Bermasalah</span>
+                    </>
+                  ) : (
+                    <span>Bookmark</span>
+                  )}
+                </span>
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#4A4A5A] mb-1">
-                Custom Title (Optional)
-              </label>
-              <input
-                type="text"
-                value={customTitle}
-                onChange={e => setCustomTitle(e.target.value)}
-                placeholder="e.g. 5 Rules for Clean Python Code"
-                className={`w-full text-xs sm:text-sm px-4 py-2.5 rounded-2xl border ${
-                  isNightMode
-                    ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
-                    : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
-                } text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] transition-all`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#4A4A5A] mb-1">
-                Catatan & Intisari Pembelajaran
-              </label>
-              <textarea
-                value={customNotes}
-                onChange={e => setCustomNotes(e.target.value)}
-                placeholder="What is the key lesson or recipe ingredient in this clip?"
-                rows={2}
-                className={`w-full text-xs sm:text-sm p-3 rounded-2xl border ${
-                  isNightMode
-                    ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
-                    : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
-                } text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#FED7C5] resize-none`}
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsAddingOpen(false);
-                  setUrlError(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="peach" size="sm" disabled={isSavingLink}>
-                <span>{isSavingLink ? 'Saving…' : 'Save to Vault (+10 XP)'}</span>
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* Search & Multi-Filter Controls */}
-      <div className="space-y-3">
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-[#5A5A6E] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search by title, notes, platform, or #tag..."
-            className={cn(
-              'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#5A5A6E] focus:outline-none focus:ring-2 focus:ring-[#BA5218] shadow-xs transition-colors duration-700',
-              isNightMode
-                ? 'bg-[#F2EBE0] border-[#E2D8C9]'
-                : 'bg-[#FAF7F2] border-[#ECE6DB]'
-            )}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              aria-label="Hapus pencarian"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#5A5A6E] hover:text-[#2E2E3A] px-1.5 py-0.5 rounded cursor-pointer"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Learning Status Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            onClick={() => setSelectedStatusFilter('all')}
-            className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
-              selectedStatusFilter === 'all'
-                ? 'bg-[#2E2E3A] text-white border-[#2E2E3A] shadow-xs'
-                : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
-            }`}
-          >
-            All Materials ({links.length})
-          </button>
-          <button
-            onClick={() => setSelectedStatusFilter('to_review')}
-            className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
-              selectedStatusFilter === 'to_review'
-                ? 'bg-[#FFEFE8] text-[#9E410E] border-[#FED7C5] shadow-xs'
-                : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
-            }`}
-          >
-            ⏳ To Review ({toReviewCount})
-          </button>
-          <button
-            onClick={() => setSelectedStatusFilter('in_progress')}
-            className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
-              selectedStatusFilter === 'in_progress'
-                ? 'bg-[#EDE8FA] text-[#483696] border-[#C8BDEB] shadow-xs'
-                : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
-            }`}
-          >
-            📖 Studying ({inProgressCount})
-          </button>
-          <button
-            onClick={() => setSelectedStatusFilter('completed')}
-            className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
-              selectedStatusFilter === 'completed'
-                ? 'bg-[#EAF6EE] text-[#1E6B3B] border-[#CCEBD6] shadow-xs'
-                : isNightMode
-                  ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                  : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
-            }`}
-          >
-            ✅ Mastered ({completedCount})
-          </button>
-        </div>
-
-        {/* Category Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all cursor-pointer whitespace-nowrap ${
-                selectedCategory === cat
-                  ? 'bg-[#FED7C5] text-[#7A3613] border-[#F4A261]/40 font-bold shadow-xs'
-                  : isNightMode
-                    ? 'bg-[#F2EBE0] text-[#3E3E4E] border-[#E2D8C9] hover:bg-[#EAE2D5]'
-                    : 'bg-[#FAF7F2] text-[#3E3E4E] border-[#ECE6DB] hover:bg-[#F3EDE2]'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Links Grid */}
-      {filteredLinks.length === 0 ? (
-        <div
-          className={cn(
-            'rounded-3xl p-10 border text-center space-y-2 transition-colors duration-700',
-            isNightMode
-              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-[#FAF7F2] border-[#ECE6DB]'
-          )}
-        >
-          <div className="text-3xl">🔍</div>
-          <h4 className="font-extrabold text-sm text-[#2E2E3A]">No saved materials found</h4>
-          <p className="text-xs text-[#828292] max-w-sm mx-auto">
-            Try adjusting your search query, change your filter tab, or save a new link above!
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3.5">
-          {filteredLinks.map(link => {
-            const isEditing = editingLinkId === link.id;
-
-            return (
-              <div
-                key={link.id}
-                className={cn(
-                  'rounded-3xl p-4 sm:p-5 border shadow-xs hover:shadow-sm transition-colors duration-700 flex flex-col justify-between',
-                  isNightMode
-                    ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:border-[#DCD6F3]'
-                    : 'bg-[#FAF7F2] border-[#ECE6DB] hover:border-[#DCD6F3]'
-                )}
-              >
+            {editingLinkId === selectedLink.id ? (
+              /* Inline Edit Mode */
+              <div className="space-y-3.5">
                 <div>
-                  <div className="flex items-center justify-between text-xs mb-2.5">
-                    <div className="flex items-center gap-2">
-                      {getPlatformBadge(link.platform, link.domain)}
-                      {link.qualityStatus === 'grounded' && (
-                        <span className="text-[9px] font-bold text-[#1E6B3B] bg-[#EAF6EE] px-2 py-0.5 rounded-full border border-[#CCEBD6]">
-                          🌱 Grounded
-                        </span>
-                      )}
-                      {link.qualityStatus === 'needs_context' && (
-                        <span className="text-[9px] font-bold text-[#9E5D0E] bg-[#FFF4E5] px-2 py-0.5 rounded-full border border-[#FAD8A5]">
-                          💬 Butuh Konteks
-                        </span>
-                      )}
-                      {link.qualityStatus === 'bookmark_only' && (
-                        <span className="text-[9px] font-bold text-[#6E6458] bg-[#EFE9DF] px-2 py-0.5 rounded-full border border-[#D5CBBA]">
-                          📌 Bookmark Saja
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[11px] text-[#525266] font-medium">{link.dateAdded}</span>
-                  </div>
+                  <label htmlFor="edit-title" className="block text-xs font-bold text-[#4E4E5E] mb-1">
+                    Judul Materi
+                  </label>
+                  <input
+                    id="edit-title"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    className="w-full text-sm font-bold text-[#2E2E3A] p-3 rounded-2xl border border-[#EAE3D5] bg-white focus:outline-none focus:ring-2 focus:ring-[#FED7C5]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-notes" className="block text-xs font-bold text-[#4E4E5E] mb-1">
+                    Catatan & Intisari
+                  </label>
+                  <textarea
+                    id="edit-notes"
+                    value={editNotes}
+                    onChange={e => setEditNotes(e.target.value)}
+                    rows={12}
+                    className="w-full text-sm text-[#2E2E3A] p-3.5 rounded-2xl border border-[#EAE3D5] bg-white focus:outline-none focus:ring-2 focus:ring-[#FED7C5] leading-relaxed"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-summary" className="block text-xs font-bold text-[#4E4E5E] mb-1">
+                    Ringkasan Singkat (Opsional)
+                  </label>
+                  <input
+                    id="edit-summary"
+                    value={editSummary}
+                    onChange={e => setEditSummary(e.target.value)}
+                    className="w-full text-xs text-[#2E2E3A] p-3 rounded-2xl border border-[#EAE3D5] bg-white focus:outline-none focus:ring-2 focus:ring-[#FED7C5]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-thumbnail" className="block text-xs font-bold text-[#4E4E5E] mb-1">
+                    URL Gambar Sampul / Thumbnail (Opsional)
+                  </label>
+                  <input
+                    id="edit-thumbnail"
+                    type="url"
+                    placeholder="https://..."
+                    value={editThumbnailUrl}
+                    onChange={e => setEditThumbnailUrl(e.target.value)}
+                    className="w-full text-xs text-[#2E2E3A] p-3 rounded-2xl border border-[#EAE3D5] bg-white focus:outline-none focus:ring-2 focus:ring-[#FED7C5]"
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="button" variant="ghost" onClick={() => setEditingLinkId(null)}>
+                    Batal
+                  </Button>
+                  <Button type="button" variant="peach" onClick={() => void handleSaveEdit(selectedLink.id)}>
+                    <Check className="h-4 w-4 mr-1.5" /> Simpan Perubahan
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Content Display Mode */
+              <>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-[#2E2E3A] tracking-tight leading-snug text-balance">
+                  {selectedLink.title}
+                </h1>
 
-                  {isEditing ? (
-                    <div className="space-y-2 mb-3">
-                      <input
-                        type="text"
-                        value={editTitle}
-                        onChange={e => setEditTitle(e.target.value)}
-                        placeholder="Material Title"
-                        className="w-full text-xs font-bold px-3 py-1.5 rounded-xl border border-[#FED7C5] bg-[#FAF7F2]"
+                {/* Media Preview / Video Player Container */}
+                <div className="space-y-2">
+                  {youtubeVideoId && playingVideoId === selectedLink.id ? (
+                    <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-[#EAE3D5] shadow-sm bg-black">
+                      <iframe
+                        title={`Putar ${selectedLink.title}`}
+                        src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`}
+                        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        className="w-full h-full border-0"
                       />
-                      <textarea
-                        value={editNotes}
-                        onChange={e => setEditNotes(e.target.value)}
-                        placeholder="Study notes / key takeaway"
-                        rows={2}
-                        className="w-full text-xs p-2.5 rounded-xl border border-[#FED7C5] bg-[#FAF7F2] resize-none"
-                      />
-                      <div className="flex justify-end gap-1.5">
-                        <Button onClick={() => setEditingLinkId(null)} variant="ghost" size="sm">
-                          Cancel
-                        </Button>
-                        <Button onClick={() => handleSaveEdit(link.id)} variant="peach" size="sm">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Save Changes</span>
-                        </Button>
-                      </div>
                     </div>
+                  ) : youtubeVideoId ? (
+                    <button
+                      type="button"
+                      onClick={() => setPlayingVideoId(selectedLink.id)}
+                      aria-label={`Putar video ${selectedLink.title}`}
+                      className="group block w-full rounded-2xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] cursor-pointer"
+                    >
+                      <VaultBookArtwork link={selectedLink} large />
+                    </button>
                   ) : (
-                    <>
-                      <h4 className="font-extrabold text-sm text-[#2E2E3A] leading-snug mb-2">
-                        {link.title}
-                      </h4>
-
-                      {/* Honest Gateway Fallback / Error Banner (Sol ADR-002) */}
-                      {(link.qualityStatus === 'gateway_error' || link.qualityStatus === 'needs_context') && (
-                        <div className="mb-3 p-3 rounded-2xl bg-[#FFF5F2] border border-[#FED7C5] text-xs space-y-1.5 select-none">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-start gap-1.5 min-w-0">
-                              <AlertTriangle className="w-4 h-4 text-[#BA5218] shrink-0 mt-0.5" />
-                              <div className="min-w-0">
-                                <p className="font-bold text-[#BA5218]">
-                                  {link.gatewayErrorMessage || (link.qualityStatus === 'needs_context' ? 'Transkrip video belum tersedia' : 'Koneksi Brain Gateway terputus')}
-                                </p>
-                                <p className="text-[11px] text-[#7A3613] mt-0.5 leading-snug">
-                                  {link.gatewayErrorAction || (link.qualityStatus === 'needs_context' ? 'Tambah caption/cuplikan teks materi untuk intisari.' : 'Periksa koneksi gateway atau coba lagi.')}
-                                </p>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRetrySynthesis(link)}
-                              disabled={retryingLinkId === link.id}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#BA5218] text-white text-[11px] font-bold rounded-xl shrink-0 hover:bg-[#9E410E] active:scale-95 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
-                            >
-                              <RefreshCw className={`w-3 h-3 ${retryingLinkId === link.id ? 'animate-spin' : ''}`} />
-                              <span>{retryingLinkId === link.id ? 'Memproses...' : 'Sintesis Ulang'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {(link.summary || link.notes) && (
-                        <div className="text-xs text-[#3E3E4E] mb-3 bg-[#FAF7F2] p-3 rounded-2xl border border-[#EFE8DD] leading-relaxed whitespace-pre-wrap font-normal">
-                          {link.notes || link.summary}
-                        </div>
-                      )}
-                    </>
+                    <a
+                      href={selectedLink.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Buka sumber asli ${selectedLink.title}`}
+                      className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]"
+                    >
+                      <VaultBookArtwork link={selectedLink} large />
+                    </a>
                   )}
 
-                  {/* Tags */}
-                  <div className="flex items-center gap-1.5 flex-wrap mb-4">
-                    {link.tags.map(t => (
+                  {/* Single clean source link */}
+                  <div className="flex justify-end pt-0.5">
+                    <a
+                      href={selectedLink.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8C8275] hover:text-[#BA5218] transition-colors"
+                    >
+                      <span>Buka sumber asli</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Gateway Error / Needs Context Notification Banner */}
+                {(selectedLink.qualityStatus === 'gateway_error' || selectedLink.qualityStatus === 'needs_context') && (
+                  <div role="status" className="rounded-2xl border border-[#FED7C5] bg-[#FFF8F3] p-4 text-sm text-[#8B3D16] space-y-2">
+                    <p className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-[#BA5218]">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span>{selectedLink.gatewayErrorMessage || 'Materi Memerlukan Konteks Tambahan'}</span>
+                    </p>
+                    <p className="text-xs text-[#5C4535] leading-relaxed">
+                      {selectedLink.gatewayErrorAction || 'Video atau postingan belum memiliki subtitle/teks utuh. Kamu bisa menempelkan catatan manual atau mencoba sintesis ulang.'}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={retryingLinkId === selectedLink.id}
+                      onClick={() => void handleRetrySynthesis(selectedLink)}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#BA5218] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#A34310] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${retryingLinkId === selectedLink.id ? 'animate-spin' : ''}`} />
+                      <span>{retryingLinkId === selectedLink.id ? 'Memproses dari Gateway...' : 'Sintesis Ulang Sekarang'}</span>
+                    </button>
+                  </div>
+                )}
+
+                <VaultReadingSections sections={noteSections} />
+
+                {/* Tags Pill List */}
+                {selectedLink.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {selectedLink.tags.map(tag => (
                       <span
-                        key={t}
-                        className="text-[10px] text-[#3E3E4E] bg-[#F7F3E9] px-2 py-0.5 rounded-md border border-[#EAE3D5] font-semibold"
+                        key={tag}
+                        className="rounded-full bg-[#F4EBDD] border border-[#E8DFCF] px-3 py-1 text-xs font-semibold text-[#624C38]"
                       >
-                        #{t}
+                        #{tag.replace(/^#/, '')}
                       </span>
                     ))}
                   </div>
-                </div>
+                )}
+              </>
+            )}
+          </article>
 
-                {/* Card Footer: Status & Actions */}
-                <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-xs">
-                  {/* Status Selector */}
-                  <div className="flex items-center gap-1.5">
-                    <label htmlFor={`vault-status-select-${link.id}`} className="text-[10px] text-[#3E3E4E] font-bold">
-                      Status:
-                    </label>
-                    <select
-                      id={`vault-status-select-${link.id}`}
-                      aria-label={`Ubah status pembelajaran untuk ${link.title}`}
-                      value={link.status}
-                      onChange={e => {
-                        const newStatus = e.target.value as LinkStatus;
-                        onUpdateStatus(link.id, newStatus);
-                        if (newStatus === 'completed') {
-                          setSuccessToast(`🎉 "${link.title}" marked as Mastered! (+10 XP to Mochi)`);
-                          setTimeout(() => setSuccessToast(null), 3500);
-                        }
-                      }}
-                      className="text-xs font-bold bg-[#FAF7F2] border border-[#EAE6DF] rounded-lg px-2 py-1 text-[#2E2E3A] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#BA5218]"
-                    >
-                      <option value="to_review">⏳ To Review</option>
-                      <option value="in_progress">📖 Studying</option>
-                      <option value="completed">✅ Mastered</option>
-                    </select>
-                  </div>
-
-                  {/* Action Icons */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleStartEdit(link)}
-                      aria-label={`Edit ${link.title}`}
-                      className="p-1.5 text-[#5A5A6E] hover:text-[#9E410E] hover:bg-[#FFEFE8] rounded-lg transition-colors cursor-pointer"
-                      title="Edit Material"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Buka link sumber ${link.title}`}
-                      className="p-1.5 text-[#483696] hover:bg-[#EDE8FA] rounded-lg transition-colors cursor-pointer"
-                      title="Open Source Link"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    <button
-                      onClick={() => onDeleteLink(link.id)}
-                      aria-label={`Hapus ${link.title}`}
-                      className="p-1.5 text-[#A82B53] hover:bg-[#FDF0F4] rounded-lg transition-colors cursor-pointer"
-                      title="Delete Link"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+          {/* Action Dock: Status Selector, Edit, and Delete */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <label htmlFor="learning-status-select" className="text-xs font-bold text-[#6B5A4B]">
+                Status Belajar:
+              </label>
+              <div className="relative inline-flex items-center">
+                {/* Live Status Color Dot Indicator */}
+                <span
+                  className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full shadow-2xs transition-colors ${
+                    selectedLink.status === 'completed'
+                      ? 'bg-[#3D945B]'
+                      : selectedLink.status === 'in_progress'
+                        ? 'bg-[#E58B24]'
+                        : 'bg-[#A89E90]'
+                  }`}
+                  aria-hidden="true"
+                />
+                <select
+                  id="learning-status-select"
+                  value={selectedLink.status}
+                  aria-label="Status belajar materi"
+                  onChange={event => onUpdateStatus(selectedLink.id, event.target.value as LinkStatus)}
+                  className="appearance-none min-h-10 rounded-xl border border-[#E4DAC8] bg-[#FDFBF7] pl-7 pr-8 py-2 text-xs font-bold text-[#3D332A] shadow-xs cursor-pointer hover:bg-[#F7F2E8] hover:border-[#D5C6AF] focus:outline-none focus:ring-2 focus:ring-[#D97736]/25 transition-all"
+                >
+                  <option value="to_review">Belum Dibaca</option>
+                  <option value="in_progress">Sedang Belajar</option>
+                  <option value="completed">Selesai</option>
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8C7E70]"
+                  aria-hidden="true"
+                />
               </div>
-            );
-          })}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleStartEdit(selectedLink)}
+                aria-label="Edit catatan materi"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-[#E4DAC8] text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-all cursor-pointer"
+                title="Edit catatan"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(selectedLink.id)}
+                aria-label="Hapus materi dari Pustaka"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-[#FED7C5] text-[#A82B53] shadow-xs hover:bg-[#FFF0F5] active:scale-95 transition-all cursor-pointer"
+                title="Hapus materi"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Delete Confirmation Alert Modal */}
+          {confirmDeleteId === selectedLink.id && (
+            <div
+              role="group"
+              aria-label="Konfirmasi hapus catatan"
+              className="rounded-2xl border border-[#FED7C5] bg-[#FFF0F4] p-4 text-sm text-[#8B1A3B] space-y-2 animate-fade-in"
+            >
+              <p className="font-extrabold text-xs uppercase tracking-wider">Hapus materi ini dari Pustaka Mochi?</p>
+              <p className="text-xs text-[#A82B53]">Catatan dan ringkasan ini akan dihapus dari memori lokal.</p>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="min-h-10 rounded-xl border border-[#EAE3D5] bg-white px-4 text-xs font-bold text-[#4E4E5E] cursor-pointer active:scale-95 transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteLink(selectedLink.id);
+                    setSelectedLinkId(null);
+                    setConfirmDeleteId(null);
+                  }}
+                  className="min-h-10 rounded-xl bg-[#A82B53] px-4 text-xs font-bold text-white shadow-xs cursor-pointer active:scale-95 transition-all"
+                >
+                  Ya, Hapus Materi
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Book Pagination Navigator */}
+          {selectedIndex >= 0 && (
+            <div className="flex items-center justify-between rounded-2xl border border-[#E8DFCF] bg-[#FDFBF7] px-3 py-1.5 shadow-xs text-xs font-bold text-[#4E4E5E]">
+              <button
+                type="button"
+                disabled={selectedIndex === 0}
+                onClick={() => {
+                  setSelectedLinkId(filteredLinks[selectedIndex - 1].id);
+                  setPlayingVideoId(null);
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }}
+                className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-[#2E2E3A] hover:bg-[#F2ECE1] active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <ChevronLeft className="h-4 w-4 text-[#BA5218]" />
+                <span>Sebelumnya</span>
+              </button>
+
+              <div className="flex items-center text-xs font-bold text-[#6D5D4E] tracking-wide select-none">
+                <span>{selectedIndex + 1} / {filteredLinks.length}</span>
+              </div>
+
+              <button
+                type="button"
+                disabled={selectedIndex === filteredLinks.length - 1}
+                onClick={() => {
+                  setSelectedLinkId(filteredLinks[selectedIndex + 1].id);
+                  setPlayingVideoId(null);
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }}
+                className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-[#2E2E3A] hover:bg-[#F2ECE1] active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+              >
+                <span>Berikutnya</span>
+                <ChevronRight className="h-4 w-4 text-[#BA5218]" />
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* =========================================================================
+           SHELF VIEW (RAK BUKU PUSTAKA MOCHI) - HARMONIZED WITH HOME MENU & DIORAMA
+           ========================================================================= */
+        <div className="space-y-4">
+          {/* Library diorama, with Mochi animated separately from the artwork. */}
+          <div className={`relative h-[220px] min-[380px]:h-[235px] overflow-hidden rounded-[32px] border-2 shadow-md ${isNightMode ? 'border-[#D5C6AF] bg-[#E5D8C3]' : 'border-[#E8DFCF] bg-[#EEE1CD]'}`}>
+            <img
+              src={libraryBg}
+              alt="Perpustakaan kecil Mochi dengan rak buku dan ruang baca yang hangat"
+              width={1672}
+              height={941}
+              className={`absolute inset-0 h-full w-full object-cover object-center ${isNightMode ? 'brightness-[0.72] saturate-[0.85]' : ''}`}
+            />
+
+            {/* Speech Bubble directly above Mochi (harmonized with Home design, comfortable landscape width) */}
+            <div
+              aria-hidden={!mochiSpeech}
+              role="status"
+              aria-live="polite"
+              className={cn(
+                'absolute top-2 left-1/2 -translate-x-1/2 z-30 w-full flex justify-center px-3 transition-[opacity,transform] duration-300 ease-out transform pointer-events-none',
+                mochiSpeech
+                  ? 'opacity-100 scale-100 translate-y-0'
+                  : 'opacity-0 scale-90 -translate-y-1'
+              )}
+            >
+              <div
+                onClick={() => {
+                  setMochiSpeech(null);
+                  setRecommendedLink(null);
+                  if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+                }}
+                className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] w-auto max-w-[320px] sm:max-w-[340px] text-center leading-snug relative select-none pointer-events-auto cursor-pointer"
+              >
+                <span className="whitespace-normal sm:whitespace-nowrap">{mochiSpeech}</span>
+                {recommendedLink && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLinkId(recommendedLink.id);
+                      setPlayingVideoId(null);
+                      setEditingLinkId(null);
+                      setMochiSpeech(null);
+                      setRecommendedLink(null);
+                      if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+                      window.scrollTo({ top: 0, behavior: 'instant' });
+                    }}
+                    className="flex items-center justify-center gap-1.5 text-[10px] font-black text-[#BA5218] mt-1 mx-auto bg-[#FFEFE8] hover:bg-[#FED7C5] px-3 py-0.5 rounded-full border border-[#FED7C5]/60 shadow-2xs active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                    aria-label={`Buka materi: ${recommendedLink.title}`}
+                  >
+                    <span className="truncate max-w-[230px] sm:max-w-[260px]">Buka: {recommendedLink.title}</span>
+                    <ArrowRight className="w-3 h-3 shrink-0" />
+                  </button>
+                )}
+                {/* Speech bubble tail pointer pointing down toward Mochi */}
+                <div
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+
+            {/* Interactive Mochi Button */}
+            <button
+              type="button"
+              onClick={handleMochiTap}
+              aria-label="Ajak Mochi berinteraksi di perpustakaan"
+              title="Ketuk Mochi untuk berinteraksi!"
+              className="group absolute bottom-0 left-1/2 -translate-x-1/2 h-[72%] w-[38%] max-w-[150px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
+            >
+              <LibraryMochi activity={mochiActivity} />
+            </button>
+          </div>
+
+          {/* Feedback Toasts */}
+          {successToast && (
+            <div role="status" className="rounded-2xl bg-[#EAF6EE] border border-[#BBE2CD] p-3.5 text-xs font-bold text-[#1E6B3B] flex items-center gap-2 animate-fade-in shadow-2xs">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#1E6B3B]" />
+              <span>{successToast}</span>
+            </div>
+          )}
+
+          {urlError && (
+            <div role="alert" className="rounded-2xl bg-[#FFF0F4] border border-[#FED7C5] p-3.5 text-xs font-bold text-[#A82B53] flex items-center gap-2 animate-fade-in shadow-2xs">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-[#A82B53]" />
+              <span>{urlError}</span>
+            </div>
+          )}
+
+          {/* Search stays primary; learning status is available when needed. */}
+          <div className="flex items-center gap-2">
+            {/* Search Input Bar (Spans full available width) */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-[#8C8275] pointer-events-none" aria-hidden="true" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
+                placeholder="Cari materi atau #tag…"
+                className="min-h-11 w-full rounded-full border border-[#EAE3D5] bg-white pl-10 pr-9 text-sm text-[#2E2E3A] placeholder-[#71685E] shadow-xs focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                aria-label="Cari di Pustaka"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  aria-label="Hapus teks pencarian"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-1 top-0 flex h-11 w-11 items-center justify-center rounded-full text-[#71685E] hover:text-[#2E2E3A] cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsStatusFilterOpen(open => !open)}
+              aria-expanded={isStatusFilterOpen}
+              aria-label="Filter status belajar"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border shadow-xs focus-visible:outline-2 focus-visible:outline-[#BA5218] cursor-pointer active:scale-95 transition-all ${isStatusFilterOpen || selectedStatusFilter !== 'all' ? 'border-[#BA5218] bg-[#FFF0E8] text-[#9E410E]' : 'border-[#EAE3D5] bg-white text-[#5A5560]'}`}
+            >
+              <ListFilter className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+
+          {/* 4. Tag Filters Horizontal Strip */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none select-none" aria-label="Filter tag kategori">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('All')}
+              aria-pressed={selectedCategory === 'All'}
+              className={`min-h-11 shrink-0 rounded-full border px-3 text-xs font-bold cursor-pointer active:scale-95 motion-safe:transition-transform ${
+                selectedCategory === 'All'
+                  ? 'border-[#BA5218] bg-[#BA5218] text-white shadow-xs'
+                  : 'border-[#EAE3D5] bg-white text-[#4E4E5E] hover:bg-[#FAF7F2]'
+              }`}
+            >
+              Semua <span className="ml-1 opacity-80">({links.length})</span>
+            </button>
+            {popularTags.map(([tag, count]) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSelectedCategory(tag)}
+                aria-pressed={selectedCategory === tag}
+                className={`min-h-11 shrink-0 rounded-full border px-3 text-xs font-bold cursor-pointer active:scale-95 motion-safe:transition-transform ${
+                  selectedCategory === tag
+                    ? 'border-[#BA5218] bg-[#BA5218] text-white shadow-xs'
+                    : 'border-[#EAE3D5] bg-white text-[#4E4E5E] hover:bg-[#FAF7F2]'
+                }`}
+              >
+                #{tag} <span className="ml-1 opacity-80">({count})</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Status choices appear only when the filter is opened. */}
+          {isStatusFilterOpen && <div className="flex gap-1.5 overflow-x-auto pb-1 text-xs select-none" aria-label="Pilihan status belajar">
+            {([
+              ['all', 'Semua'],
+              ['to_review', `Belum dibaca (${toReviewCount})`],
+              ['in_progress', `Dipelajari (${inProgressCount})`],
+              ['completed', `Selesai (${completedCount})`],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => { setSelectedStatusFilter(value); setIsStatusFilterOpen(false); }}
+                aria-pressed={selectedStatusFilter === value}
+                className={`min-h-11 shrink-0 rounded-full px-3 text-[11px] font-bold cursor-pointer active:scale-95 motion-safe:transition-transform ${
+                  selectedStatusFilter === value
+                    ? 'bg-[#2E2E3A] text-white shadow-xs'
+                    : 'bg-[#EFE9DF] text-[#4E4E5E] hover:bg-[#E5DDD0]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>}
+
+          {/* 6. The Bookshelves Grid */}
+          {filteredLinks.length ? (
+            <div className="space-y-6 pt-1">
+              {renderShelf(todayLinks, 'Hari ini')}
+              {renderShelf(olderLinks, 'Sebelumnya')}
+            </div>
+          ) : (
+            <div className="rounded-[32px] border border-dashed border-[#EAE3D5] bg-[#FAF7F2] p-8 text-center space-y-2">
+              <div className="w-12 h-12 mx-auto rounded-full bg-white border border-[#EAE3D5] flex items-center justify-center text-[#BA5218] shadow-xs">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <p className="text-sm font-bold text-[#2E2E3A]">Belum ada materi di rak ini.</p>
+              <p className="text-xs text-[#8C8275]">
+                {searchQuery || selectedCategory !== 'All' || selectedStatusFilter !== 'all'
+                  ? 'Coba ubah kata kunci pencarian atau reset filter tag.'
+                  : 'Tempel tautan baru dari tombol (+) di atas untuk mengisi rak Mochi!'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Persistent Toast Feedback for Detail Mode */}
+      {selectedLink && successToast && (
+        <div role="status" className="rounded-2xl bg-[#EAF6EE] border border-[#BBE2CD] p-3 text-xs font-bold text-[#1E6B3B] flex items-center gap-2 animate-fade-in shadow-2xs">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-[#1E6B3B]" />
+          <span>{successToast}</span>
+        </div>
+      )}
+
+      {selectedLink && urlError && (
+        <div role="alert" className="rounded-2xl bg-[#FFF0F4] border border-[#FED7C5] p-3 text-xs font-bold text-[#A82B53] flex items-center gap-2 animate-fade-in shadow-2xs">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-[#A82B53]" />
+          <span>{urlError}</span>
         </div>
       )}
     </div>

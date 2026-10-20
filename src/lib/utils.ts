@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { PlatformType } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -13,7 +14,7 @@ function isYouTubeHost(host: string): boolean {
   return host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com');
 }
 
-export function detectPlatform(url: string): { platform: 'youtube' | 'tiktok' | 'instagram' | 'web'; domain: string } {
+export function detectPlatform(url: string): { platform: PlatformType; domain: string } {
   try {
     const parsed = parseLinkUrl(url);
     const host = parsed.hostname.toLowerCase();
@@ -26,6 +27,12 @@ export function detectPlatform(url: string): { platform: 'youtube' | 'tiktok' | 
     }
     if (host.includes('instagram.com')) {
       return { platform: 'instagram', domain: 'Instagram Reels' };
+    }
+    if (host.includes('threads.net')) {
+      return { platform: 'threads', domain: 'Threads' };
+    }
+    if (host.includes('twitter.com') || host.includes('x.com')) {
+      return { platform: 'threads', domain: 'X / Twitter' };
     }
     return { platform: 'web', domain: host.replace(/^www\./, '') };
   } catch {

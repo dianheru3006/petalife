@@ -20,7 +20,7 @@ export const LiveCalendar: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
   const handleClick = () => {
     const user = getUserDisplayName();
     onCalendarClick?.(
-      `Hari ini ${dateInfo.fullFormattedDate}! Semangat terus belajarnya ya ${user}! 📅✨`
+      `Hari ini ${dateInfo.fullFormattedDate}! Semangat terus belajarnya ya ${user}!`
     );
   };
 

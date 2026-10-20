@@ -61,6 +61,27 @@ export function App() {
     }
   }, [pet.isSleeping]);
 
+  // Synchronize Telegram Mini App header and background with Petalife theme
+  useEffect(() => {
+    try {
+      const tg = (window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            setHeaderColor?: (color: string) => void;
+            setBackgroundColor?: (color: string) => void;
+          };
+        };
+      })?.Telegram?.WebApp;
+      if (tg) {
+        const bg = isNightMode ? '#EBE2D6' : '#FAF7F2';
+        tg.setHeaderColor?.(bg);
+        tg.setBackgroundColor?.(bg);
+      }
+    } catch {
+      // Ignored outside Telegram environment
+    }
+  }, [isNightMode]);
+
   const handleToggleNightMode = () => {
     setPet(prev => {
       const updated = togglePetSleep(prev);

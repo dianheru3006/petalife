@@ -1,4 +1,5 @@
 import type { PlatformType, KeyTakeaway, GatewayErrorType } from '../types';
+import { formatStructuredNotes } from './noteView';
 
 export type { KeyTakeaway };
 
@@ -13,6 +14,7 @@ export interface SmartVaultContent {
   summary: string;
   tags: string[];
   author?: string;
+  thumbnailUrl?: string;
 }
 
 function matchesKeyword(text: string, words: string[]): boolean {
@@ -75,7 +77,7 @@ export function generateSmartVaultContent(
 
   // Sol ADR-001: For video & closed social media WITHOUT user context or transcript,
   // do NOT fabricate fake 4-layer takeaways! Save honestly as metadata/bookmark.
-  if ((isClosedSocial || isVideoPlatform || gatewayError) && !userContext) {
+  if ((isClosedSocial || isVideoPlatform) && !userContext || gatewayError) {
     const title = rawTitle || `Bookmark ${platform.charAt(0).toUpperCase() + platform.slice(1)} (${domain})`;
     const coreThesis = rawTitle
       ? (gatewayError
@@ -84,20 +86,20 @@ export function generateSmartVaultContent(
       : `Tautan ${platform} tersimpan sebagai bookmark. Menunggu cuplikan teks atau caption pengguna untuk dirangkum.`;
     
     const reasonText = gatewayError
-      ? `⚠️ **Koneksi Gateway:** ${gatewayError.message}\n🎯 **Tindakan:** ${gatewayError.action}`
+      ? `Koneksi gateway: ${gatewayError.message}\nTindakan: ${gatewayError.action}`
       : (isClosedSocial && !rawTitle
           ? 'Mochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login.'
           : 'Mochi baru berhasil mencatat judul dan tautannya. Karena video/postingan ini belum memiliki transkrip tertulis, Mochi belum membuat analisis 4 lapis tiruan.');
 
     const formattedNotes = [
-      `📌 **Tautan Tersimpan sebagai Bookmark (${gatewayError ? 'Menunggu Sintesis' : 'Metadata Terverifikasi'})**\n`,
+      `Tautan Tersimpan sebagai Bookmark (${gatewayError ? 'Menunggu Sintesis' : 'Metadata Terverifikasi'})\n`,
       `**Judul:** ${title}`,
       `**Kategori Terdeteksi:** ${detectedCategory}`,
       `**Sumber:** ${domain}${author ? ` (${author})` : ''}\n`,
-      `💬 **Catatan Mochi:**\n${reasonText}`,
+      `Catatan Mochi:\n${reasonText}`,
       gatewayError
-        ? `\n💡 **Tips:** Tekan tombol "Sintesis Ulang" di Vault setelah koneksi gateway tersedia!`
-        : `💡 **Tips:** Tempelkan 1–2 kalimat poin penting yang kamu pelajari dari materi ini agar Mochi buatkan intisari komprehensif!`
+        ? `\nCoba tombol "Sintesis Ulang" saat koneksi gateway tersedia.`
+        : `Tambahkan caption atau cuplikan materi agar Mochi dapat membuat ringkasan.`
     ].join('\n');
 
     return {
@@ -327,15 +329,7 @@ function formatPayload(
   tags: string[],
   author?: string
 ): SmartVaultContent {
-  const formattedTakeaways = keyTakeaways
-    .map(t => `* **${t.concept}**: ${t.explanation}`)
-    .join('\n\n');
-
-  const formattedActions = actionableInsights
-    .map(a => `* ${a}`)
-    .join('\n');
-
-  const formattedNotes = `💡 **Gagasan Utama:**\n${coreThesis}\n\n🔍 **Analisis Mendalam & Poin Kunci:**\n${formattedTakeaways}\n\n🎯 **Aksi Praktis:**\n${formattedActions}\n\n🌱 **Refleksi Diri:**\n${reflectionPrompt}`;
+  const formattedNotes = formatStructuredNotes({ coreThesis, keyTakeaways, actionableInsights, reflectionPrompt });
 
   return {
     title,

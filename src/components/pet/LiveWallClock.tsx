@@ -29,7 +29,7 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
   const handleClick = () => {
     const user = getUserDisplayName();
     onClockClick?.(
-      `Sekarang jam ${angles.timeFormatted} ${angles.timeOfDay} ${user}! Jangan lupa istirahat dan minum air ya 🍵⏰`
+      `Sekarang jam ${angles.timeFormatted} ${angles.timeOfDay} ${user}! Jangan lupa istirahat dan minum air ya.`
     );
   };
 

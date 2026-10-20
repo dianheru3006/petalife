@@ -5,7 +5,8 @@ import type { SavedLink, LinkQualityStatus } from '../../lib/types';
 import { ExternalLink, Play, Globe, Pencil, X } from 'lucide-react';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { detectPlatform, getYouTubeThumbnail } from '../../lib/utils';
-import { getNoteViewSections, noteSummary, noteTextForDraft } from '../../lib/utils/noteView';
+import { formatStructuredNotes, getNoteViewSections, noteSummary, noteTextForDraft } from '../../lib/utils/noteView';
+import { VaultReadingSections } from '../../features/vault/VaultReadingSections';
 
 const YouTubeArtwork: FC<{ url: string; title: string; isShort: boolean }> = ({ url, title, isShort }) => {
   const [imageFailed, setImageFailed] = useState(false);
@@ -58,7 +59,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
   useEffect(() => {
     if (link) {
       setTitle(link.title || '');
-      setNotes(noteTextForDraft(link));
+      setNotes(link.notes ? noteTextForDraft(link) : (formatStructuredNotes(link) || link.summary || ''));
       setTags(link.tags || []);
       setSaveError(null);
       setIsEditingNotes(link.qualityStatus === 'needs_context');
@@ -120,7 +121,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       await onSaveAndFeed(updatedLink);
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan catatan ke Vault. Draf Anda tetap aman di sini, coba lagi.';
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan catatan ke Pustaka. Draf Anda tetap aman di sini, coba lagi.';
       setSaveError(msg);
     } finally {
       setIsSubmitting(false);
@@ -367,20 +368,8 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   />
                 </div>
               ) : noteSections.length ? (
-                <div className="space-y-2.5" aria-label="Pratinjau intisari">
-                  {noteSections.map((section, index) => (
-                    <section key={`${section.kind}-${index}`} className="bg-white border border-[#EAE3D5] rounded-2xl px-4 py-3.5 shadow-2xs">
-                      <h4 className="text-[13px] font-extrabold text-[#513827] mb-2">
-                        {section.kind === 'thesis' ? '💡 ' : section.kind === 'takeaways' ? '🔍 ' : section.kind === 'actions' ? '🎯 ' : section.kind === 'reflection' ? '🌱 ' : ''}
-                        {section.title}
-                      </h4>
-                      <div className="space-y-2 text-[13px] sm:text-sm leading-relaxed text-[#373643]">
-                        {section.lines.map((line, lineIndex) => (
-                          <p key={lineIndex} className={line.bullet ? 'pl-3 border-l-2 border-[#D9B59A]' : ''}>{line.text}</p>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                <div aria-label="Pratinjau intisari">
+                  <VaultReadingSections sections={noteSections} />
                 </div>
               ) : (
                 <p className="bg-white border border-[#EAE3D5] rounded-2xl p-4 text-sm text-[#6E6458]">Belum ada intisari. Pilih Edit teks untuk menambahkan catatan.</p>
@@ -431,7 +420,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
             >
               <span className="text-lg">✨</span>
               <span>
-                {isSubmitting ? 'Menyimpan...' : `Simpan ke Vault & Suapi ${petName}`}
+                {isSubmitting ? 'Menyimpan...' : `Simpan ke Pustaka & Suapi ${petName}`}
               </span>
             </button>
           </div>

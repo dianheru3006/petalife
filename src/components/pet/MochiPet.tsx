@@ -145,6 +145,13 @@ export const MochiPet: FC<MochiPetProps> = ({
     };
   }, [isSleeping, isFeeding, currentAction, pet.hunger, pet.energy]);
 
+  // Clean up action timer on unmount
+  useEffect(() => {
+    return () => {
+      if (actionTimerRef.current) clearTimeout(actionTimerRef.current);
+    };
+  }, []);
+
   const triggerAction = useCallback((action: MochiAction) => {
     // Clear any active autonomous fidget immediately
     setFidget('none');
@@ -657,12 +664,19 @@ export const MochiPet: FC<MochiPetProps> = ({
               <path d="M122 92 L124.5 98 L130.5 99 L126 103 L127.5 109 L122 105.5 L116.5 109 L118 103 L113.5 99 L119.5 98 Z" />
             </g>
           ) : currentAction === 'wink' || (currentAction === 'idle' && fidget === 'cute-wink') ? (
-            /* Playful Wink (> ✦) */
+            /* Playful Kawaii Wink (> ◕) */
             <g>
-              <path d="M72 102 Q80 95 88 102" stroke="#2C1A14" strokeWidth="3.5" strokeLinecap="round" fill="none" />
-              <path d="M72 102 Q80 108 88 102" stroke="#2C1A14" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-              <text x="59" y="98" fontSize="12" fill="#F4A261" className="animate-pulse">✦</text>
+              {/* Left Eye: Iconic Kawaii Wink Chevron (>) */}
+              <path
+                d="M71 95 L85 102 L71 109"
+                stroke="#2C1A14"
+                strokeWidth="3.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
 
+              {/* Right Eye: Big Sparkling Anime Eye */}
               <ellipse cx="122" cy="102" rx="9" ry="11" fill="#2C1A14" />
               <circle cx="119" cy="97" r="3.6" fill="#FFFFFF" />
               <circle cx="125" cy="106" r="1.8" fill="#FFFFFF" />

@@ -30,7 +30,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
 
   const titles: Record<NavigationTab, { title: string; subtitle: string }> = {
     home: { title: `Halo, ${userName}! ☀️`, subtitle: 'Mochi is energized and waiting for new lessons.' },
-    vault: { title: 'Content Vault 📚', subtitle: 'Shorts, Reels, and articles saved for your growth.' },
+    vault: { title: 'Pustaka 📚', subtitle: 'Materi tersimpan untuk dibaca dan dipelajari.' },
     notes: { title: 'Personal Notes 📝', subtitle: 'Quick takeaways, reflections, and recipe notes.' },
     assistant: { title: 'AI Study Assistant ✨', subtitle: 'Recall, summarize, and connect ideas across your materials.' },
     settings: { title: 'Pengaturan ⚙️', subtitle: 'Hubungkan Mochi dengan Brain Gateway Asisten Heru.' },

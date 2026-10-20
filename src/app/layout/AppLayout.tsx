@@ -28,8 +28,8 @@ export const AppLayout: FC<AppLayoutProps> = ({
     >
       {/* Mobile-First Mini App Container: Seamless continuous background, thumb-friendly centered layout */}
       <div className="w-full max-w-md min-h-screen mx-auto flex flex-col relative">
-        {/* Top Header - hidden on home tab since Terrarium has its own cozy title */}
-        {currentTab !== 'home' && (
+        {/* Home and Vault carry their own page titles in the same visual rhythm. */}
+        {currentTab !== 'home' && currentTab !== 'vault' && (
           <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />
         )}
 

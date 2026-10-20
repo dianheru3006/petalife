@@ -21,10 +21,44 @@ function cleanInline(text: string): string {
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, concept: string, label: string | undefined) => label || concept)
     .replace(/[\[\]]/g, '')
     .replace(/\*\*/g, '')
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    .replace(/^(?:[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]\s*)+/u, '')
     .replace(/\s*:\s*:\s*/g, ': ')
     .replace(/\s*:\s*\]/g, ':')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function cleanGeneratedText(text: string): string {
+  return cleanInline(text)
+    .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Regional_Indicator}\uFE0F\u200D]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** One readable note for AI output; the same four fields drive both the draft and Vault. */
+export function formatStructuredNotes(content: {
+  coreThesis?: string;
+  keyTakeaways?: { concept: string; explanation: string }[];
+  actionableInsights?: string[];
+  reflectionPrompt?: string;
+}): string {
+  const thesis = cleanGeneratedText(content.coreThesis || '');
+  const takeaways = (content.keyTakeaways || [])
+    .map(item => {
+      const concept = cleanGeneratedText(item.concept || '').replace(/:$/, '');
+      const explanation = cleanGeneratedText(item.explanation || '');
+      return concept && explanation ? `- ${concept}: ${explanation}` : explanation ? `- ${explanation}` : '';
+    })
+    .filter(Boolean);
+  const actions = (content.actionableInsights || []).map(item => cleanGeneratedText(item)).filter(Boolean);
+  const reflection = cleanGeneratedText(content.reflectionPrompt || '');
+  return [
+    thesis && `Gagasan Utama\n${thesis}`,
+    takeaways.length && `Poin Kunci\n${takeaways.join('\n')}`,
+    actions.length && `Aksi Praktis\n${actions.map(item => `- ${item}`).join('\n')}`,
+    reflection && `Refleksi Diri\n${reflection}`,
+  ].filter(Boolean).join('\n\n');
 }
 
 function headingKind(line: string): NoteSectionKind | null {
@@ -73,14 +107,5 @@ export function noteTextForDraft(link: SavedLink): string {
     return notes;
   }
 
-  const takeaways = (link.keyTakeaways || [])
-    .map(item => `- **${cleanInline(item.concept)}:** ${cleanInline(item.explanation)}`)
-    .join('\n');
-  const actions = (link.actionableInsights || []).map(item => `- ${cleanInline(item)}`).join('\n');
-  return [
-    `💡 **Gagasan Utama:**\n${cleanInline(link.coreThesis)}`,
-    takeaways && `🔍 **Model Mental & Poin Kunci:**\n${takeaways}`,
-    actions && `🎯 **Aksi Praktis (24 Jam):**\n${actions}`,
-    link.reflectionPrompt && `🌱 **Refleksi Diri:**\n${cleanInline(link.reflectionPrompt)}`,
-  ].filter(Boolean).join('\n\n');
+  return formatStructuredNotes(link);
 }

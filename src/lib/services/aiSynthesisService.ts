@@ -1,5 +1,6 @@
 import type { PlatformType, EvidenceLevel, LinkQualityStatus, CaptureMethod, GatewayErrorType, LinkProvenance } from '../types';
 import { generateSmartVaultContent, type SmartVaultContent } from '../utils/noteGenerator';
+import { formatStructuredNotes } from '../utils/noteView';
 import { resolveLinkMetadata } from './linkMetadataService';
 import { getBrainGatewayUrl, DEFAULT_BRAIN_GATEWAY_URL } from './brainGatewaySettings';
 
@@ -118,7 +119,7 @@ export async function synthesizeLink(
                 userContext
               );
               return {
-                content: localSmart,
+                content: { ...localSmart, thumbnailUrl: meta.thumbnailUrl },
                 isFromRemoteAI: true,
                 evidenceLevel: 'metadata_only',
                 qualityStatus: 'needs_context',
@@ -131,18 +132,27 @@ export async function synthesizeLink(
               };
             }
 
-            const formattedNotes = d.notes || [
-              `💡 **Gagasan Utama:**\n${d.coreThesis || ''}`,
-              d.keyTakeaways?.length
-                ? `\n🔍 **Analisis Mendalam & Poin Kunci:**\n${d.keyTakeaways.map((t: { concept: string; explanation: string }) => `* **${t.concept}**: ${t.explanation}`).join('\n\n')}`
-                : '',
-              d.actionableInsights?.length
-                ? `\n🎯 **Aksi Praktis:**\n${d.actionableInsights.map((a: string) => `* ${a}`).join('\n')}`
-                : '',
-              d.reflectionPrompt ? `\n🌱 **Refleksi Diri:**\n${d.reflectionPrompt}` : ''
-            ].filter(Boolean).join('\n\n');
-
-            const hasSubstantiveContent = Boolean(d.coreThesis && d.keyTakeaways?.length && d.actionableInsights?.length);
+            // Render from the verified structured fields. Backend freeform notes can
+            // contain duplicated headings, emoji and extra claims outside these fields.
+            const readableTakeaways = Array.isArray(d.keyTakeaways)
+              ? d.keyTakeaways.filter((item: unknown): item is { concept: string; explanation: string } =>
+                  typeof item === 'object' && item !== null &&
+                  typeof (item as { concept?: unknown }).concept === 'string' &&
+                  typeof (item as { explanation?: unknown }).explanation === 'string')
+              : [];
+            const readableActions = Array.isArray(d.actionableInsights)
+              ? d.actionableInsights.filter((item: unknown): item is string => typeof item === 'string')
+              : [];
+            const hasSubstantiveContent = Boolean(typeof d.coreThesis === 'string' && d.coreThesis.trim() &&
+              readableTakeaways.length && readableActions.length);
+            const formattedNotes = hasSubstantiveContent
+              ? formatStructuredNotes({
+                  coreThesis: d.coreThesis,
+                  keyTakeaways: readableTakeaways,
+                  actionableInsights: readableActions,
+                  reflectionPrompt: d.reflectionPrompt,
+                })
+              : (typeof d.notes === 'string' ? d.notes : '');
             const evidenceLevel: EvidenceLevel = d.evidenceLevel === 'full_text' || d.evidenceLevel === 'excerpt'
               ? d.evidenceLevel
               : (userContext ? 'excerpt' : (meta.isRealMetadata ? 'metadata_only' : 'url_only'));
@@ -162,13 +172,15 @@ export async function synthesizeLink(
                 title: d.title,
                 category: d.category || 'Umum',
                 coreThesis: d.coreThesis || d.summary || '',
-                keyTakeaways: Array.isArray(d.keyTakeaways) ? d.keyTakeaways : [],
-                actionableInsights: Array.isArray(d.actionableInsights) ? d.actionableInsights : [],
+                keyTakeaways: readableTakeaways,
+                actionableInsights: readableActions,
                 reflectionPrompt: d.reflectionPrompt || '',
                 notes: formattedNotes,
                 summary: d.coreThesis || d.summary || '',
                 tags: Array.isArray(d.tags) ? d.tags : ['#wawasan', '#vault'],
                 author: meta.author || d.author,
+                thumbnailUrl: typeof d.thumbnailUrl === 'string' && /^https:\/\//i.test(d.thumbnailUrl)
+                  ? d.thumbnailUrl : meta.thumbnailUrl,
               },
               isFromRemoteAI: true,
               evidenceLevel,
@@ -245,7 +257,7 @@ export async function synthesizeLink(
     : (userContext ? 'draft' : 'needs_context');
 
   return {
-    content: localSmart,
+    content: { ...localSmart, thumbnailUrl: meta.thumbnailUrl },
     isFromRemoteAI: false,
     evidenceLevel,
     qualityStatus,

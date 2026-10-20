@@ -13,25 +13,51 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
 
   const currentChannel = TV_CHANNELS[channelIdx];
 
-  // Auto-cycle channels every 25 seconds during daytime mode
+  // Auto-cycle channels every 25 seconds during daytime mode when tab is visible
   useEffect(() => {
     if (isNightMode) return;
 
-    const interval = setInterval(() => {
-      setChannelIdx(prev => (prev + 1) % TV_CHANNELS.length);
-      setIsSwitching(true);
+    let interval: ReturnType<typeof setInterval> | null = null;
 
-      setTimeout(() => {
-        setIsSwitching(false);
-      }, 260);
-    }, 25000);
+    const startInterval = () => {
+      if (interval) clearInterval(interval);
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
 
-    return () => clearInterval(interval);
+      interval = setInterval(() => {
+        setChannelIdx(prev => (prev + 1) % TV_CHANNELS.length);
+        setIsSwitching(true);
+
+        setTimeout(() => {
+          setIsSwitching(false);
+        }, 260);
+      }, 25000);
+    };
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        if (interval) clearInterval(interval);
+        interval = null;
+      } else {
+        startInterval();
+      }
+    };
+
+    startInterval();
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
   }, [isNightMode]);
 
   const handleScreenClick = () => {
     if (isNightMode) {
-      onTvInteraction?.('Ssst... TV-nya sudah dimatikan, saatnya istirahat... 🌙💤');
+      onTvInteraction?.('Ssst... TV-nya sudah dimatikan, saatnya istirahat...');
       return;
     }
 

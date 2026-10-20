@@ -24,6 +24,16 @@ export async function initializeDatabase(database: PetalifeDatabase = db): Promi
 
       if (linksCount === 0) {
         await database.savedLinks.bulkAdd(initialSavedLinks);
+      } else {
+        // Backfill missing thumbnailUrls for initial links if empty
+        for (const link of initialSavedLinks) {
+          if (link.thumbnailUrl) {
+            const existing = await database.savedLinks.get(link.id);
+            if (existing && !existing.thumbnailUrl) {
+              await database.savedLinks.update(link.id, { thumbnailUrl: link.thumbnailUrl });
+            }
+          }
+        }
       }
       if (notesCount === 0) {
         await database.notes.bulkAdd(initialNotes);

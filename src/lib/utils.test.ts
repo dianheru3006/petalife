@@ -9,6 +9,15 @@ describe('YouTube source identity', () => {
     expect(detectPlatform('https://notyoutube.com/shorts/qxABp0pjntU').platform).toBe('web');
   });
 
+  it('detects Instagram, TikTok, Threads and X/Twitter platforms correctly', () => {
+    expect(detectPlatform('https://www.instagram.com/reel/C123456/').platform).toBe('instagram');
+    expect(detectPlatform('https://www.tiktok.com/@user/video/123').platform).toBe('tiktok');
+    expect(detectPlatform('https://www.threads.net/@user/post/123').platform).toBe('threads');
+    expect(detectPlatform('https://x.com/user/status/123').platform).toBe('threads');
+    expect(detectPlatform('https://twitter.com/user/status/123').platform).toBe('threads');
+    expect(detectPlatform('https://medium.com/@author/article').platform).toBe('web');
+  });
+
   it('derives a real thumbnail only from a valid YouTube video ID', () => {
     const thumbnail = 'https://img.youtube.com/vi/qxABp0pjntU/hqdefault.jpg';
     expect(getYouTubeThumbnail('https://youtu.be/qxABp0pjntU?t=12')).toBe(thumbnail);

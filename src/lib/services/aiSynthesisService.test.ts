@@ -193,6 +193,9 @@ describe('aiSynthesisService', () => {
     expect(result.evidenceLevel).toBe('full_text');
     expect(result.provenance).toBe('video_analysis');
     expect(result.isFromRemoteAI).toBe(true);
+    expect(result.content.notes).toContain('Gagasan Utama\nOrang mempertahankan sistem');
+    expect(result.content.notes).toContain('Poin Kunci\n- System Justification:');
+    expect(result.content.notes).not.toMatch(/[💡🔍🎯🌱]|Rangkuman lengkap/);
   });
 });
 

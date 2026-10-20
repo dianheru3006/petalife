@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SavedLink } from '../types';
-import { getNoteViewSections, noteSummary, noteTextForDraft } from './noteView';
+import { formatStructuredNotes, getNoteViewSections, noteSummary, noteTextForDraft } from './noteView';
 
 describe('Mochi note reading view', () => {
   it('shows four readable layers from the note text without Obsidian syntax', () => {
@@ -60,5 +60,21 @@ describe('Mochi note reading view', () => {
     expect(getNoteViewSections('Catatan pribadi pengguna.')).toEqual([
       { kind: 'general', title: 'Catatan', lines: [{ text: 'Catatan pribadi pengguna.', bullet: false }] },
     ]);
+  });
+
+  it('formats AI fields as one clean reading card while keeping all source-backed points', () => {
+    const notes = formatStructuredNotes({
+      coreThesis: '💡 **Gunakan uang 💰 pada waktu yang tepat.**',
+      keyTakeaways: [
+        { concept: 'Time-Energy-Money', explanation: 'Sesuaikan pengalaman dengan energi dan waktu yang tersedia.' },
+        { concept: 'Tujuan uang', explanation: 'Biayai pengalaman yang bernilai bagi hidup.' },
+      ],
+      actionableInsights: ['Pilih satu pengalaman yang ingin diwujudkan tahun ini.'],
+      reflectionPrompt: 'Pengeluaran mana yang paling kamu sesali tidak lakukan?',
+    });
+    expect(notes).not.toMatch(/[💡🔍🎯🌱]|\*\*/);
+    expect(getNoteViewSections(notes).map(section => section.kind)).toEqual(['thesis', 'takeaways', 'actions', 'reflection']);
+    expect(getNoteViewSections(notes)[1].lines).toHaveLength(2);
+    expect(getNoteViewSections(notes)[0].lines[0].text).toBe('Gunakan uang pada waktu yang tepat.');
   });
 });

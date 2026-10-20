@@ -15,10 +15,11 @@ describe('Sol ADR-001 Note Generator & Knowledge Synthesizer', () => {
     expect(result.keyTakeaways.length).toBeGreaterThan(0);
     expect(result.actionableInsights.length).toBeGreaterThan(0);
     expect(result.reflectionPrompt).toBeDefined();
-    expect(result.notes).toContain('💡 **Gagasan Utama:**');
-    expect(result.notes).toContain('🔍 **Analisis Mendalam & Poin Kunci:**');
-    expect(result.notes).toContain('🎯 **Aksi Praktis:**');
-    expect(result.notes).toContain('🌱 **Refleksi Diri:**');
+    expect(result.notes).toContain('Gagasan Utama\n');
+    expect(result.notes).toContain('Poin Kunci\n');
+    expect(result.notes).toContain('Aksi Praktis\n');
+    expect(result.notes).toContain('Refleksi Diri\n');
+    expect(result.notes).not.toMatch(/[💡🔍🎯🌱]|\*\*/);
 
     // STRICT CHECK: NO QUIZ ALLOWED
     expect((result as any).quiz_question).toBeUndefined();
@@ -40,6 +41,18 @@ describe('Sol ADR-001 Note Generator & Knowledge Synthesizer', () => {
     expect(instagramResult.actionableInsights).toHaveLength(0);
     expect(instagramResult.notes).toContain('Tautan Tersimpan sebagai Bookmark');
     expect(instagramResult.notes).toContain('Mochi belum dapat membaca isi postingan ini karena platform membatasi akses tanpa login');
+  });
+
+  it('does not turn a gateway outage into canned takeaways, even with source context', () => {
+    const result = generateSmartVaultContent(
+      'https://example.com/article', 'web', 'example.com', 'Fokus kerja', undefined,
+      'Artikel ini membahas cara mengurangi notifikasi ketika bekerja.',
+      { type: 'network_error', message: 'Tidak terhubung.', action: 'Coba lagi.' },
+    );
+    expect(result.keyTakeaways).toEqual([]);
+    expect(result.actionableInsights).toEqual([]);
+    expect(result.notes).toContain('Koneksi gateway: Tidak terhubung.');
+    expect(result.notes).not.toMatch(/[💡🔍🎯🌱]/);
   });
 
   it('synthesizes comprehensive notes when user provides caption context for closed platforms', () => {

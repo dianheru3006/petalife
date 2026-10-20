@@ -1034,8 +1034,124 @@
   will-change: transform, opacity;
 }
 
-/* Respect Reduced Motion */
+@keyframes library-mochi-breathe {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  48% {
+    transform: translateY(-4px) scale(1.025, 0.975);
+  }
+}
+
+@keyframes library-mochi-blink {
+  0%, 88%, 94%, 100% {
+    transform: scaleY(1);
+  }
+  90%, 92% {
+    transform: scaleY(0.1);
+  }
+  91% {
+    transform: scaleY(0.85);
+  }
+}
+
+@keyframes library-mochi-gaze {
+  0%, 25% {
+    transform: translate(0, 0);
+  }
+  30%, 55% {
+    transform: translate(1.8px, 1.2px);
+  }
+  60%, 85% {
+    transform: translate(-1.8px, 1.2px);
+  }
+  90%, 100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes library-mochi-page-curl {
+  0%, 70%, 100% {
+    transform: rotate(0deg) scaleX(1);
+    opacity: 1;
+  }
+  78% {
+    transform: rotate(-14deg) scaleX(0.35);
+    opacity: 0.9;
+  }
+  84% {
+    transform: rotate(-8deg) scaleX(-0.85);
+    opacity: 0.95;
+  }
+  90% {
+    transform: rotate(0deg) scaleX(-1);
+    opacity: 0;
+  }
+}
+
+@keyframes library-mochi-sprout-sway {
+  0%, 100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes library-mochi-glasses-shine {
+  0%, 65%, 100% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  72% {
+    opacity: 0.85;
+    transform: translateX(0px);
+  }
+  78% {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+.library-mochi-breathe,
+.library-mochi-bob {
+  animation: library-mochi-breathe 3.6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  transform-origin: bottom center;
+}
+
+.library-mochi-blink,
+.library-mochi-eyes {
+  animation: library-mochi-blink 5.6s ease-in-out infinite;
+}
+
+.library-mochi-gaze {
+  animation: library-mochi-gaze 7.5s ease-in-out infinite;
+}
+
+.library-mochi-page {
+  animation: library-mochi-page-curl 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: 75px 145px;
+}
+
+.library-mochi-sprout {
+  animation: library-mochi-sprout-sway 3.6s ease-in-out infinite;
+  transform-origin: 75px 45px;
+}
+
+.library-mochi-glasses-shine {
+  animation: library-mochi-glasses-shine 6.5s ease-in-out infinite;
+}
+
+/* Respect Reduced Motion & User Pause Motion Preference */
 @media (prefers-reduced-motion: reduce) {
+  .library-mochi-breathe,
+  .library-mochi-bob,
+  .library-mochi-page,
+  .library-mochi-blink,
+  .library-mochi-eyes,
+  .library-mochi-gaze,
+  .library-mochi-sprout,
+  .library-mochi-glasses-shine,
   .anim-page-enter,
   .anim-fab-item-1,
   .anim-fab-item-2,
@@ -1051,6 +1167,11 @@
   .animate-fade-in,
   .animate-slide-up,
   .anim-mochi-idle,
+  .anim-mochi-idle-tired,
+  .anim-mochi-tilt-left,
+  .anim-mochi-tilt-right,
+  .anim-mochi-humming,
+  .anim-mochi-stretch,
   .anim-mochi-eating,
   .anim-mochi-sleeping,
   .anim-mochi-studying,
@@ -1062,16 +1183,21 @@
   .anim-mochi-spin,
   .anim-mochi-wink,
   .anim-mochi-dance,
+  .anim-mochi-dizzy,
+  .anim-terrarium-shake,
   .anim-natural-blink,
+  .anim-sleepy-blink,
   .anim-pencil-scribble,
   .anim-glasses-shine,
   .anim-float-note,
   .anim-float-heart,
   .anim-float-zzz,
   .anim-gentle-sway,
+  .anim-sprout-joy,
   .anim-float-bubble,
   .animate-bounce,
   .animate-pulse,
+  .animate-spin,
   .anim-tv-fish,
   .anim-tv-fish-tail,
   .anim-tv-bubble-1,
@@ -1096,4 +1222,5 @@
     transition: none !important;
   }
 }
+
 

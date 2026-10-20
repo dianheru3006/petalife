@@ -25,7 +25,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Nasi Onigiri Rumput Laut',
     shortName: 'Onigiri',
     emoji: '🍙',
-    feedSpeech: 'Nyam nyam! Nasi Onigiri rumput laut ini pulen dan gurih! 🍙💖',
+    feedSpeech: 'Nyam nyam! Nasi Onigiri rumput laut ini pulen dan gurih!',
     IconComponent: OnigiriIcon,
   },
   {
@@ -33,7 +33,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Kue Stroberi Lembut',
     shortName: 'Kue Stroberi',
     emoji: '🍰',
-    feedSpeech: 'Waaah! Kue Stroberinya manis dan lumer di lidah Mochi! 🍰✨',
+    feedSpeech: 'Waaah! Kue Stroberinya manis dan lumer di lidah Mochi!',
     IconComponent: CakeIcon,
   },
   {
@@ -41,7 +41,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Dango 3 Warna Sakura',
     shortName: 'Dango Sakura',
     emoji: '🍡',
-    feedSpeech: 'Oishi! Dango sakura kenyal kesukaan Mochi! 🍡🌸',
+    feedSpeech: 'Oishi! Dango sakura kenyal kesukaan Mochi!',
     IconComponent: DangoIcon,
   },
   {
@@ -49,7 +49,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Bakpao Kukus Hangat',
     shortName: 'Bakpao Hangat',
     emoji: '🥟',
-    feedSpeech: 'Haochi! Bakpao hangatnya empuk dan harum sekali! 🥟✨',
+    feedSpeech: 'Haochi! Bakpao hangatnya empuk dan harum sekali!',
     IconComponent: BaoziIcon,
   },
   {
@@ -57,7 +57,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Panekuk Madu & Mentega',
     shortName: 'Panekuk Madu',
     emoji: '🥞',
-    feedSpeech: 'Yummy! Panekuk madunya wangi mentega banget! 🥞🍯',
+    feedSpeech: 'Yummy! Panekuk madunya wangi mentega banget!',
     IconComponent: PancakeIcon,
   },
   {
@@ -65,7 +65,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Biskuit Cokelat Renyah',
     shortName: 'Biskuit Cokelat',
     emoji: '🍪',
-    feedSpeech: 'Krenyes! Biskuit cokelatnya renyah dan lezat! 🍪🍫',
+    feedSpeech: 'Krenyes! Biskuit cokelatnya renyah dan lezat!',
     IconComponent: CookieIcon,
   },
   {
@@ -73,7 +73,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Puding Karamel Lembut',
     shortName: 'Puding Karamel',
     emoji: '🍮',
-    feedSpeech: 'Slurrrp! Puding karamelnya goyang-goyang manis! 🍮✨',
+    feedSpeech: 'Slurrrp! Puding karamelnya goyang-goyang manis!',
     IconComponent: PuddingIcon,
   },
   {
@@ -81,7 +81,7 @@ export const SNACK_VARIANTS: SnackVariant[] = [
     name: 'Buah Persik Madu Segar',
     shortName: 'Buah Persik',
     emoji: '🍑',
-    feedSpeech: 'Segar sekali! Buah persik manis kaya vitamin! 🍑🌸',
+    feedSpeech: 'Segar sekali! Buah persik manis kaya vitamin!',
     IconComponent: PeachIcon,
   },
 ];
