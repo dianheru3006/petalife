@@ -8,6 +8,7 @@ export interface AISynthesizeOptions {
   context?: string;
   timeoutMs?: number;
   captureMethod?: CaptureMethod;
+  onProgress?: (stage: string, stageLabel: string) => void;
 }
 
 export interface SynthesizedLinkResult {
@@ -23,6 +24,129 @@ export interface SynthesizedLinkResult {
   gatewayErrorMessage?: string;
   gatewayErrorAction?: string;
   gatewayHttpStatus?: number;
+}
+
+const ACTIVE_JOB_STORAGE_KEY = 'petalife_active_async_jobs';
+
+export interface ActiveJobRecord {
+  jobId: string;
+  pollUrl: string;
+  url: string;
+  timestamp: number;
+}
+
+export function saveActiveJob(record: ActiveJobRecord): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const existing = getActiveJobs();
+    existing[record.url] = record;
+    localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, JSON.stringify(existing));
+  } catch (_) {}
+}
+
+export function getActiveJobForUrl(url: string): ActiveJobRecord | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const existing = getActiveJobs();
+    const record = existing[url];
+    if (!record) return null;
+    if (Date.now() - record.timestamp > 2 * 60 * 60 * 1000) {
+      clearActiveJob(url);
+      return null;
+    }
+    return record;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function clearActiveJob(url: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const existing = getActiveJobs();
+    delete existing[url];
+    localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, JSON.stringify(existing));
+  } catch (_) {}
+}
+
+function getActiveJobs(): Record<string, ActiveJobRecord> {
+  try {
+    const raw = localStorage.getItem(ACTIVE_JOB_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+async function pollJobUntilFinished(
+  pollUrl: string,
+  headers: Record<string, string>,
+  onProgress?: (stage: string, stageLabel: string) => void,
+  signal?: AbortSignal
+): Promise<{ success: boolean; data?: any; error?: string; errorCode?: string; retryable?: boolean }> {
+  const startTime = Date.now();
+  const MAX_POLL_DURATION_MS = 120000;
+
+  while (Date.now() - startTime < MAX_POLL_DURATION_MS) {
+    if (signal?.aborted) {
+      const err = new Error('AbortError');
+      err.name = 'AbortError';
+      throw err;
+    }
+
+    const elapsed = Date.now() - startTime;
+    const intervalMs = elapsed < 20000 ? 2500 : 4000;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+
+    if (signal?.aborted) {
+      const err = new Error('AbortError');
+      err.name = 'AbortError';
+      throw err;
+    }
+
+    const pollRes = await fetch(pollUrl, {
+      method: 'GET',
+      headers,
+      signal
+    });
+
+    if (!pollRes.ok) {
+      if (pollRes.status === 401 || pollRes.status === 403) {
+        return { success: false, error: 'Sesi atau otorisasi tidak valid.', errorCode: 'AUTH_ERROR', retryable: false };
+      }
+      return { success: false, error: `Status HTTP ${pollRes.status} saat memeriksa job.`, errorCode: 'HTTP_ERROR', retryable: true };
+    }
+
+    let pollJson: any = null;
+    try {
+      pollJson = await pollRes.json();
+    } catch {
+      return { success: false, error: 'Format status respons bukan JSON valid.', errorCode: 'INVALID_JSON', retryable: true };
+    }
+
+    if (!pollJson || !pollJson.success) {
+      return { success: false, error: 'Respons status tidak valid.', errorCode: 'INVALID_STATUS', retryable: true };
+    }
+
+    if (onProgress && pollJson.stage) {
+      onProgress(pollJson.stage, pollJson.stageLabel || 'Mochi sedang memproses...');
+    }
+
+    if (pollJson.status === 'completed') {
+      return { success: true, data: pollJson.data };
+    }
+
+    if (pollJson.status === 'failed') {
+      return {
+        success: false,
+        error: pollJson.errorMessage || 'Gagal memproses materi.',
+        errorCode: pollJson.errorCode,
+        retryable: Boolean(pollJson.retryable)
+      };
+    }
+  }
+
+  return { success: false, error: 'Batas waktu pemantauan status terlampaui.', errorCode: 'POLL_TIMEOUT', retryable: true };
 }
 
 /**
@@ -80,26 +204,114 @@ export async function synthesizeLink(
         headers['X-Telegram-Init-Data'] = initData;
       }
 
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          url: cleanUrl,
-          context: userContext || (meta.isRealMetadata ? `Judul asli: ${meta.title} oleh ${meta.author || ''}` : '')
-        }),
-        signal: controller.signal,
-      });
+      let json: any = null;
 
-      gatewayHttpStatus = res.status;
-
-      if (res.ok) {
-        let json: any = null;
+      // Syarat 4: Cek apakah ada job yang sedang berjalan di penyimpanan persisten localStorage
+      const existingJob = getActiveJobForUrl(cleanUrl);
+      if (existingJob) {
+        if (options.onProgress) {
+          options.onProgress('queued', 'Melanjutkan pemantauan proses Mochi...');
+        }
         try {
-          json = await res.json();
-        } catch {
+          const pollResult = await pollJobUntilFinished(
+            existingJob.pollUrl,
+            headers,
+            options.onProgress,
+            controller.signal
+          );
+          clearActiveJob(cleanUrl);
+          if (pollResult.success && pollResult.data) {
+            json = { success: true, data: pollResult.data };
+          }
+        } catch (_) {
+          clearActiveJob(cleanUrl);
+        }
+      }
+
+      if (!json) {
+        const res = await fetch(apiUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            url: cleanUrl,
+            context: userContext || (meta.isRealMetadata ? `Judul asli: ${meta.title} oleh ${meta.author || ''}` : ''),
+            async: isVideoPlatform
+          }),
+          signal: controller.signal,
+        });
+
+        gatewayHttpStatus = res.status;
+
+        if (res.status === 202) {
+          let jobPayload: any = null;
+          try {
+            jobPayload = await res.json();
+          } catch {
+            gatewayErrorType = 'invalid_response';
+            gatewayErrorMessage = 'Respons antrean bukan JSON valid.';
+          }
+
+          if (jobPayload && jobPayload.jobId) {
+            const pollUrl = `${gatewayUrl.replace(/\/$/, '')}${jobPayload.pollUrl || `/api/petalife/job-status/${jobPayload.jobId}`}`;
+            saveActiveJob({
+              jobId: jobPayload.jobId,
+              pollUrl,
+              url: cleanUrl,
+              timestamp: Date.now()
+            });
+
+            if (options.onProgress && jobPayload.stage) {
+              options.onProgress(jobPayload.stage, jobPayload.stageLabel || 'Mochi mencatat antrean...');
+            }
+
+            try {
+              const pollResult = await pollJobUntilFinished(
+                pollUrl,
+                headers,
+                options.onProgress,
+                controller.signal
+              );
+              clearActiveJob(cleanUrl);
+
+              if (pollResult.success && pollResult.data) {
+                json = { success: true, data: pollResult.data };
+              } else {
+                gatewayErrorType = 'server_error';
+                gatewayErrorMessage = pollResult.error || 'Sintesis video belum berhasil.';
+                gatewayErrorAction = pollResult.retryable ? 'Tekan Sintesis Ulang untuk mencoba kembali.' : 'Tempelkan cuplikan teks materi.';
+              }
+            } catch (pollErr: any) {
+              clearActiveJob(cleanUrl);
+              if (pollErr?.name === 'AbortError') throw pollErr;
+              gatewayErrorType = 'server_error';
+              gatewayErrorMessage = 'Pemantauan status proses terputus.';
+              gatewayErrorAction = 'Tekan Sintesis Ulang untuk memeriksa kembali.';
+            }
+          }
+        } else if (res.ok) {
+          try {
+            json = await res.json();
+          } catch {
+            gatewayErrorType = 'invalid_response';
+            gatewayErrorMessage = 'Respons Brain Gateway bukan JSON valid.';
+            gatewayErrorAction = 'Periksa respon backend lalu coba lagi.';
+          }
+        } else if (res.status === 401) {
+          gatewayErrorType = 'unauthorized';
+          gatewayErrorMessage = 'Sesi AI belum valid.';
+          gatewayErrorAction = 'Buka lewat Telegram Mini App atau masuk ulang.';
+        } else if (res.status === 429) {
+          gatewayErrorType = 'rate_limited';
+          gatewayErrorMessage = 'Mochi sedang sibuk.';
+          gatewayErrorAction = 'Coba lagi setelah jeda; kuota batas permintaan tercapai.';
+        } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+          gatewayErrorType = 'server_error';
+          gatewayErrorMessage = 'Sintesis server belum tersedia.';
+          gatewayErrorAction = 'Simpan bookmark, lalu Sintesis ulang.';
+        } else {
           gatewayErrorType = 'invalid_response';
-          gatewayErrorMessage = 'Respons Brain Gateway bukan JSON valid.';
-          gatewayErrorAction = 'Periksa respon backend lalu coba lagi.';
+          gatewayErrorMessage = `Server mengembalikan status HTTP ${res.status}.`;
+          gatewayErrorAction = 'Periksa konfigurasi gateway atau coba lagi.';
         }
 
         if (json) {
@@ -197,22 +409,6 @@ export async function synthesizeLink(
             gatewayErrorAction = 'Tekan Sintesis Ulang untuk mencoba kembali.';
           }
         }
-      } else if (res.status === 401) {
-        gatewayErrorType = 'unauthorized';
-        gatewayErrorMessage = 'Sesi AI belum valid.';
-        gatewayErrorAction = 'Buka lewat Telegram Mini App atau masuk ulang.';
-      } else if (res.status === 429) {
-        gatewayErrorType = 'rate_limited';
-        gatewayErrorMessage = 'Mochi sedang sibuk.';
-        gatewayErrorAction = 'Coba lagi setelah jeda; kuota batas permintaan tercapai.';
-      } else if (res.status === 502 || res.status === 503 || res.status === 504) {
-        gatewayErrorType = 'server_error';
-        gatewayErrorMessage = 'Sintesis server belum tersedia.';
-        gatewayErrorAction = 'Simpan bookmark, lalu Sintesis ulang.';
-      } else {
-        gatewayErrorType = 'invalid_response';
-        gatewayErrorMessage = `Server mengembalikan status HTTP ${res.status}.`;
-        gatewayErrorAction = 'Periksa konfigurasi gateway atau coba lagi.';
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {

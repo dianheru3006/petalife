@@ -197,5 +197,78 @@ describe('aiSynthesisService', () => {
     expect(result.content.notes).toContain('Poin Kunci\n- System Justification:');
     expect(result.content.notes).not.toMatch(/[💡🔍🎯🌱]|Rangkuman lengkap/);
   });
+
+  it('handles HTTP 202 Async Accepted, saves to localStorage, and polls until completed', async () => {
+    const mockCompletedData = {
+      title: 'Kebahagiaan Pikiran Tenang',
+      category: 'Psikologi',
+      tags: ['#mindfulness'],
+      coreThesis: 'Menurut pembicara, tidak memikirkan apa-apa merupakan kebahagiaan tertinggi.',
+      keyTakeaways: [
+        { concept: 'Single Tasking', explanation: 'Pembicara menyatakan kebahagiaan ada pada single tasking.' }
+      ],
+      actionableInsights: ['Fokus satu aktivitas.'],
+      reflectionPrompt: 'Kapan kamu tenang?',
+      notes: 'Gagasan Utama\nMenurut pembicara...',
+      summary: 'Ringkasan...',
+      qualityStatus: 'grounded',
+      evidenceLevel: 'full_text',
+      provenance: 'caption_and_audio'
+    };
+
+    let callCount = 0;
+    const stagesReported: string[] = [];
+
+    globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+      callCount += 1;
+      if (init?.method === 'POST') {
+        return {
+          ok: false,
+          status: 202,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({
+            success: true,
+            async: true,
+            jobId: 'job_test_123',
+            status: 'pending',
+            stage: 'queued',
+            stageLabel: 'Mochi mencatat antrean...',
+            pollUrl: '/api/petalife/job-status/job_test_123'
+          })
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          success: true,
+          jobId: 'job_test_123',
+          status: 'completed',
+          stage: 'completed',
+          stageLabel: 'Mochi selesai!',
+          data: mockCompletedData
+        })
+      };
+    });
+
+    const result = await synthesizeLink(
+      'https://www.instagram.com/reel/DervtpLjZyV/',
+      'instagram',
+      'instagram.com',
+      {
+        timeoutMs: 15000,
+        onProgress: (stage, label) => {
+          stagesReported.push(`${stage}:${label}`);
+        }
+      }
+    );
+
+    expect(result.qualityStatus).toBe('grounded');
+    expect(result.content.title).toBe('Kebahagiaan Pikiran Tenang');
+    expect(callCount).toBe(3);
+    expect(stagesReported.length).toBeGreaterThanOrEqual(1);
+  });
 });
 

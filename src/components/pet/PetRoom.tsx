@@ -695,7 +695,13 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     try {
       // 2. Multi-tier AI Synthesis (Gemini/Groq via Asisten Heru with Sol ADR-001 contract)
-      const res = await synthesizeLink(targetUrl, platform, domain, { context: userContext });
+      const res = await synthesizeLink(targetUrl, platform, domain, {
+        context: userContext,
+        onProgress: (_stage, stageLabel) => {
+          forceMochiAction('studying');
+          triggerSpeech(stageLabel, 6000);
+        }
+      });
       const { content: smart, qualityStatus, evidenceLevel, captureMethod, sourceExcerpt, isFromRemoteAI } = res;
       if (platform === 'youtube' && qualityStatus === 'grounded') {
         const remaining = 5600 - (Date.now() - startedAt);
