@@ -67,7 +67,7 @@ export async function synthesizeLink(
     try {
       const controller = new AbortController();
       const isVideoPlatform = platform === 'youtube' || platform === 'instagram' || platform === 'tiktok';
-      timeout = setTimeout(() => controller.abort(), options.timeoutMs || (isVideoPlatform ? 90000 : 14000));
+      timeout = setTimeout(() => controller.abort(), options.timeoutMs || (isVideoPlatform ? 105000 : 14000));
 
       const initData = typeof window !== 'undefined'
         ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
