@@ -4,6 +4,9 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
   const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
   const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
   const CACHE_PREFIX = 'petalife-shell-';
+  // R2-PWA-02: kunci CSS persisten kini bervers BUILD_ID — kontrak ini yang diuji.
+  const BUILD_ID = 'testbuild1';
+  const versionedCssKey = () => `${STABLE_CSS_KEY}?${BUILD_ID}`;
 
   let mockCachesMap: Map<string, Map<string, Response>>;
 
@@ -61,7 +64,7 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
     const backupCache = getMockCache(PERSISTENT_CSS_BACKUP_CACHE);
     const knownGoodCss = 'body { margin: 0; background-color: #FAF7F2; }';
     await backupCache.put(
-      STABLE_CSS_KEY,
+      versionedCssKey(),
       new Response(knownGoodCss, {
         status: 200,
         headers: { 'Content-Type': 'text/css; charset=utf-8' },
@@ -75,7 +78,7 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
 
       // Logic from sw.js lines 150-164
       if (url.pathname.endsWith('.css')) {
-        const fallbackCss = await backupCache.match(STABLE_CSS_KEY);
+        const fallbackCss = await backupCache.match(versionedCssKey());
         if (fallbackCss) {
           const body = await fallbackCss.text();
           return new Response(body, {
@@ -98,11 +101,26 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
     expect(text).toBe(knownGoodCss);
   });
 
+  it('never serves a stylesheet cached for a different BUILD_ID (anti style collision)', async () => {
+    const backupCache = getMockCache(PERSISTENT_CSS_BACKUP_CACHE);
+    await backupCache.put(
+      `${STABLE_CSS_KEY}?oldbuild9`,
+      new Response('body { color: red; }', {
+        status: 200,
+        headers: { 'Content-Type': 'text/css; charset=utf-8' },
+      })
+    );
+
+    // Build aktif berbeda -> fallback WAJIB menolak CSS build lama.
+    const staleFallback = await backupCache.match(versionedCssKey());
+    expect(staleFallback).toBeNull();
+  });
+
   it('serves persistent backup stylesheet when network is disconnected (offline)', async () => {
     const backupCache = getMockCache(PERSISTENT_CSS_BACKUP_CACHE);
     const knownGoodCss = ':root { --color-primary: #4A3728; }';
     await backupCache.put(
-      STABLE_CSS_KEY,
+      versionedCssKey(),
       new Response(knownGoodCss, {
         status: 200,
         headers: { 'Content-Type': 'text/css; charset=utf-8' },
@@ -117,7 +135,7 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
       } catch (err) {
         // Logic from sw.js lines 166-180
         if (url.pathname.endsWith('.css')) {
-          const fallbackCss = await backupCache.match(STABLE_CSS_KEY);
+          const fallbackCss = await backupCache.match(versionedCssKey());
           if (fallbackCss) {
             const body = await fallbackCss.text();
             return new Response(body, {
@@ -139,5 +157,19 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
     expect(response.headers.get('X-Petalife-Fallback')).toBe('true');
     const content = await response.text();
     expect(content).toBe(knownGoodCss);
+  });
+
+  it('public/sw.js benar-benar mengimplementasikan kontrak R2-PWA-01/02 (bukan hanya simulasi)', async () => {
+    const swUrl = new URL('../../../public/sw.js', import.meta.url);
+    const source = (await import('node:fs')).readFileSync(swUrl, 'utf8');
+
+    // Timeout navigasi: layar putih tidak boleh terjadi saat tunnel menggantung.
+    expect(source).toContain('AbortSignal.timeout(4000)');
+    // Precache per-item: addAll atomik dilarang.
+    expect(source).not.toContain('cache.addAll(');
+    // Kunci CSS WAJIB bervers BUILD_ID untuk tulis maupun baca.
+    expect(source).toContain('`${STABLE_CSS_KEY}?${BUILD_ID}`');
+    expect(source).not.toMatch(/backupCache\.put\(STABLE_CSS_KEY/);
+    expect(source).not.toMatch(/backupCache\.match\(STABLE_CSS_KEY\)/);
   });
 });

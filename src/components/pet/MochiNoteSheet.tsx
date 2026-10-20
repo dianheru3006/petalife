@@ -1,8 +1,9 @@
 import type { FC, FormEvent } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { SavedLink, LinkQualityStatus } from '../../lib/types';
 import { ExternalLink, Play, Globe, X } from 'lucide-react';
+import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 
 export interface MochiNoteSheetProps {
   isOpen: boolean;
@@ -33,6 +34,27 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       setSaveError(null);
     }
   }, [link]);
+
+  // R2-UX-01: tinggi keyboard virtual yang menutupi sheet.
+  const keyboardInset = useVisualViewportInset();
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  // R2-UX-02: scroll lock + Escape, hanya aktif selama sheet terbuka.
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !link) return null;
 
@@ -136,10 +158,12 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="mochi-sheet-title"
+      style={keyboardInset ? { paddingBottom: `${keyboardInset}px` } : undefined}
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 anim-modal-backdrop pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
       onClick={onClose}
     >
       <div
+        ref={sheetRef}
         className="w-full max-w-md bg-[#FAF7F2] rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] flex flex-col max-h-[88dvh] overflow-hidden anim-modal-sheet"
         onClick={(e) => e.stopPropagation()}
       >
@@ -301,6 +325,11 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   rows={8}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
+                  onFocus={(e) => {
+                    // R2-UX-01: setelah keyboard terbuka, gulir field ke tengah visual viewport.
+                    const field = e.currentTarget;
+                    setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250);
+                  }}
                   placeholder="Rangkuman komprehensif dari materi yang dipelajari..."
                   className="w-full text-sm sm:text-base text-[#2E2E3A] placeholder-[#9E9484] bg-transparent border-0 p-0 focus:outline-none resize-none leading-relaxed"
                 />

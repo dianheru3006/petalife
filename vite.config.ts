@@ -39,6 +39,24 @@ function injectServiceWorkerAssetsPlugin(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        // R2-PERF-01: pisahkan vendor agar entry chunk hanya berisi kode layar pertama.
+        // Catatan: Vite 8 memakai Rolldown, yang HANYA menerima bentuk fungsi
+        // (objek manualChunks ditolak: "Expected Function but received Object").
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('react-dom') || id.includes('scheduler')) return 'react';
+          if (id.includes('/react/')) return 'react';
+          if (id.includes('dexie')) return 'db';
+          if (id.includes('lucide-react')) return 'icons';
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     host: true,
     allowedHosts: true,

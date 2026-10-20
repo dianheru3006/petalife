@@ -5,6 +5,15 @@ const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_
 const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
 const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
 
+// R2-PWA-02: kunci CSS persisten WAJIB bervers. Tanpa ini, CSS build lama bisa
+// tersaji untuk bundle JS build baru dan merusak tata letak (style collision).
+const versionedCssKey = () => `${STABLE_CSS_KEY}?${BUILD_ID}`;
+
+async function matchPersistentCss() {
+  const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
+  return backupCache.match(versionedCssKey());
+}
+
 // 1. Static Web App Shell Assets
 const STATIC_PRECACHE = [
   './',
@@ -34,14 +43,18 @@ self.addEventListener('message', (event) => {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      await cache.addAll(ALL_PRECACHE);
+      // R2-PWA-02: addAll bersifat atomik — satu aset 404 membatalkan SELURUH install.
+      // Cache per-item agar PWA tetap memiliki shell walau satu ikon/manifest hilang.
+      await Promise.all(ALL_PRECACHE.map((url) =>
+        cache.add(url).catch((e) => console.warn('[Petalife SW] skip precache', url, e && e.message))
+      ));
       // Mirror the active CSS stylesheet into a persistent non-purged cache
       const cssAsset = BUILD_ASSETS.find((a) => a.endsWith('.css'));
       if (cssAsset) {
         const cssRes = await cache.match(cssAsset);
         if (cssRes) {
           const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
-          await backupCache.put(STABLE_CSS_KEY, cssRes.clone());
+          await backupCache.put(versionedCssKey(), cssRes.clone());
         }
       }
     })
@@ -91,8 +104,14 @@ self.addEventListener('fetch', (event) => {
 
   // Navigation requests (HTML SPA shell fallback)
   if (request.mode === 'navigate') {
+    // R2-PWA-01: network-first BERBATAS WAKTU. Tanpa timeout, tunnel yang menggantung
+    // membuat PWA menampilkan layar putih padahal shell-nya sudah tersimpan offline.
+    const navSignal = (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function')
+      ? AbortSignal.timeout(4000)
+      : undefined;
+
     event.respondWith(
-      fetch(request)
+      fetch(request, navSignal ? { signal: navSignal } : undefined)
         .then((response) => {
           if (response.status === 200) {
             const copy = response.clone();
@@ -141,7 +160,7 @@ self.addEventListener('fetch', (event) => {
               // Keep persistent stylesheet backup updated
               if (request.destination === 'style' || url.pathname.endsWith('.css')) {
                 caches.open(PERSISTENT_CSS_BACKUP_CACHE).then((backupCache) => {
-                  backupCache.put(STABLE_CSS_KEY, networkResponse.clone());
+                  backupCache.put(versionedCssKey(), networkResponse.clone());
                 });
               }
               return networkResponse;
@@ -149,8 +168,8 @@ self.addEventListener('fetch', (event) => {
 
             // If CSS returned 404 or non-200 from network/CDN edge, serve persistent backup
             if (request.destination === 'style' || url.pathname.endsWith('.css')) {
-              const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
-              const fallbackCss = await backupCache.match(STABLE_CSS_KEY);
+              // Hanya CSS dari BUILD_ID yang sama boleh dipakai (anti style collision).
+              const fallbackCss = await matchPersistentCss();
               if (fallbackCss) {
                 console.warn('[Petalife SW] CSS returned status ' + networkResponse.status + '. Serving persistent backup stylesheet.');
                 const body = await fallbackCss.blob();
@@ -166,8 +185,7 @@ self.addEventListener('fetch', (event) => {
           .catch(async (err) => {
             // Robust styling fallback: if CSS asset fails to load over network, serve persistent backup
             if (request.destination === 'style' || url.pathname.endsWith('.css')) {
-              const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
-              const fallbackCss = await backupCache.match(STABLE_CSS_KEY);
+              const fallbackCss = await matchPersistentCss();
               if (fallbackCss) {
                 console.warn('[Petalife SW] Network failed for CSS. Serving persistent backup stylesheet.');
                 const body = await fallbackCss.blob();

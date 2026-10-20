@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
 import { feedPet, awardXp, calculateTimeDecay, togglePetSleep } from './features/pet/engine/petEngine';
@@ -18,10 +18,11 @@ import { queryAssistant } from './features/assistant/engine/assistantEngine';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
 import { DashboardPage } from './features/dashboard/DashboardPage';
-import { VaultPage } from './features/vault/VaultPage';
-import { NotesPage } from './features/notes/NotesPage';
-import { AssistantPage } from './features/assistant/AssistantPage';
-import { SettingsPage } from './features/settings/SettingsPage';
+// R2-PERF-01: halaman non-home dimuat lazy agar entry chunk tetap ringan.
+const VaultPage = lazy(() => import('./features/vault/VaultPage').then(m => ({ default: m.VaultPage })));
+const NotesPage = lazy(() => import('./features/notes/NotesPage').then(m => ({ default: m.NotesPage })));
+const AssistantPage = lazy(() => import('./features/assistant/AssistantPage').then(m => ({ default: m.AssistantPage })));
+const SettingsPage = lazy(() => import('./features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 import { applyServiceWorkerUpdate } from './registerServiceWorker';
 
 const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant', 'settings'];
@@ -149,10 +150,35 @@ export function App() {
     };
   }, []);
 
+  // R2-DATA-01: ref agar mutasi XP tidak bergantung pada flush useEffect.
+  const petRef = useRef<Pet>(pet);
+
   // Sync pet state changes to versioned localStorage
   useEffect(() => {
+    petRef.current = pet;
     saveStoredPet(pet);
   }, [pet]);
+
+  /**
+   * R2-DATA-01 — Write-through persistence.
+   * Reward ledger (IndexedDB) sudah commit sebelum fungsi ini dipanggil; jika XP hanya
+   * hidup di state React, menutup tab atau kuota localStorage yang habis akan menghanguskan
+   * XP secara permanen. Karena itu persistensi dilakukan SINKRON di sini, bukan menunggu useEffect.
+   */
+  const persistPetChange = (mutator: (current: Pet) => Pet): Pet => {
+    const next = mutator(petRef.current);
+    petRef.current = next;
+    if (!saveStoredPet(next)) {
+      setStorageError('Progres XP gagal disimpan di perangkat ini (penyimpanan penuh atau mode privat). Muat ulang halaman sebelum melanjutkan.');
+    }
+    setPet(next);
+    return next;
+  };
+
+  const applyRewardXp = (xpAmount: number) => {
+    if (!xpAmount || xpAmount <= 0) return;
+    persistPetChange(current => awardXp(current, xpAmount).pet);
+  };
 
   // Periodic passive decay while user keeps application open (every 60 seconds)
   useEffect(() => {
@@ -174,7 +200,7 @@ export function App() {
       try {
         const isNew = await recordRewardClaim(ledgerKey, 'habit', goalId, goal.xpReward);
         if (isNew) {
-          setPet(p => awardXp(p, goal.xpReward).pet);
+          applyRewardXp(goal.xpReward);
         }
       } catch (err) {
         console.error(`[App] Failed to claim reward for goal ${goalId}:`, err);
@@ -221,11 +247,11 @@ export function App() {
       const todayKey = getTodayDateString();
       const rewardResult = await claimDailyLinkReward(created.id, todayKey, 2);
       if (rewardResult.awarded) {
-        setPet(prev => awardXp(prev, rewardResult.xpAwarded).pet);
+        applyRewardXp(rewardResult.xpAwarded);
         // Check learning variety bonus (10 XP if 2 distinct learning categories today)
         const varietyResult = await claimLearningVarietyBonus(todayKey);
         if (varietyResult.awarded) {
-          setPet(prev => awardXp(prev, varietyResult.xpAwarded).pet);
+          applyRewardXp(varietyResult.xpAwarded);
         }
       }
 
@@ -272,7 +298,7 @@ export function App() {
         const todayKey = getTodayDateString();
         const reviewResult = await claimDailyReviewReward(id, todayKey, 2);
         if (reviewResult.awarded) {
-          setPet(prev => {
+          persistPetChange(prev => {
             const awardResult = awardXp(prev, reviewResult.xpAwarded);
             return {
               ...awardResult.pet,
@@ -290,7 +316,7 @@ export function App() {
           // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
           const varietyResult = await claimLearningVarietyBonus(todayKey);
           if (varietyResult.awarded) {
-            setPet(prev => awardXp(prev, varietyResult.xpAwarded).pet);
+            applyRewardXp(varietyResult.xpAwarded);
           }
         }
       }
@@ -308,12 +334,12 @@ export function App() {
       const todayKey = getTodayDateString();
       const noteReward = await claimDailyNoteReward(created.id, todayKey, 2);
       if (noteReward.awarded) {
-        setPet(prev => awardXp(prev, noteReward.xpAwarded).pet);
+        applyRewardXp(noteReward.xpAwarded);
 
         // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
         const varietyResult = await claimLearningVarietyBonus(todayKey);
         if (varietyResult.awarded) {
-          setPet(prev => awardXp(prev, varietyResult.xpAwarded).pet);
+          applyRewardXp(varietyResult.xpAwarded);
         }
       }
 
@@ -354,7 +380,7 @@ export function App() {
       try {
         const isNew = await recordRewardClaim(ledgerKey, 'habit', id, goal.xpReward);
         if (isNew) {
-          setPet(p => awardXp(p, goal.xpReward).pet);
+          applyRewardXp(goal.xpReward);
         }
       } catch (err) {
         console.error('[App] Failed to record reward claim:', err);
@@ -454,6 +480,7 @@ export function App() {
       )}
 
       <div key={currentTab} className="anim-page-enter">
+        <Suspense fallback={<div className="p-6 text-center text-sm font-semibold text-[#8C8275] select-none">Memuat…</div>}>
         {currentTab === 'home' && (
           <DashboardPage
             pet={pet}
@@ -500,6 +527,7 @@ export function App() {
           />
         )}
         {currentTab === 'settings' && <SettingsPage />}
+        </Suspense>
       </div>
     </AppLayout>
   );
