@@ -2,8 +2,36 @@ import type { FC, FormEvent } from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { SavedLink, LinkQualityStatus } from '../../lib/types';
-import { ExternalLink, Play, Globe, X } from 'lucide-react';
+import { ExternalLink, Play, Globe, Pencil, X } from 'lucide-react';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
+import { detectPlatform, getYouTubeThumbnail } from '../../lib/utils';
+import { getNoteViewSections, noteSummary, noteTextForDraft } from '../../lib/utils/noteView';
+
+const YouTubeArtwork: FC<{ url: string; title: string; isShort: boolean }> = ({ url, title, isShort }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const thumbnailUrl = getYouTubeThumbnail(url);
+
+  return (
+    <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-[#B42318] flex items-center justify-center text-white shadow-xs flex-shrink-0 relative overflow-hidden">
+      {thumbnailUrl && !imageFailed ? (
+        <img
+          src={thumbnailUrl}
+          alt={`Thumbnail video ${title}`}
+          className="w-full h-full object-cover"
+          decoding="async"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <Play className="w-6 h-6 fill-white text-white translate-x-0.5" aria-hidden="true" />
+      )}
+      {isShort && (
+        <span className="absolute bottom-0 right-0 text-[9px] font-black bg-black/75 text-white px-1.5 py-0.5 rounded-tl-md">
+          SHORT
+        </span>
+      )}
+    </div>
+  );
+};
 
 export interface MochiNoteSheetProps {
   isOpen: boolean;
@@ -25,13 +53,15 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
 
   useEffect(() => {
     if (link) {
       setTitle(link.title || '');
-      setNotes(link.notes || link.summary || '');
+      setNotes(noteTextForDraft(link));
       setTags(link.tags || []);
       setSaveError(null);
+      setIsEditingNotes(link.qualityStatus === 'needs_context');
     }
   }, [link]);
 
@@ -58,6 +88,10 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
 
   if (!isOpen || !link) return null;
 
+  const isYouTubeShort = link.platform === 'youtube' && detectPlatform(link.url).domain === 'YouTube Shorts';
+  const sourceDomain = link.platform === 'youtube' ? detectPlatform(link.url).domain : link.domain;
+  const noteSections = getNoteViewSections(notes);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -76,7 +110,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
         ...link,
         title: title.trim() || link.title,
         notes: trimmedNotes || link.notes,
-        summary: trimmedNotes ? trimmedNotes.slice(0, 150) : link.summary,
+        summary: trimmedNotes ? (noteSummary(trimmedNotes) || link.summary) : link.summary,
         tags: tags.length > 0 ? tags : link.tags,
         updatedAt: Date.now(),
         qualityStatus: updatedStatus,
@@ -108,16 +142,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
           </div>
         );
       case 'youtube':
-        return (
-          <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#FF0000] to-[#B30000] flex items-center justify-center text-white shadow-xs flex-shrink-0 relative">
-            <div className="w-6 h-6 rounded-full bg-white/25 flex items-center justify-center">
-              <Play className="w-3.5 h-3.5 fill-white text-white translate-x-0.5" />
-            </div>
-            <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-black/60 text-white px-1.5 py-0.5 rounded-md">
-              SHORT
-            </span>
-          </div>
-        );
+        return <YouTubeArtwork key={link.url} url={link.url} title={title || link.title} isShort={isYouTubeShort} />;
       case 'tiktok':
         return (
           <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#111111] via-[#010101] to-[#25F4EE] flex items-center justify-center text-white shadow-xs flex-shrink-0 relative">
@@ -143,7 +168,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       case 'instagram':
         return 'INSTAGRAM';
       case 'youtube':
-        return 'YOUTUBE SHORTS';
+        return isYouTubeShort ? 'YOUTUBE SHORTS' : 'YOUTUBE';
       case 'tiktok':
         return 'TIKTOK';
       default:
@@ -176,13 +201,13 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
         <div className="px-5 pt-1.5 pb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] font-bold tracking-widest text-[#8C8275] uppercase">
-              RINGKASAN CERDAS {petName.toUpperCase()}
+              DRAF CATATAN {petName.toUpperCase()}
             </p>
             <h2
               id="mochi-sheet-title"
-              className="text-2xl sm:text-[25px] font-black text-[#2E2E3A] tracking-tight mt-0.5 leading-snug"
+              className="text-[22px] sm:text-2xl font-black text-[#2E2E3A] tracking-tight mt-0.5 leading-snug"
             >
-              Hasil Ekstraksi & Intisari Vault
+              Tinjau intisari
             </h2>
           </div>
           <button
@@ -206,7 +231,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   {getPlatformLabel()}
                 </span>
                 <h3 className="text-sm font-bold text-[#2E2E3A] line-clamp-1 leading-snug">
-                  {link.title || link.domain}
+                  {title || link.title || link.domain}
                 </h3>
                 <a
                   href={link.url}
@@ -214,7 +239,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                   rel="noopener noreferrer"
                   className="text-xs text-[#8C8275] hover:text-[#BA5218] flex items-center gap-1 mt-0.5 transition-colors group"
                 >
-                  <span className="truncate">{link.domain}</span>
+                  <span className="truncate">{link.author ? `${link.author} · ${sourceDomain}` : sourceDomain}</span>
                   <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </a>
 
@@ -311,29 +336,55 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
               />
             </div>
 
-            {/* Section 3: RINGKASAN & INTISARI LENGKAP */}
+            {/* Section 3: read first, edit on demand. Notes remain the single saved source. */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="mochi-note-body"
-                className="text-[11px] font-bold text-[#8C8275] tracking-widest uppercase block"
-              >
-                RINGKASAN & INTISARI LENGKAP
-              </label>
-              <div className="bg-white border border-[#EAE3D5] rounded-2xl p-4 shadow-2xs focus-within:ring-2 focus-within:ring-[#FED7C5] transition-all">
-                <textarea
-                  id="mochi-note-body"
-                  rows={8}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  onFocus={(e) => {
-                    // R2-UX-01: setelah keyboard terbuka, gulir field ke tengah visual viewport.
-                    const field = e.currentTarget;
-                    setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250);
-                  }}
-                  placeholder="Rangkuman komprehensif dari materi yang dipelajari..."
-                  className="w-full text-sm sm:text-base text-[#2E2E3A] placeholder-[#9E9484] bg-transparent border-0 p-0 focus:outline-none resize-none leading-relaxed"
-                />
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-bold text-[#6E6458] tracking-wider uppercase">Intisari materi</p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingNotes(value => !value)}
+                  aria-pressed={isEditingNotes}
+                  className="min-h-11 px-3 inline-flex items-center gap-1.5 rounded-xl text-xs font-bold text-[#8B3D16] hover:bg-[#F2E7DA] focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                >
+                  <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                  {isEditingNotes ? 'Lihat intisari' : 'Edit teks'}
+                </button>
               </div>
+              {isEditingNotes ? (
+                <div className="bg-white border border-[#EAE3D5] rounded-2xl p-4 shadow-2xs focus-within:ring-2 focus-within:ring-[#FED7C5] transition-all">
+                  <label htmlFor="mochi-note-body" className="sr-only">Edit teks intisari</label>
+                  <textarea
+                    id="mochi-note-body"
+                    rows={12}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    onFocus={(e) => {
+                      const field = e.currentTarget;
+                      setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250);
+                    }}
+                    placeholder="Tulis intisari materi yang dipelajari..."
+                    className="w-full text-sm sm:text-base text-[#2E2E3A] placeholder-[#8C8275] bg-transparent border-0 p-0 focus:outline-none resize-y leading-relaxed"
+                  />
+                </div>
+              ) : noteSections.length ? (
+                <div className="space-y-2.5" aria-label="Pratinjau intisari">
+                  {noteSections.map((section, index) => (
+                    <section key={`${section.kind}-${index}`} className="bg-white border border-[#EAE3D5] rounded-2xl px-4 py-3.5 shadow-2xs">
+                      <h4 className="text-[13px] font-extrabold text-[#513827] mb-2">
+                        {section.kind === 'thesis' ? '💡 ' : section.kind === 'takeaways' ? '🔍 ' : section.kind === 'actions' ? '🎯 ' : section.kind === 'reflection' ? '🌱 ' : ''}
+                        {section.title}
+                      </h4>
+                      <div className="space-y-2 text-[13px] sm:text-sm leading-relaxed text-[#373643]">
+                        {section.lines.map((line, lineIndex) => (
+                          <p key={lineIndex} className={line.bullet ? 'pl-3 border-l-2 border-[#D9B59A]' : ''}>{line.text}</p>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <p className="bg-white border border-[#EAE3D5] rounded-2xl p-4 text-sm text-[#6E6458]">Belum ada intisari. Pilih Edit teks untuk menambahkan catatan.</p>
+              )}
             </div>
 
             {/* Section 4: TAG */}
