@@ -2,6 +2,7 @@ import { useState, type FC } from 'react';
 import { Play } from 'lucide-react';
 import type { SavedLink, PlatformType } from '../../lib/types';
 import { getYouTubeThumbnail } from '../../lib/utils';
+import { getBrainGatewayUrl } from '../../lib/services/brainGatewaySettings';
 
 // Official Brand Silhouette SVG Icons
 const YouTubeBrandIcon: FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
@@ -77,10 +78,24 @@ export const DEFAULT_LINK_THUMBNAILS: Record<string, string> = {
   'link-4': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=800&auto=format&fit=crop&q=80',
 };
 
-export function getLinkThumbnailUrl(link: SavedLink): string | undefined {
-  if (link.thumbnailUrl && /^https?:\/\//i.test(link.thumbnailUrl)) {
-    return link.thumbnailUrl;
-  }
+/**
+ * Poster Instagram/TikTok di-cache di server Narzo dan disimpan sebagai path
+ * relatif. Resolusi dilakukan saat render memakai gateway yang sedang aktif,
+ * sehingga URL tunnel yang berganti tidak menghasilkan gambar rusak.
+ */
+const SAVED_THUMBNAIL_PATH_RE = /^\/api\/petalife\/thumbnail\/[a-f0-9]{32}$/;
+
+export function resolveLinkThumbnailUrl(raw: string | undefined, gatewayBase?: string): string | undefined {
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (!SAVED_THUMBNAIL_PATH_RE.test(raw)) return undefined;
+  const base = String(gatewayBase ?? getBrainGatewayUrl() ?? '').replace(/\/+$/, '');
+  return base ? `${base}${raw}` : undefined;
+}
+
+export function getLinkThumbnailUrl(link: SavedLink, gatewayBase?: string): string | undefined {
+  const saved = resolveLinkThumbnailUrl(link.thumbnailUrl, gatewayBase);
+  if (saved) return saved;
   const yt = getYouTubeThumbnail(link.url);
   if (yt) return yt;
   if (DEFAULT_LINK_THUMBNAILS[link.id]) {

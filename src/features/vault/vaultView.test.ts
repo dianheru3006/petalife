@@ -3,7 +3,7 @@ import type { SavedLink } from '../../lib/types';
 import { getYouTubeThumbnail } from '../../lib/utils';
 import { getNoteViewSections } from '../../lib/utils/noteView';
 import type { LibraryMochiActivity } from './LibraryMochi';
-import { getLinkThumbnailUrl, DEFAULT_LINK_THUMBNAILS } from './VaultBookArtwork';
+import { getLinkThumbnailUrl, resolveLinkThumbnailUrl, DEFAULT_LINK_THUMBNAILS } from './VaultBookArtwork';
 
 describe('Vault Pustaka & Reading Mode Contracts', () => {
   const sampleYouTubeLink: SavedLink = {
@@ -104,6 +104,35 @@ describe('Vault Pustaka & Reading Mode Contracts', () => {
       updatedAt: Date.now(),
     };
     expect(getLinkThumbnailUrl(mockInstagramLink)).toBe(DEFAULT_LINK_THUMBNAILS['link-3']);
+  });
+
+  it('resolves server-cached Instagram poster paths against the active gateway', () => {
+    const key = '0123456789abcdef0123456789abcdef';
+    const reel: SavedLink = {
+      id: 'link-reel-1',
+      url: 'https://www.instagram.com/reel/C8abcDEF123/',
+      title: 'Reel Poster Test',
+      platform: 'instagram',
+      domain: 'Instagram Reels',
+      tags: ['#psikologi'],
+      status: 'completed',
+      dateAdded: '2026-10-21',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      thumbnailUrl: `/api/petalife/thumbnail/${key}`,
+    };
+
+    expect(resolveLinkThumbnailUrl(`/api/petalife/thumbnail/${key}`, 'https://brain.example.com'))
+      .toBe(`https://brain.example.com/api/petalife/thumbnail/${key}`);
+    expect(getLinkThumbnailUrl(reel, 'https://brain.example.com/'))
+      .toBe(`https://brain.example.com/api/petalife/thumbnail/${key}`);
+    // Tanpa gateway aktif, path relatif tidak boleh menjadi URL rusak.
+    expect(resolveLinkThumbnailUrl(`/api/petalife/thumbnail/${key}`, '')).toBeUndefined();
+    // Path di luar pola cache (traversal, host asing) tidak pernah diteruskan.
+    expect(resolveLinkThumbnailUrl('/api/petalife/thumbnail/../../etc/passwd', 'https://brain.example.com'))
+      .toBeUndefined();
+    expect(resolveLinkThumbnailUrl('https://cdn.example.com/poster.jpg', 'https://brain.example.com'))
+      .toBe('https://cdn.example.com/poster.jpg');
   });
 });
 

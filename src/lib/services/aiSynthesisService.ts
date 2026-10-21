@@ -284,8 +284,7 @@ export function formatSynthesizedData(
       summary: d.coreThesis || d.summary || '',
       tags: Array.isArray(d.tags) ? d.tags : ['#wawasan', '#vault'],
       author: meta.author || d.author,
-      thumbnailUrl: typeof d.thumbnailUrl === 'string' && /^https:\/\//i.test(d.thumbnailUrl)
-        ? d.thumbnailUrl : meta.thumbnailUrl,
+      thumbnailUrl: pickThumbnailUrl(d.thumbnailUrl, meta.thumbnailUrl),
     },
     isFromRemoteAI: true,
     evidenceLevel,
@@ -375,6 +374,21 @@ async function pollJobUntilFinished(
   }
 
   return { success: false, error: 'Batas waktu pemantauan status terlampaui.', errorCode: 'POLL_TIMEOUT', retryable: true };
+}
+
+/**
+ * Poster short-video dari backend disimpan sebagai path relatif
+ * `/api/petalife/thumbnail/<hash>` agar URL tunnel yang berubah tidak
+ * mematahkan gambar lama. URL https absolut (YouTube/microlink) tetap diterima.
+ */
+const SAVED_THUMBNAIL_PATH_RE = /^\/api\/petalife\/thumbnail\/[a-f0-9]{32}$/;
+
+export function pickThumbnailUrl(candidate: unknown, fallback?: string): string | undefined {
+  if (typeof candidate === 'string'
+    && (/^https:\/\//i.test(candidate) || SAVED_THUMBNAIL_PATH_RE.test(candidate))) {
+    return candidate;
+  }
+  return fallback;
 }
 
 export async function resumeActiveJob(

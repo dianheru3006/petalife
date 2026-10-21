@@ -5,7 +5,8 @@ import {
   resumeActiveJob,
   getActiveJobForUrl,
   saveActiveJob,
-  clearAnonSession
+  clearAnonSession,
+  pickThumbnailUrl
 } from './aiSynthesisService';
 
 describe('aiSynthesisService', () => {
@@ -24,6 +25,19 @@ describe('aiSynthesisService', () => {
   afterEach(() => {
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
+  });
+
+  it('accepts server-cached poster paths but rejects unsafe thumbnail candidates', () => {
+    const key = '0123456789abcdef0123456789abcdef';
+    expect(pickThumbnailUrl(`/api/petalife/thumbnail/${key}`))
+      .toBe(`/api/petalife/thumbnail/${key}`);
+    expect(pickThumbnailUrl('https://img.youtube.com/vi/qxABp0pjntU/hqdefault.jpg'))
+      .toBe('https://img.youtube.com/vi/qxABp0pjntU/hqdefault.jpg');
+    expect(pickThumbnailUrl('/etc/passwd')).toBeUndefined();
+    expect(pickThumbnailUrl('javascript:alert(1)', 'https://cdn.example.com/poster.jpg'))
+      .toBe('https://cdn.example.com/poster.jpg');
+    expect(pickThumbnailUrl(undefined, 'https://cdn.example.com/poster.jpg'))
+      .toBe('https://cdn.example.com/poster.jpg');
   });
 
   it('handles network error (failed to fetch) with honest gateway_error and network_error type', async () => {

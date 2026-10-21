@@ -366,10 +366,11 @@ export function App() {
 
   // 4. Notes Actions with IndexedDB Persistence & Sol XP Economy (15 XP per note, max 2/day)
   const handleAddNote = async (newNote: Note) => {
-    try {
-      const created = await createNote(newNote);
-      setNotes(prev => [created, ...prev]);
+    // The editor may report success only after the note itself is durable.
+    const created = await createNote(newNote);
+    setNotes(prev => [created, ...prev]);
 
+    try {
       const todayKey = getTodayDateString();
       const noteReward = await claimDailyNoteReward(created.id, todayKey, 2);
       if (noteReward.awarded) {
@@ -387,7 +388,8 @@ export function App() {
 
       await fulfillDailyGoal('goal-4');
     } catch (err) {
-      console.error('[App] Failed to save note to repository:', err);
+      // Reward bookkeeping must not turn an already saved note into a false failure.
+      console.error('[App] Note saved, but reward bookkeeping failed:', err);
     }
   };
 
@@ -397,6 +399,7 @@ export function App() {
       setNotes(prev => prev.map(n => n.id === id ? updated : n));
     } catch (err) {
       console.error('[App] Failed to update note:', err);
+      throw err;
     }
   };
 
@@ -406,6 +409,7 @@ export function App() {
       setNotes(prev => prev.filter(n => n.id !== id));
     } catch (err) {
       console.error('[App] Failed to delete note from repository:', err);
+      throw err;
     }
   };
 
@@ -521,7 +525,7 @@ export function App() {
         </div>
       )}
 
-      <div key={currentTab} className="anim-page-enter">
+      <div key={currentTab} className={currentTab === 'notes' ? '' : 'anim-page-enter'}>
         <Suspense fallback={<div className="p-6 text-center text-sm font-semibold text-[#8C8275] select-none">Memuat…</div>}>
         {currentTab === 'home' && (
           <DashboardPage

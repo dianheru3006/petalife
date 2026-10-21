@@ -1,320 +1,352 @@
 import type { FC, FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Note } from '../../lib/types';
-import { Button } from '../../components/ui/Button';
-import { FileText, Plus, Search, Trash2, Check, Pencil } from 'lucide-react';
+import { ArrowLeft, Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { NotesMochi } from './NotesMochi';
+import notesStudyBg from '../../assets/notes-study-bg.webp';
 
 export interface NotesPageProps {
   notes: Note[];
-  onAddNote: (note: Note) => void;
-  onUpdateNote?: (id: string, updates: Partial<Note>) => void;
-  onDeleteNote: (id: string) => void;
+  onAddNote: (note: Note) => Promise<void> | void;
+  onUpdateNote?: (id: string, updates: Partial<Note>) => Promise<void> | void;
+  onDeleteNote: (id: string) => Promise<void> | void;
   isNightMode?: boolean;
 }
 
+type NoteColor = NonNullable<Note['color']>;
+
+const NOTE_COLORS: { value: NoteColor; label: string; swatch: string; paper: string }[] = [
+  { value: 'cream', label: 'Kertas', swatch: 'bg-[#F5EBD5]', paper: 'bg-[#FFFDF7]' },
+  { value: 'peach', label: 'Persik', swatch: 'bg-[#F4C6A9]', paper: 'bg-[#FFF5EB]' },
+  { value: 'lavender', label: 'Lavender', swatch: 'bg-[#D9D0E8]', paper: 'bg-[#F9F5FC]' },
+  { value: 'mint', label: 'Mint', swatch: 'bg-[#C8DFC9]', paper: 'bg-[#F4FBF5]' },
+  { value: 'pink', label: 'Merah muda', swatch: 'bg-[#F3D2D8]', paper: 'bg-[#FFF7F8]' },
+];
+
+const formatDate = (timestamp?: number) => {
+  if (!timestamp || typeof timestamp !== 'number' || Number.isNaN(timestamp)) return '';
+  try {
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    }).format(timestamp);
+  } catch {
+    return '';
+  }
+};
+
 export const NotesPage: FC<NotesPageProps> = ({
-  notes,
-  onAddNote,
-  onUpdateNote,
-  onDeleteNote,
-  isNightMode = false,
+  notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false,
 }) => {
-  const [isCreating, setIsCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [bodyInput, setBodyInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
-  const [colorInput, setColorInput] = useState<'peach' | 'lavender' | 'mint' | 'pink' | 'cream'>('peach');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [colorInput, setColorInput] = useState<NoteColor>('cream');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [mochiGreetingIndex, setMochiGreetingIndex] = useState(0);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const noteButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const isSavingRef = useRef(isSaving);
 
-  const resetForm = () => {
-    setTitleInput('');
-    setBodyInput('');
-    setTagsInput('');
-    setEditingNoteId(null);
-    setIsCreating(false);
-  };
+  useEffect(() => {
+    isSavingRef.current = isSaving;
+  }, [isSaving]);
 
-  const handleStartEdit = (note: Note) => {
-    setEditingNoteId(note.id);
-    setTitleInput(note.title);
-    setBodyInput(note.body);
-    setTagsInput(note.tags.join(', '));
-    setColorInput(note.color || 'peach');
-    setIsCreating(true);
-  };
+  const sortedNotes = [...notes].sort(
+    (a, b) => (b.updatedAtTimestamp || b.createdAt || 0) - (a.updatedAtTimestamp || a.createdAt || 0)
+  );
+  const query = searchQuery.trim().toLocaleLowerCase('id-ID');
+  const filteredNotes = query
+    ? sortedNotes.filter(note => [note.title || '', note.body || '', ...(note.tags ?? [])].some(value => (value || '').toLocaleLowerCase('id-ID').includes(query)))
+    : sortedNotes;
+  const selectedNote = notes.find(note => note.id === selectedNoteId);
+  const mochiGreetings = notes.length === 0
+    ? ['Mochi siap mencatat ide pertamamu.', 'Satu ide kecil bisa jadi awal yang besar.']
+    : [`Lagi nyatet... sudah ${notes.length} catatan.`, 'Punya ide baru? Tulis di papan, ya!'];
 
-  const handleSave = (e: FormEvent) => {
-    e.preventDefault();
-    if (!titleInput.trim() && !bodyInput.trim()) return;
-
-    const tags = tagsInput
-      .split(',')
-      .map(t => t.trim().replace(/^#/, ''))
-      .filter(Boolean);
-
-    if (editingNoteId && onUpdateNote) {
-      onUpdateNote(editingNoteId, {
-        title: titleInput.trim() || 'Untitled Note',
-        body: bodyInput.trim(),
-        tags: tags.length > 0 ? tags : ['general'],
-        color: colorInput,
-        updatedAt: 'Just now',
+  useEffect(() => {
+    if (!isEditorOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = requestAnimationFrame(() => titleRef.current?.focus());
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape' && !isSavingRef.current) {
+        event.preventDefault();
+        setIsEditorOpen(false);
+      }
+      if (event.key !== 'Tab' || !editorRef.current) return;
+      const focusables = [...editorRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled])',
+      )];
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+      requestAnimationFrame(() => {
+        if (triggerRef.current?.isConnected) triggerRef.current.focus();
       });
-      resetForm();
-      setSaveToast('✨ Note updated successfully!');
-      setTimeout(() => setSaveToast(null), 3000);
+    };
+  }, [isEditorOpen]);
+
+  const openEditor = (note?: Note) => {
+    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setEditingNoteId(note?.id ?? null);
+    setTitleInput(note?.title ?? '');
+    setBodyInput(note?.body ?? '');
+    setTagsInput((note?.tags ?? []).filter(tag => tag !== 'general').join(', '));
+    setColorInput(note?.color ?? 'cream');
+    setError(null);
+    setIsEditorOpen(true);
+  };
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const title = titleInput.trim();
+    const body = bodyInput.trim();
+    if (!title && !body) {
+      setError('Tulis judul atau isi catatan terlebih dahulu.');
       return;
     }
-
-    const now = Date.now();
-    const newNote: Note = {
-      id: `note-${now}`,
-      title: titleInput.trim() || 'Untitled Quick Note',
-      body: bodyInput.trim(),
-      tags: tags.length > 0 ? tags : ['general'],
-      updatedAt: 'Just now',
-      createdAt: now,
-      updatedAtTimestamp: now,
-      color: colorInput
-    };
-
-    onAddNote(newNote);
-    resetForm();
-    setSaveToast('✨ Note saved successfully!');
-    setTimeout(() => setSaveToast(null), 3000);
+    const tags = [...new Set(tagsInput.split(',').map(tag => tag.trim().replace(/^#/, '')).filter(Boolean))];
+    setIsSaving(true);
+    setError(null);
+    try {
+      if (editingNoteId) {
+        if (!onUpdateNote) throw new Error('Penyuntingan catatan belum tersedia.');
+        await onUpdateNote(editingNoteId, {
+          title: title || 'Catatan tanpa judul', body, tags: tags.length ? tags : ['general'], color: colorInput,
+        });
+        setNotice('Perubahan catatan tersimpan.');
+      } else {
+        const now = Date.now();
+        await onAddNote({
+          id: `note-${now}-${Math.random().toString(36).slice(2, 7)}`,
+          title: title || 'Catatan tanpa judul',
+          body,
+          tags: tags.length ? tags : ['general'],
+          updatedAt: 'Baru saja',
+          createdAt: now,
+          updatedAtTimestamp: now,
+          color: colorInput,
+        });
+        setNotice('Catatan tersimpan.');
+      }
+      setIsEditorOpen(false);
+    } catch {
+      setError('Catatan belum tersimpan. Periksa penyimpanan perangkat lalu coba lagi.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const filteredNotes = notes.filter(n =>
-    n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    n.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    n.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const handleDelete = async () => {
+    if (!selectedNote) return;
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await onDeleteNote(selectedNote.id);
+      setSelectedNoteId(null);
+      setConfirmDelete(false);
+      setNotice('Catatan dihapus.');
+    } catch {
+      setError('Catatan belum terhapus. Coba lagi.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
-  const colorCardStyles = {
-    peach: 'bg-[#FFF5ED] border-[#FED7C5] hover:border-[#F4A261]',
-    lavender: 'bg-[#F8F5FD] border-[#E8E4F8] hover:border-[#9381DA]',
-    mint: 'bg-[#F2F9F5] border-[#D7F0E3] hover:border-[#57B37C]',
-    pink: 'bg-[#FDF4F7] border-[#FCE4EC] hover:border-[#E57399]',
-    cream: isNightMode
-      ? 'bg-[#FAF6EE] border-[#DDD2C2] hover:border-[#D6CAB2]'
-      : 'bg-[#FAF7F2] border-[#EFE8D8] hover:border-[#D6CAB2]',
+  const goBack = () => {
+    const id = selectedNoteId;
+    setSelectedNoteId(null);
+    setConfirmDelete(false);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    requestAnimationFrame(() => {
+      if (id) noteButtonRefs.current.get(id)?.focus();
+    });
   };
 
   return (
-    <div className="space-y-4 max-w-md mx-auto">
-      {/* Header & Add Note Button */}
-      <div
-        className={cn(
-          'rounded-3xl p-4 sm:p-5 border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-700',
-          isNightMode
-            ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-            : 'bg-[#FAF7F2] border-[#ECE6DB]'
-        )}
-      >
-        <div>
-          <h3 className="font-extrabold text-base sm:text-lg text-[#2E2E3A] flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#36955E]" />
-            <span>Personal Study & Reflection Notes</span>
-          </h3>
-          <p className="text-xs sm:text-sm text-[#4A4A5A]">
-            Jot down key points, ideas, and recipe tweaks to keep with you.
-          </p>
-        </div>
-
-        <Button
-          onClick={() => isCreating ? resetForm() : setIsCreating(true)}
-          variant={isCreating ? 'outline' : 'mint'}
-          size="sm"
-          className="self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{isCreating ? 'Cancel' : 'Write Note'}</span>
-        </Button>
-      </div>
-
-      {/* Save Notification */}
-      {saveToast && (
-        <div className="p-3 rounded-2xl bg-[#EAF6EE] border border-[#CCEBD6] text-xs font-bold text-[#1E6B3B] flex items-center gap-2">
-          <Check className="w-4 h-4" />
-          <span>{saveToast}</span>
+    <div className="mx-auto w-full max-w-md pb-8">
+      {notice && (
+        <div role="status" className="mb-3 flex items-center gap-2 rounded-2xl border border-[#C9DEC9] bg-[#F1F8EF] px-4 py-3 text-sm font-semibold text-[#315D3B]">
+          <Check className="h-4 w-4" />{notice}
         </div>
       )}
 
-      {/* Note Creator Form */}
-      {isCreating && (
-        <form
-          onSubmit={handleSave}
-          className={cn(
-            'rounded-3xl p-4 sm:p-5 border shadow-sm space-y-3.5 transition-colors duration-700',
-            isNightMode
-              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-[#FAF7F2] border-[#ECE6DB]'
-          )}
-        >
-          <h4 className="font-extrabold text-sm text-[#2E2E3A]">
-            {editingNoteId ? '✏️ Edit Note' : 'Write a New Note'}
-          </h4>
+      {selectedNote ? (
+        <div className="space-y-4 anim-page-enter">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <button type="button" onClick={goBack} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#E7DED0] bg-white px-4 text-sm font-bold text-[#493D32] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
+              <ArrowLeft className="h-4 w-4" /> Kembali ke papan
+            </button>
+            <span className="text-xs text-[#71665A]">{formatDate(selectedNote.createdAt)}</span>
+          </div>
 
-          <input
-            type="text"
-            value={titleInput}
-            onChange={e => setTitleInput(e.target.value)}
-            placeholder="Note Title (e.g. Clean Architecture Rule of Thumb)"
-            className={cn(
-              'w-full text-xs sm:text-sm px-4 py-2.5 rounded-2xl border text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] font-bold transition-all',
-              isNightMode
-                ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
-                : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
-            )}
-            required
-          />
-
-          <textarea
-            value={bodyInput}
-            onChange={e => setBodyInput(e.target.value)}
-            placeholder="Write your thoughts, ingredients, or takeaways here..."
-            rows={4}
-            className={cn(
-              'w-full text-xs sm:text-sm p-4 rounded-2xl border text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] resize-none transition-all',
-              isNightMode
-                ? 'border-[#E2D8C9] bg-[#F2EBE0] focus:bg-[#FAF6EE]'
-                : 'border-[#EAE6DF] bg-[#FAF7F2] focus:bg-[#FFFDF9]'
-            )}
-            required
-          />
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-            {/* Color picker */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[#4A4A5A] font-semibold">Card Tint:</span>
-              <div className="flex items-center gap-1.5">
-                {(['peach', 'lavender', 'mint', 'pink', 'cream'] as const).map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setColorInput(color)}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer ${
-                      colorInput === color ? 'scale-110 border-[#4A4A5A]' : 'border-transparent'
-                    } ${
-                      color === 'peach' ? 'bg-[#FED7C5]' :
-                      color === 'lavender' ? 'bg-[#DCD6F3]' :
-                      color === 'mint' ? 'bg-[#CCEBD6]' :
-                      color === 'pink' ? 'bg-[#FAD0DC]' : 'bg-[#EFE8D8]'
-                    }`}
-                  />
+          <article className="notes-lined-paper min-h-[50vh] rounded-[28px] border border-[#E8DCCB] bg-[#FFFCF7] p-6 shadow-[0_10px_30px_#6C503017] sm:p-7">
+            <div className="mb-5 border-b border-[#E8DCCB] pb-4">
+              <p className="mb-2 text-xs font-semibold text-[#806C55]">Catatan pribadi</p>
+              <h1 className="font-display text-2xl font-extrabold leading-snug text-[#332D2A]">{selectedNote.title}</h1>
+            </div>
+            <div className="whitespace-pre-wrap break-words text-[15px] leading-8 text-[#403A35]">{selectedNote.body || 'Belum ada isi catatan.'}</div>
+            {(selectedNote.tags ?? []).some(tag => tag !== 'general') && (
+              <div className="mt-8 flex flex-wrap gap-2 border-t border-[#E8DCCB] pt-4">
+                {(selectedNote.tags ?? []).filter(tag => tag !== 'general').map(tag => (
+                  <span key={tag} className="rounded-full bg-[#F2E9DB] px-3 py-1 text-xs font-semibold text-[#654C35]">#{tag}</span>
                 ))}
               </div>
-            </div>
+            )}
+          </article>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={e => setTagsInput(e.target.value)}
-                placeholder="tags, separated, by, comma"
-                className={cn(
-                  'text-xs px-3 py-1.5 rounded-xl border text-[#4A4A5A] placeholder-[#5A5A6E]',
-                  isNightMode
-                    ? 'border-[#E2D8C9] bg-[#F2EBE0]'
-                    : 'border-[#EAE6DF] bg-[#FAF7F2]'
-                )}
-              />
-              <Button type="submit" variant="mint" size="sm">
-                <span>{editingNoteId ? 'Update Note' : 'Save Note'}</span>
-              </Button>
-            </div>
+          <div className="flex flex-wrap gap-2 px-1">
+            {onUpdateNote && (
+              <button type="button" onClick={() => openEditor(selectedNote)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
+                <Pencil className="h-4 w-4" /> Edit catatan
+              </button>
+            )}
+            <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#E5C9BC] bg-[#FFF7F3] px-5 text-sm font-semibold text-[#923C23] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
+              <Trash2 className="h-4 w-4" /> Hapus
+            </button>
           </div>
-        </form>
-      )}
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-[#5A5A6E] absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search your notes by keyword or tag..."
-          className={cn(
-            'w-full text-xs sm:text-sm pl-10 pr-4 py-3 rounded-2xl border text-[#2E2E3A] placeholder-[#5A5A6E] focus:outline-none focus:ring-2 focus:ring-[#D7F0E3] shadow-xs transition-colors duration-700',
-            isNightMode
-              ? 'bg-[#F2EBE0] border-[#E2D8C9]'
-              : 'bg-[#FAF7F2] border-[#ECE6DB]'
+          {confirmDelete && (
+            <div className="rounded-2xl border border-[#E5C9BC] bg-[#FFF7F3] p-4" role="alertdialog" aria-label="Konfirmasi hapus catatan">
+              <p className="text-sm font-bold text-[#563B31]">Hapus catatan ini?</p>
+              <p className="mt-1 text-sm text-[#67564D]">Catatan yang dihapus tidak dapat dikembalikan.</p>
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={() => setConfirmDelete(false)} className="min-h-11 rounded-full border border-[#DDCDBF] bg-white px-4 text-sm font-semibold text-[#493D32]">Batal</button>
+                <button type="button" disabled={isDeleting} onClick={() => void handleDelete()} className="min-h-11 rounded-full bg-[#A33F27] px-4 text-sm font-bold text-white disabled:opacity-60">{isDeleting ? 'Menghapus…' : 'Ya, hapus'}</button>
+              </div>
+            </div>
           )}
-        />
-      </div>
-
-      {/* Notes Grid */}
-      {filteredNotes.length === 0 ? (
-        <div
-          className={cn(
-            'rounded-3xl p-10 border text-center space-y-2 transition-colors duration-700',
-            isNightMode
-              ? 'bg-[#FAF6EE] border-[#DDD2C2]'
-              : 'bg-[#FAF7F2] border-[#ECE6DB]'
-          )}
-        >
-          <div className="text-3xl">📝</div>
-          <h4 className="font-extrabold text-sm text-[#2E2E3A]">No notes found</h4>
-          <p className="text-xs text-[#4A4A5A]">
-            Write down your first thought or summary using the button above!
-          </p>
+          {error && <p role="alert" className="px-1 text-sm text-[#A33F27]">{error}</p>}
         </div>
       ) : (
-        <div className="flex flex-col gap-3.5">
-          {filteredNotes.map(note => {
-            const cardColorStyle = colorCardStyles[note.color || 'cream'];
-            return (
-              <div
-                key={note.id}
-                className={`rounded-3xl p-5 border shadow-xs transition-all flex flex-col justify-between ${cardColorStyle}`}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h4 className="font-extrabold text-sm text-[#2E2E3A] leading-snug">
-                      {note.title}
-                    </h4>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleStartEdit(note)}
-                        className="text-[#5A5A6E] hover:text-[#1E6B3B] p-1 rounded transition-colors cursor-pointer"
-                        title="Edit Note"
-                        aria-label={`Edit ${note.title}`}
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onDeleteNote(note.id)}
-                        className="text-[#5A5A6E] hover:text-[#A82B53] p-1 rounded transition-colors cursor-pointer"
-                        title="Delete Note"
-                        aria-label={`Delete ${note.title}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+        <>
+          <header className="flex items-center justify-between gap-3 px-2 pb-3 pt-1">
+            <div>
+              <p className="text-xs font-medium text-[#5B5660]">Ruang pikirmu</p>
+              <h1 className="font-display text-[20px] font-extrabold leading-tight text-[#2E2E3A]">Catatan</h1>
+            </div>
+            <button type="button" onClick={() => openEditor()} aria-label="Buat catatan baru" className="flex h-11 w-11 items-center justify-center rounded-full border border-[#D8C7B4] bg-[#F5ECDD] text-[#5D4633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
+              <Plus className="h-5 w-5" />
+            </button>
+          </header>
 
-                  <p className="text-xs text-[#4A4A5A] whitespace-pre-line leading-relaxed mb-4">
-                    {note.body}
-                  </p>
-                </div>
+          <section aria-label="Mochi menulis catatan" className={cn(
+            'relative mb-4 h-[220px] min-[380px]:h-[235px] overflow-hidden rounded-[32px] border-2 shadow-md',
+            isNightMode ? 'border-[#D5C6AF] bg-[#E5D8C3]' : 'border-[#E8DFCF] bg-[#EEE1CD]',
+          )}>
+            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} className={cn('absolute inset-0 h-full w-full object-cover object-center', isNightMode && 'brightness-[0.72] saturate-[0.85]')} />
+            <div role="status" aria-live="polite" className="pointer-events-none absolute left-1/2 top-2 z-20 w-max max-w-[calc(100%-24px)] -translate-x-1/2 rounded-2xl border border-[#EAE3D5] bg-white/95 px-4 py-1.5 text-center text-xs font-bold leading-snug text-[#3A3340] shadow-md backdrop-blur-md">
+              {mochiGreetings[mochiGreetingIndex % mochiGreetings.length]}
+              <span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#EAE3D5] bg-white" />
+            </div>
+            <button type="button" onClick={() => setMochiGreetingIndex(index => index + 1)} aria-label="Ajak Mochi berinteraksi di meja catatan" className="absolute bottom-0 left-1/2 h-[72%] w-[38%] max-w-[150px] -translate-x-1/2 cursor-pointer rounded-2xl motion-safe:transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-[#BA5218]">
+              <NotesMochi />
+            </button>
+          </section>
 
-                <div className="pt-2 border-t border-black/5 flex items-center justify-between text-[11px] text-[#4A4A5A]">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {note.tags.map(t => (
-                      <span key={t} className="text-[10px] text-[#3A3A4A] bg-black/4 px-1.5 py-0.5 rounded-md border border-black/5 font-medium">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                  <span>{note.updatedAt}</span>
-                </div>
+          <label className="relative mb-4 block">
+            <span className="sr-only">Cari catatan</span>
+            <Search aria-hidden="true" className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7A746B]" />
+            <input type="search" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Cari judul, isi, atau #tag..." className="h-14 w-full rounded-full border border-[#E8E2D8] bg-white pl-12 pr-5 text-sm text-[#302D2B] placeholder:text-[#7A746B] shadow-[0_5px_15px_#4E3A2610] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
+          </label>
+
+          <div className="mb-3 flex items-center gap-3 px-2 text-sm font-bold text-[#665B4E]"><span>Papan catatan {filteredNotes.length}</span><span aria-hidden="true" className="h-px flex-1 bg-[#EAE3D8]" /></div>
+          <section aria-label="Papan catatan" className="notes-corkboard relative min-h-[250px] rounded-[32px] border-2 border-[#D5B485] px-4 pb-7 pt-6 shadow-md">
+            {filteredNotes.length === 0 ? (
+              <div className="flex min-h-[185px] flex-col items-center justify-center rounded-xl bg-[#FFFDF8]/85 px-5 text-center shadow-sm">
+                <p className="font-display text-base font-extrabold text-[#493B2E]">{notes.length === 0 ? 'Papan masih kosong' : 'Tidak ada catatan yang cocok'}</p>
+                <p className="mt-1 text-sm leading-relaxed text-[#63594D]">{notes.length === 0 ? 'Tulis ide, pelajaran, atau refleksi pertamamu.' : 'Coba kata lain pada pencarian.'}</p>
               </div>
-            );
-          })}
+            ) : (
+              <div className="grid grid-cols-2 items-start gap-3.5">
+                {filteredNotes.map((note, index) => {
+                  const paper = NOTE_COLORS.find(color => color.value === note.color)?.paper ?? NOTE_COLORS[0].paper;
+                  return (
+                    <button
+                      key={note.id}
+                      ref={node => { if (node) noteButtonRefs.current.set(note.id, node); else noteButtonRefs.current.delete(note.id); }}
+                      type="button"
+                      onClick={() => { setSelectedNoteId(note.id); setNotice(null); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                      aria-label={`Baca catatan ${note.title}`}
+                      className={cn('group relative min-h-[178px] w-full rounded-[4px] border border-[#E7DED1] px-3.5 pb-4 pt-6 text-left shadow-[2px_5px_8px_#5E462432] motion-safe:transition-transform motion-safe:duration-200 hover:-translate-y-1 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#68452A]', paper, index % 3 === 1 ? 'rotate-[1deg]' : index % 3 === 2 ? '-rotate-[0.8deg]' : 'rotate-[-0.5deg]')}
+                    >
+                      <span aria-hidden="true" className="absolute left-1/2 top-1 h-3.5 w-3.5 -translate-x-1/2 rounded-full border border-[#AF4838] bg-[radial-gradient(circle_at_35%_25%,#FFB7AA,#D35B48_65%,#9E3E31)] shadow-[1px_2px_3px_#50342655]" />
+                      <span className="line-clamp-3 font-display text-[14px] font-extrabold leading-snug text-[#332D28]">{note.title}</span>
+                      {note.body && <span className="mt-2 line-clamp-4 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+          <div className="flex justify-end pb-4 pt-5">
+            <button type="button" onClick={() => openEditor()} className="inline-flex min-h-12 items-center gap-2.5 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white shadow-[0_8px_20px_#4A342D38] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
+              <Plus className="h-5 w-5" /> Catatan baru
+            </button>
+          </div>
+        </>
+      )}
+
+      {isEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#2B241FCC] p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget && !isSaving) setIsEditorOpen(false); }}>
+          <div ref={editorRef} role="dialog" aria-modal="true" aria-labelledby="note-editor-title" className="anim-modal-sheet max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] bg-[#FFFCF7] p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] shadow-2xl sm:rounded-[30px] sm:p-6">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-[#806C55]">Papan catatan Mochi</p>
+                <h2 id="note-editor-title" className="font-display text-xl font-extrabold text-[#332D2A]">{editingNoteId ? 'Edit catatan' : 'Catatan baru'}</h2>
+              </div>
+              <button type="button" aria-label="Tutup editor" disabled={isSaving} onClick={() => setIsEditorOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#E8DCCB] bg-white text-[#493D32] focus-visible:outline-2 focus-visible:outline-[#BA5218]"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={event => void handleSave(event)} className="space-y-4">
+              <label className="block text-sm font-bold text-[#493D32]">Judul
+                <input ref={titleRef} value={titleInput} onChange={event => setTitleInput(event.target.value)} maxLength={140} placeholder="Ide yang ingin kamu ingat" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-medium text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
+              </label>
+              <label className="block text-sm font-bold text-[#493D32]">Isi catatan
+                <textarea value={bodyInput} onChange={event => setBodyInput(event.target.value)} rows={7} placeholder="Tulis pelajaran, ide, atau refleksi di sini..." className="mt-1.5 w-full resize-y rounded-xl border border-[#DDCDBB] bg-white p-4 text-sm font-normal leading-relaxed text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
+              </label>
+              <label className="block text-sm font-bold text-[#493D32]">Tag <span className="font-normal text-[#766A5F]">(opsional, pisahkan dengan koma)</span>
+                <input value={tagsInput} onChange={event => setTagsInput(event.target.value)} placeholder="belajar, ide, refleksi" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-normal text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
+              </label>
+              <fieldset>
+                <legend className="mb-2 text-sm font-bold text-[#493D32]">Warna kertas</legend>
+                <div className="flex flex-wrap gap-2">
+                  {NOTE_COLORS.map(color => (
+                    <button key={color.value} type="button" onClick={() => setColorInput(color.value)} aria-label={color.label} aria-pressed={colorInput === color.value} className={cn('flex h-11 w-11 items-center justify-center rounded-full border-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]', colorInput === color.value ? 'border-[#5D4633]' : 'border-transparent')}>
+                      <span className={cn('h-8 w-8 rounded-full border border-[#7A624933]', color.swatch)} />
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              {error && <p role="alert" className="text-sm font-medium text-[#A33F27]">{error}</p>}
+              <button type="submit" disabled={isSaving} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
+                <Check className="h-4 w-4" />{isSaving ? 'Menyimpan…' : 'Simpan catatan'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

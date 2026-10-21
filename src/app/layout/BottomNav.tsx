@@ -17,7 +17,7 @@ export const BottomNav: FC<BottomNavProps> = ({
   const tabs: { id: NavigationTab; label: string; icon: ReactNode }[] = [
     { id: 'home', label: 'Beranda', icon: <Home className="w-[18px] h-[18px]" /> },
     { id: 'vault', label: 'Pustaka', icon: <Bookmark className="w-[18px] h-[18px]" /> },
-    { id: 'notes', label: 'Notes', icon: <FileText className="w-[18px] h-[18px]" /> },
+    { id: 'notes', label: 'Catatan', icon: <FileText className="w-[18px] h-[18px]" /> },
     { id: 'assistant', label: 'Asisten', icon: <MessageSquare className="w-[18px] h-[18px]" /> },
     { id: 'settings', label: 'Pengaturan', icon: <Settings className="w-[18px] h-[18px]" /> },
   ];
@@ -69,7 +69,7 @@ export const BottomNav: FC<BottomNavProps> = ({
             {/* Smooth Sliding Label */}
             <span
               className={cn(
-                'overflow-hidden whitespace-nowrap transition-all duration-300 ease-out font-black text-xs sm:text-[13px] leading-none',
+                'shrink-0 overflow-hidden whitespace-nowrap transition-all duration-300 ease-out font-black text-xs sm:text-[13px] leading-none',
                 isActive
                   ? 'max-w-[80px] opacity-100 ml-1.5 text-[#2E2E3A]'
                   : 'max-w-0 opacity-0 ml-0 pointer-events-none'

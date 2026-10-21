@@ -28,8 +28,8 @@ export const AppLayout: FC<AppLayoutProps> = ({
     >
       {/* Mobile-First Mini App Container: Seamless continuous background, thumb-friendly centered layout */}
       <div className="w-full max-w-md min-h-screen mx-auto flex flex-col relative">
-        {/* Home and Vault carry their own page titles in the same visual rhythm. */}
-        {currentTab !== 'home' && currentTab !== 'vault' && (
+        {/* Home, Vault, and Notes carry their own page titles in the same visual rhythm. */}
+        {currentTab !== 'home' && currentTab !== 'vault' && currentTab !== 'notes' && (
           <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />
         )}
 
