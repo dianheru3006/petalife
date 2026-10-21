@@ -28,12 +28,117 @@ export interface SynthesizedLinkResult {
 }
 
 const ACTIVE_JOB_STORAGE_KEY = 'petalife_active_async_jobs';
+const ANON_SESSION_STORAGE_KEY = 'petalife_anon_session';
+const ANON_REFRESH_MARGIN_MS = 60_000;
+
+interface StoredAnonSession {
+  token: string;
+  expiresAt: number;
+}
+
+// Fallback in-memory jika sessionStorage diblokir (mode privat / WebView ketat).
+let memoryAnonSession: StoredAnonSession | null = null;
+
+function readAnonSession(): StoredAnonSession | null {
+  try {
+    if (typeof sessionStorage === 'undefined') return memoryAnonSession;
+    const raw = sessionStorage.getItem(ANON_SESSION_STORAGE_KEY);
+    if (!raw) return memoryAnonSession;
+    const parsed = JSON.parse(raw) as Partial<StoredAnonSession>;
+    if (typeof parsed?.token !== 'string' || typeof parsed?.expiresAt !== 'number') return null;
+    return { token: parsed.token, expiresAt: parsed.expiresAt };
+  } catch (_) {
+    return memoryAnonSession;
+  }
+}
+
+function writeAnonSession(session: StoredAnonSession | null): void {
+  memoryAnonSession = session;
+  try {
+    if (typeof sessionStorage === 'undefined') return;
+    if (session) sessionStorage.setItem(ANON_SESSION_STORAGE_KEY, JSON.stringify(session));
+    else sessionStorage.removeItem(ANON_SESSION_STORAGE_KEY);
+  } catch (_) {
+    // sessionStorage tidak tersedia; fallback memori tetap dipakai.
+  }
+}
+
+export function clearAnonSession(): void {
+  writeAnonSession(null);
+}
+
+/**
+ * R3-PROD-01: token sesi anonim untuk pengunjung non-Telegram.
+ * Di-cache di sessionStorage sampai 60 detik sebelum kedaluwarsa.
+ */
+export async function getAnonSessionToken(
+  apiBase: string,
+  signal?: AbortSignal,
+  options: { force?: boolean } = {}
+): Promise<string | null> {
+  const existing = readAnonSession();
+
+  // Lazy secara default: jangan menambah round-trip sebelum server benar-benar
+  // menolak dengan 401. Pemanggil yang butuh token lebih awal (resume polling)
+  // memakai { force: true }, yang SELALU menerbitkan token baru dan mengabaikan
+  // cache (token cached bisa sudah gugur karena restart server).
+  if (!options.force) {
+    if (existing && existing.expiresAt - Date.now() > ANON_REFRESH_MARGIN_MS) {
+      return existing.token;
+    }
+    return existing?.token ?? null;
+  }
+
+  try {
+    const res = await fetch(`${apiBase.replace(/\/$/, '')}/api/petalife/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal
+    });
+    if (!res.ok) return existing?.token ?? null;
+    const payload = await res.json() as { token?: string; expiresIn?: number };
+    if (!payload?.token) return null;
+    const expiresAt = Date.now() + (Number(payload.expiresIn) || 1200) * 1000;
+    writeAnonSession({ token: payload.token, expiresAt });
+    return payload.token;
+  } catch (_) {
+    // Jaringan gagal: token lama masih lebih baik daripada tidak sama sekali.
+    return existing?.token ?? null;
+  }
+}
+
+/**
+ * Header autentikasi Petalife: initData Telegram bila ada, jika tidak sesi anonim.
+ * Dipakai oleh sintesis dan polling agar pengunjung web publik tidak terkena 401.
+ */
+export async function buildPetalifeAuthHeaders(
+  apiBase: string,
+  signal?: AbortSignal,
+  options: { eager?: boolean } = {}
+): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {};
+  const initData = typeof window !== 'undefined'
+    ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
+    : '';
+
+  if (initData) {
+    headers['X-Telegram-Init-Data'] = initData;
+    return headers;
+  }
+
+  const token = await getAnonSessionToken(apiBase, signal, { force: Boolean(options.eager) });
+  if (token) headers['X-Petalife-Session'] = token;
+  return headers;
+}
 
 export interface ActiveJobRecord {
   jobId: string;
   pollUrl: string;
   url: string;
   timestamp: number;
+  /** Basis gateway agar resumeActiveJob bisa menerbitkan sesi anonim baru. */
+  apiBase?: string;
 }
 
 export function saveActiveJob(record: ActiveJobRecord): void {
@@ -276,16 +381,15 @@ export async function resumeActiveJob(
   record: ActiveJobRecord,
   onProgress?: (stage: string, stageLabel: string) => void
 ): Promise<{ success: boolean; result?: SynthesizedLinkResult; retryable?: boolean; error?: string }> {
-  const initData = typeof window !== 'undefined'
-    ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
-    : '';
+  // R3-PROD-01: resume setelah reopen harus menerbitkan sesi anonim baru,
+  // karena token 20 menit sudah kedaluwarsa jauh sebelum TTL job 2 jam.
+  const apiBase = record.apiBase
+    || record.pollUrl.replace(/\/api\/petalife\/job-status\/.*$/, '');
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(await buildPetalifeAuthHeaders(apiBase, undefined, { eager: true })),
   };
-  if (initData) {
-    headers['X-Telegram-Init-Data'] = initData;
-  }
 
   const pollResult = await pollJobUntilFinished(
     record.pollUrl,
@@ -336,10 +440,9 @@ export async function synthesizeLink(
   // Tier 2: Check remote AI gateway (Asisten Heru / Gemini Flash / Groq)
   const envUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_API_URL) as string | undefined;
   const gatewayUrl = getBrainGatewayUrl() || envUrl || DEFAULT_BRAIN_GATEWAY_URL;
+  const apiBase = gatewayUrl ? gatewayUrl.replace(/\/$/, '') : '';
   const isStaticHost = typeof window !== 'undefined' && Boolean(window.location?.hostname?.endsWith('github.io'));
-  const apiUrl = gatewayUrl
-    ? `${gatewayUrl.replace(/\/$/, '')}/api/petalife/summarize-link`
-    : (!isStaticHost ? '/api/petalife/summarize-link' : null);
+  const apiUrl = (apiBase || !isStaticHost) ? `${apiBase}/api/petalife/summarize-link` : null;
 
   let gatewayErrorType: GatewayErrorType | undefined;
   let gatewayErrorMessage: string | undefined;
@@ -356,22 +459,21 @@ export async function synthesizeLink(
       const defaultTimeout = isShortVideo ? 280000 : (platform === 'youtube' ? 75000 : 14000);
       timeout = setTimeout(() => controller.abort(), options.timeoutMs || defaultTimeout);
 
-      const initData = typeof window !== 'undefined'
-        ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
-        : '';
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (initData) {
-        headers['X-Telegram-Init-Data'] = initData;
-      }
+      // R3-PROD-01: initData Telegram bila ada, jika tidak sesi anonim (token 20 menit).
+      const headers = await buildPetalifeAuthHeaders(apiBase, controller.signal);
+      headers['Content-Type'] = 'application/json';
 
       let json: any = null;
 
       // Syarat 4: Cek apakah ada job yang sedang berjalan di penyimpanan persisten localStorage
       const existingJob = getActiveJobForUrl(cleanUrl);
       if (existingJob) {
+        // Polling tidak punya jalur retry 401 seperti request sintesis, jadi tier
+        // anonim harus sudah pegang token SEBELUM polling dimulai.
+        if (!headers['X-Telegram-Init-Data'] && !headers['X-Petalife-Session']) {
+          const resumed = await getAnonSessionToken(apiBase, controller.signal, { force: true });
+          if (resumed) headers['X-Petalife-Session'] = resumed;
+        }
         if (options.onProgress) {
           options.onProgress('queued', 'Melanjutkan pemantauan proses Mochi...');
         }
@@ -406,7 +508,7 @@ export async function synthesizeLink(
       }
 
       if (!json) {
-        const res = await fetch(apiUrl, {
+        const requestInit: RequestInit = {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -415,7 +517,20 @@ export async function synthesizeLink(
             async: isShortVideo
           }),
           signal: controller.signal,
-        });
+        };
+
+        let res = await fetch(apiUrl, requestInit);
+
+        // Token anonim bisa kedaluwarsa atau gugur setelah server restart: terbitkan
+        // sekali lagi lalu ulangi request yang sama. Hanya untuk tier anonim.
+        if (res.status === 401 && !headers['X-Telegram-Init-Data']) {
+          clearAnonSession();
+          const refreshed = await getAnonSessionToken(apiBase, controller.signal, { force: true });
+          if (refreshed) {
+            headers['X-Petalife-Session'] = refreshed;
+            res = await fetch(apiUrl, requestInit);
+          }
+        }
 
         gatewayHttpStatus = res.status;
 
@@ -429,12 +544,13 @@ export async function synthesizeLink(
           }
 
           if (jobPayload && jobPayload.jobId) {
-            const pollUrl = `${gatewayUrl.replace(/\/$/, '')}${jobPayload.pollUrl || `/api/petalife/job-status/${jobPayload.jobId}`}`;
+            const pollUrl = `${apiBase}${jobPayload.pollUrl || `/api/petalife/job-status/${jobPayload.jobId}`}`;
             saveActiveJob({
               jobId: jobPayload.jobId,
               pollUrl,
               url: cleanUrl,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              apiBase
             });
 
             if (options.onProgress && jobPayload.stage) {

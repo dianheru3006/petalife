@@ -52,6 +52,22 @@ export async function recordRewardClaim(
   }
 }
 
+/**
+ * R3-DATA-01: kompensasi transaksi.
+ *
+ * Klaim ledger adalah commit yang durabel; pemberian XP adalah langkah kedua yang
+ * bisa gagal (kuota localStorage habis / mode privat). Tanpa pembatalan, idempotensi
+ * ledger menolak percobaan ulang selamanya dan XP pengguna hangus permanen.
+ * Panggil fungsi ini HANYA ketika persistensi XP dipastikan gagal.
+ */
+export async function releaseRewardClaim(id: string, database: PetalifeDatabase = db): Promise<void> {
+  try {
+    await database.rewardLedger.delete(id);
+  } catch (err) {
+    console.error(`[RewardLedger] Gagal membatalkan klaim ${id}:`, err);
+  }
+}
+
 export interface LinkRewardResult {
   awarded: boolean;
   xpAwarded: number;

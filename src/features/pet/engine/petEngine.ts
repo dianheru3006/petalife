@@ -1,4 +1,5 @@
 import type { Pet } from '../../../lib/types';
+import { getMonotonicDayKey } from '../../../lib/utils/monotonicClock';
 
 export const PET_CONSTANTS = {
   MAX_STAT: 100,
@@ -261,7 +262,8 @@ export function feedPet(pet: Pet, now = Date.now(), todayKey?: string): FeedResu
     ? pet.energy
     : Math.min(80, pet.energy + PET_CONSTANTS.FEED_ENERGY_GAIN);
 
-  const localToday = todayKey || new Date(now).toLocaleDateString('en-CA'); // YYYY-MM-DD
+  // R3-DATA-02: kunci hari monotonik; jam mundur tidak boleh memberi XP harian lagi.
+  const localToday = todayKey || getMonotonicDayKey(now); // YYYY-MM-DD
   const isFirstCareToday = pet.lastCareDate !== localToday;
   const xpGain = isFirstCareToday ? PET_CONSTANTS.FEED_XP_GAIN_FIRST_DAILY : PET_CONSTANTS.FEED_XP_GAIN_REPEAT;
 

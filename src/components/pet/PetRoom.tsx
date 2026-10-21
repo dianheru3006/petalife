@@ -22,6 +22,7 @@ import { canFeedPet, getPetContextualStatus, getDisplayStats } from '../../featu
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
 import { detectPlatform, cn, getUserDisplayName } from '../../lib/utils';
 import roomBg from '../../assets/room-bg.jpg';
+import roomBgWebp from '../../assets/room-bg.webp';
 import { SnackBubble, CircularMeter } from './SnackBubble';
 import { SNACK_VARIANTS } from './snackData';
 import { TvScreen } from './TvScreen';
@@ -959,11 +960,16 @@ export const PetRoom: FC<PetRoomProps> = ({
         )}
       >
         {/* Background 3D Room Diorama - 100% Crisp, Pure & Warm */}
-        <img
-          src={roomBg}
-          alt="Rumah Mochi 3D Living Room"
-          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
-        />
+        {/* R3-PERF-01: WebP 37 KB menggantikan JPEG 193 KB di jalur kritis;
+            JPEG tetap menjadi fallback untuk WebView lama. */}
+        <picture className="absolute inset-0">
+          <source srcSet={roomBgWebp} type="image/webp" />
+          <img
+            src={roomBg}
+            alt="Rumah Mochi 3D Living Room"
+            className="w-full h-full object-cover object-center pointer-events-none"
+          />
+        </picture>
 
         {/* Interactive Dynamic Daytime TV & Night Power-off Screen */}
         <TvScreen

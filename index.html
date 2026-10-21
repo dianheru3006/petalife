@@ -5,6 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <link rel="manifest" href="./manifest.json" />
+    <!-- R3-PERF-01: latar ruang Mochi adalah gambar terbesar di layar pertama. -->
+    <link rel="preload" as="image" type="image/webp" href="./src/assets/room-bg.webp" />
     <meta name="application-name" content="Petalife" />
     <meta name="theme-color" content="#FAF6EE" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -13,8 +15,11 @@
     <meta name="apple-mobile-web-app-title" content="Petalife" />
     <meta name="description" content="A cozy Tamagotchi-inspired virtual companion that helps you capture, review, and retain your learning materials." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- Telegram Mini App Official SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Telegram Mini App Official SDK.
+         R3-PERF-02: WAJIB defer. Skrip klasik sinkron di <head> memblokir first paint
+         sampai telegram.org menjawab; di jaringan buruk itu = layar putih.
+         Urutan eksekusi tetap benar: defer dieksekusi sebelum modul React (juga deferred). -->
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
     <title>Petalife — Cozy Virtual Pet & Learning Vault</title>
     <!-- Friendly typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

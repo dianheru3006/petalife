@@ -12,6 +12,7 @@ import {
   claimDailyReviewReward,
   claimDailyNoteReward,
   claimLearningVarietyBonus,
+  releaseRewardClaim,
   type LinkRewardResult
 } from './lib/db/rewardLedgerRepository';
 import { queryAssistant } from './features/assistant/engine/assistantEngine';
@@ -186,19 +187,28 @@ export function App() {
    * hidup di state React, menutup tab atau kuota localStorage yang habis akan menghanguskan
    * XP secara permanen. Karena itu persistensi dilakukan SINKRON di sini, bukan menunggu useEffect.
    */
-  const persistPetChange = (mutator: (current: Pet) => Pet): Pet => {
+  const persistPetChange = (mutator: (current: Pet) => Pet): boolean => {
     const next = mutator(petRef.current);
     petRef.current = next;
-    if (!saveStoredPet(next)) {
+    const persisted = saveStoredPet(next);
+    if (!persisted) {
       setStorageError('Progres XP gagal disimpan di perangkat ini (penyimpanan penuh atau mode privat). Muat ulang halaman sebelum melanjutkan.');
     }
     setPet(next);
-    return next;
+    return persisted;
   };
 
-  const applyRewardXp = (xpAmount: number) => {
-    if (!xpAmount || xpAmount <= 0) return;
-    persistPetChange(current => awardXp(current, xpAmount).pet);
+  /**
+   * R3-DATA-01: klaim ledger hanya sah bila XP benar-benar tersimpan di perangkat.
+   * Ledger sudah commit lebih dulu (durabel) dan bersifat idempoten, sehingga bila
+   * persistensi gagal kita WAJIB membatalkan klaim — kalau tidak, percobaan ulang
+   * ditolak selamanya dan XP pengguna hangus permanen.
+   */
+  const applyClaimedReward = async (ledgerKey: string, xpAmount: number): Promise<boolean> => {
+    if (!xpAmount || xpAmount <= 0) return true;
+    if (persistPetChange(current => awardXp(current, xpAmount).pet)) return true;
+    await releaseRewardClaim(ledgerKey);
+    return false;
   };
 
   // Periodic passive decay while user keeps application open (every 60 seconds)
@@ -221,7 +231,7 @@ export function App() {
       try {
         const isNew = await recordRewardClaim(ledgerKey, 'habit', goalId, goal.xpReward);
         if (isNew) {
-          applyRewardXp(goal.xpReward);
+          await applyClaimedReward(ledgerKey, goal.xpReward);
         }
       } catch (err) {
         console.error(`[App] Failed to claim reward for goal ${goalId}:`, err);
@@ -268,11 +278,14 @@ export function App() {
       const todayKey = getTodayDateString();
       const rewardResult = await claimDailyLinkReward(created.id, todayKey, 2);
       if (rewardResult.awarded) {
-        applyRewardXp(rewardResult.xpAwarded);
-        // Check learning variety bonus (10 XP if 2 distinct learning categories today)
-        const varietyResult = await claimLearningVarietyBonus(todayKey);
-        if (varietyResult.awarded) {
-          applyRewardXp(varietyResult.xpAwarded);
+        const ledgerKey = `link_save:${todayKey}:${created.id}`;
+        const persisted = await applyClaimedReward(ledgerKey, rewardResult.xpAwarded);
+        // Variety bonus hanya relevan bila reward utama benar-benar tersimpan.
+        if (persisted) {
+          const varietyResult = await claimLearningVarietyBonus(todayKey);
+          if (varietyResult.awarded) {
+            await applyClaimedReward(`variety_bonus:${todayKey}`, varietyResult.xpAwarded);
+          }
         }
       }
 
@@ -319,7 +332,8 @@ export function App() {
         const todayKey = getTodayDateString();
         const reviewResult = await claimDailyReviewReward(id, todayKey, 2);
         if (reviewResult.awarded) {
-          persistPetChange(prev => {
+          const reviewLedgerKey = `link_review:${todayKey}:${id}`;
+          const persisted = persistPetChange(prev => {
             const awardResult = awardXp(prev, reviewResult.xpAwarded);
             return {
               ...awardResult.pet,
@@ -327,17 +341,21 @@ export function App() {
               state: 'happy',
             };
           });
-          setTimeout(() => {
-            setPet(current => ({
-              ...current,
-              state: current.isSleeping ? 'sleeping' : 'idle',
-            }));
-          }, 1800);
+          if (!persisted) {
+            await releaseRewardClaim(reviewLedgerKey);
+          } else {
+            setTimeout(() => {
+              setPet(current => ({
+                ...current,
+                state: current.isSleeping ? 'sleeping' : 'idle',
+              }));
+            }, 1800);
 
-          // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
-          const varietyResult = await claimLearningVarietyBonus(todayKey);
-          if (varietyResult.awarded) {
-            applyRewardXp(varietyResult.xpAwarded);
+            // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
+            const varietyResult = await claimLearningVarietyBonus(todayKey);
+            if (varietyResult.awarded) {
+              await applyClaimedReward(`variety_bonus:${todayKey}`, varietyResult.xpAwarded);
+            }
           }
         }
       }
@@ -355,12 +373,15 @@ export function App() {
       const todayKey = getTodayDateString();
       const noteReward = await claimDailyNoteReward(created.id, todayKey, 2);
       if (noteReward.awarded) {
-        applyRewardXp(noteReward.xpAwarded);
+        const noteLedgerKey = `note_save:${todayKey}:${created.id}`;
+        const persisted = await applyClaimedReward(noteLedgerKey, noteReward.xpAwarded);
 
         // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
-        const varietyResult = await claimLearningVarietyBonus(todayKey);
-        if (varietyResult.awarded) {
-          applyRewardXp(varietyResult.xpAwarded);
+        if (persisted) {
+          const varietyResult = await claimLearningVarietyBonus(todayKey);
+          if (varietyResult.awarded) {
+            await applyClaimedReward(`variety_bonus:${todayKey}`, varietyResult.xpAwarded);
+          }
         }
       }
 
@@ -401,7 +422,7 @@ export function App() {
       try {
         const isNew = await recordRewardClaim(ledgerKey, 'habit', id, goal.xpReward);
         if (isNew) {
-          applyRewardXp(goal.xpReward);
+          await applyClaimedReward(ledgerKey, goal.xpReward);
         }
       } catch (err) {
         console.error('[App] Failed to record reward claim:', err);

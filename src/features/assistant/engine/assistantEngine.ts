@@ -1,5 +1,6 @@
 import type { SavedLink, Note, Pet, NavigationTab } from '../../../lib/types';
 import { getUserDisplayName } from '../../../lib/utils';
+import { buildPetalifeAuthHeaders, getAnonSessionToken } from '../../../lib/services/aiSynthesisService';
 
 export interface AssistantResponse {
   replyText: string;
@@ -161,6 +162,7 @@ export async function queryAssistant(
   // Static hosts (such as GitHub Pages) reject POST requests with 405; only query network when an explicit
   // remote gateway URL is provided or when hosted on a server origin with backend API support.
   const isStaticHost = typeof window !== 'undefined' && Boolean(window.location?.hostname?.endsWith('github.io'));
+  const apiBase = (envUrl || '').replace(/\/$/, '');
   const apiUrl = envUrl || (!isStaticHost ? '/api/petalife/chat' : null);
 
   if (apiUrl) {
@@ -168,18 +170,12 @@ export async function queryAssistant(
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 3500);
 
-      const initData = typeof window !== 'undefined'
-        ? (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData || ''
-        : '';
+      // R3-PROD-01: pengunjung web publik memakai sesi anonim; pengguna Telegram
+      // tetap memakai initData.
+      const headers = await buildPetalifeAuthHeaders(apiBase, controller.signal);
+      headers['Content-Type'] = 'application/json';
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (initData) {
-        headers['X-Telegram-Init-Data'] = initData;
-      }
-
-      const res = await fetch(apiUrl, {
+      const requestInit: RequestInit = {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -194,7 +190,16 @@ export async function queryAssistant(
           },
         }),
         signal: controller.signal,
-      });
+      };
+
+      let res = await fetch(apiUrl, requestInit);
+      if (res.status === 401 && !headers['X-Telegram-Init-Data']) {
+        const refreshed = await getAnonSessionToken(apiBase, controller.signal, { force: true });
+        if (refreshed) {
+          headers['X-Petalife-Session'] = refreshed;
+          res = await fetch(apiUrl, requestInit);
+        }
+      }
       clearTimeout(timeout);
 
       if (res.ok) {

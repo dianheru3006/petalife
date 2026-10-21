@@ -4,7 +4,8 @@ import {
   getPendingActiveJobs,
   resumeActiveJob,
   getActiveJobForUrl,
-  saveActiveJob
+  saveActiveJob,
+  clearAnonSession
 } from './aiSynthesisService';
 
 describe('aiSynthesisService', () => {
@@ -51,6 +52,74 @@ describe('aiSynthesisService', () => {
     expect(result.gatewayErrorType).toBe('unauthorized');
     expect(result.gatewayHttpStatus).toBe(401);
     expect(result.content.notes).toContain('Sesi AI belum valid.');
+  });
+
+  it('R3-PROD-01: obtains an anonymous session after 401 and retries with X-Petalife-Session', async () => {
+    clearAnonSession();
+    const calls: Array<{ url: string; headers: Record<string, string> }> = [];
+
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      // Snapshot: objek headers dimutasi oleh service saat retry 401.
+      const headers = { ...((init?.headers || {}) as Record<string, string>) };
+      calls.push({ url: String(url), headers });
+
+      if (String(url).endsWith('/api/petalife/session')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({ success: true, token: 'anon-token-123', expiresIn: 1200, tier: 'anonymous' }),
+        };
+      }
+
+      const summarizeCalls = calls.filter(c => c.url.endsWith('/api/petalife/summarize-link'));
+      if (summarizeCalls.length === 1) {
+        return {
+          ok: false,
+          status: 401,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({ error: 'Unauthorized' }),
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          success: true,
+          data: {
+            title: 'Akses Publik',
+            category: 'Umum',
+            tags: ['#publik'],
+            coreThesis: 'Pengunjung web publik dapat memakai sintesis tanpa akun Telegram.',
+            keyTakeaways: [
+              { concept: 'Sesi anonim', explanation: 'Token berumur pendek membuka akses tier anonim.' },
+            ],
+            actionableInsights: ['Simpan materi seperti biasa.'],
+            reflectionPrompt: 'Apa yang ingin kamu pelajari hari ini?',
+            notes: 'Gagasan Utama\nPengunjung web publik dapat memakai sintesis.',
+            qualityStatus: 'grounded',
+            evidenceLevel: 'full_text',
+          },
+        }),
+      };
+    });
+
+    const result = await synthesizeLink('https://example.com/publik', 'web', 'example.com');
+
+    expect(result.isFromRemoteAI).toBe(true);
+    expect(result.qualityStatus).toBe('grounded');
+
+    const sessionCalls = calls.filter(c => c.url.endsWith('/api/petalife/session'));
+    expect(sessionCalls.length).toBe(1);
+
+    const summarizeCalls = calls.filter(c => c.url.endsWith('/api/petalife/summarize-link'));
+    expect(summarizeCalls.length).toBe(2);
+    // Percobaan pertama tanpa sesi, percobaan kedua membawa token anonim.
+    expect(summarizeCalls[0].headers['X-Petalife-Session']).toBeUndefined();
+    expect(summarizeCalls[1].headers['X-Petalife-Session']).toBe('anon-token-123');
+    expect(summarizeCalls[1].headers['X-Telegram-Init-Data']).toBeUndefined();
   });
 
   it('handles 429 Rate Limit with rate_limited error type', async () => {
@@ -401,6 +470,69 @@ describe('aiSynthesisService', () => {
     // After success, it should be removed from localStorage
     expect(getActiveJobForUrl(testUrl)).toBeNull();
     expect(getPendingActiveJobs().length).toBe(0);
+  });
+
+  it('R3-PROD-01: polling an existing job as a web visitor fetches a session BEFORE polling', async () => {
+    clearAnonSession();
+    const testUrl = 'https://www.instagram.com/reel/AnonResumeReel/';
+    saveActiveJob({
+      jobId: 'job_anon_resume_1',
+      pollUrl: 'http://localhost:3000/api/petalife/job-status/job_anon_resume_1',
+      url: testUrl,
+      timestamp: Date.now(),
+      apiBase: 'http://localhost:3000'
+    });
+
+    const calls: Array<{ url: string; headers: Record<string, string> }> = [];
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      const headers = { ...((init?.headers || {}) as Record<string, string>) };
+      calls.push({ url: String(url), headers });
+
+      if (String(url).endsWith('/api/petalife/session')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({ success: true, token: 'anon-resume-token', expiresIn: 1200, tier: 'anonymous' })
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          success: true,
+          jobId: 'job_anon_resume_1',
+          status: 'completed',
+          stage: 'completed',
+          data: {
+            title: 'Catatan Anonim',
+            category: 'Umum',
+            coreThesis: 'Pengunjung web tetap bisa melanjutkan job lama.',
+            keyTakeaways: [{ concept: 'Sesi anonim', explanation: 'Token diterbitkan sebelum polling.' }],
+            actionableInsights: ['Lanjutkan pemantauan.'],
+            notes: 'Gagasan Utama\nPengunjung web tetap bisa melanjutkan job lama.',
+            summary: 'Ringkasan sesi anonim.',
+            qualityStatus: 'grounded',
+            evidenceLevel: 'full_text',
+            provenance: 'caption_and_audio'
+          }
+        })
+      };
+    });
+
+    const result = await synthesizeLink(testUrl, 'instagram', 'instagram.com', { timeoutMs: 15000 });
+
+    // Fokus test ini adalah sesi anonim, bukan tingkat bukti hasil sintesis.
+    expect(result.gatewayErrorType).toBeUndefined();
+
+    const sessionIndex = calls.findIndex(c => c.url.endsWith('/api/petalife/session'));
+    const pollIndex = calls.findIndex(c => c.url.includes('/job-status/'));
+    expect(sessionIndex).toBeGreaterThanOrEqual(0);
+    expect(pollIndex).toBeGreaterThanOrEqual(0);
+    expect(sessionIndex).toBeLessThan(pollIndex);
+    expect(calls[pollIndex].headers['X-Petalife-Session']).toBe('anon-resume-token');
   });
 });
 

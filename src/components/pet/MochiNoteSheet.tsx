@@ -6,6 +6,7 @@ import { ExternalLink, Play, Globe, Pencil, X } from 'lucide-react';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { detectPlatform, getYouTubeThumbnail } from '../../lib/utils';
 import { formatStructuredNotes, getNoteViewSections, noteSummary, noteTextForDraft } from '../../lib/utils/noteView';
+import { getFocusableElements, resolveFocusTargetIndex, resolveInitialFocusIndex } from '../../lib/utils/focusTrap';
 import { VaultReadingSections } from '../../features/vault/VaultReadingSections';
 
 const YouTubeArtwork: FC<{ url: string; title: string; isShort: boolean }> = ({ url, title, isShort }) => {
@@ -69,15 +70,67 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
   // R2-UX-01: tinggi keyboard virtual yang menutupi sheet.
   const keyboardInset = useVisualViewportInset();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
-  // R2-UX-02: scroll lock + Escape, hanya aktif selama sheet terbuka.
+  // R3-UX-01: simpan pemicu, fokuskan target pertama saat terbuka, dan
+  // kembalikan fokus ke pemicu saat sheet ditutup.
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+
+    previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+
+    const focusTimer = setTimeout(() => {
+      const elements = getFocusableElements(sheetRef.current);
+      const targetIndex = resolveInitialFocusIndex(elements);
+      if (targetIndex >= 0) elements[targetIndex].focus();
+      else sheetRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      const trigger = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (trigger && document.contains(trigger)) trigger.focus();
+    };
+  }, [isOpen]);
+
+  // R2-UX-02: scroll lock + Escape + focus trap, hanya aktif selama sheet terbuka.
   useEffect(() => {
     if (!isOpen || typeof document === 'undefined') return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      // R3-UX-01: Tab/Shift+Tab tidak boleh keluar ke navbar di belakang modal.
+      const elements = getFocusableElements(sheetRef.current);
+      if (elements.length === 0) {
+        event.preventDefault();
+        sheetRef.current?.focus();
+        return;
+      }
+
+      const activeIndex = elements.indexOf(document.activeElement as HTMLElement);
+      const targetIndex = resolveFocusTargetIndex(elements.length, activeIndex, event.shiftKey);
+      if (activeIndex === -1) {
+        event.preventDefault();
+        elements[targetIndex].focus();
+        return;
+      }
+      if (event.shiftKey && activeIndex === 0) {
+        event.preventDefault();
+        elements[elements.length - 1].focus();
+      } else if (!event.shiftKey && activeIndex === elements.length - 1) {
+        event.preventDefault();
+        elements[0].focus();
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
 
@@ -190,7 +243,8 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
     >
       <div
         ref={sheetRef}
-        className="w-full max-w-md bg-[#FAF7F2] rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] flex flex-col max-h-[88dvh] overflow-hidden anim-modal-sheet"
+        tabIndex={-1}
+        className="w-full max-w-md bg-[#FAF7F2] focus:outline-none rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] flex flex-col max-h-[88dvh] overflow-hidden anim-modal-sheet"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Pull Handle Indicator */}

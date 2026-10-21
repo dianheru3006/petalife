@@ -8,6 +8,7 @@ import {
   claimDailyReviewReward,
   claimDailyNoteReward,
   claimLearningVarietyBonus,
+  releaseRewardClaim,
   getClaimedQuizQuestionIds,
   recordQuizAttempt,
   getQuizHistory,
@@ -108,6 +109,24 @@ describe('Reward Ledger & Quiz History (Phase 3B)', () => {
     const bonusDup = await claimLearningVarietyBonus(today, testDb);
     expect(bonusDup.awarded).toBe(false);
     expect(bonusDup.reason).toBe('already_claimed');
+  });
+
+  it('releases a claim when XP persistence fails so the reward can be retried (R3-DATA-01)', async () => {
+    const today = '2026-10-17';
+    const first = await claimDailyLinkReward('link-retry', today, 2, testDb);
+    expect(first.awarded).toBe(true);
+
+    // Simulasi saveStoredPet gagal: klaim harus dibatalkan agar tidak hangus permanen.
+    await releaseRewardClaim(`link_save:${today}:link-retry`, testDb);
+
+    const retry = await claimDailyLinkReward('link-retry', today, 2, testDb);
+    expect(retry.awarded).toBe(true);
+    expect(retry.xpAwarded).toBe(5);
+
+    // Setelah retry berhasil, idempotensi tetap berlaku.
+    const duplicate = await claimDailyLinkReward('link-retry', today, 2, testDb);
+    expect(duplicate.awarded).toBe(false);
+    expect(duplicate.reason).toBe('already_claimed');
   });
 
   it('records and orders quiz attempt history', async () => {
