@@ -44,7 +44,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
   };
 
   return (
-    <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-170px)] min-h-0">
+    <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-185px)] min-h-0">
       {/* Grounded AI Assistant Badge */}
       <div
         className={cn(

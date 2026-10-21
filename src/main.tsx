@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { registerServiceWorker } from './registerServiceWorker'
+import { prewarmInactiveTabsOnIdle } from './lib/perf/prewarmTabs'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -11,6 +12,10 @@ createRoot(document.getElementById('root')!).render(
 )
 
 registerServiceWorker()
+
+// R4-PERF-04: panaskan chunk + gambar tab Pustaka/Catatan saat perangkat menganggur,
+// supaya perpindahan tab tidak lagi menunggu unduh chunk dan decode gambar.
+prewarmInactiveTabsOnIdle()
 
 // Safe Telegram Mini App viewport & theme initialization if embedded
 try {

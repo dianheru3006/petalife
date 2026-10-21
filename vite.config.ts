@@ -20,6 +20,22 @@ function injectServiceWorkerAssetsPlugin(): Plugin {
         assetFiles = fs.readdirSync(assetsDir).map(file => `./assets/${file}`);
       }
 
+      // R4-PERF-06: pasangan fallback (mis. room-bg.jpg 197 KB untuk WebView
+      // kuno) tidak boleh ikut di-precache. Install SW akan mengunduh SEMUA
+      // BUILD_ASSETS; menyertakan fallback yang hanya dipakai browser tanpa
+      // WebP berarti ~378 KB kuota terbuang di setiap instalasi. Fallback tetap
+      // dikirim ke dist dan akan di-cache SW saat benar-benar diminta.
+      const stemOf = (file: string) => file.replace(/\.[a-z0-9]+$/i, '').replace(/-[A-Za-z0-9_-]{6,}$/, '');
+      const webpStems = new Set(
+        assetFiles.filter(file => file.endsWith('.webp')).map(stemOf)
+      );
+      const precacheFiles = assetFiles.filter(file => {
+        const isLegacyRaster = /\.(jpe?g|png)$/i.test(file);
+        return !(isLegacyRaster && webpStems.has(stemOf(file)));
+      });
+      const skippedFallbacks = assetFiles.length - precacheFiles.length;
+      assetFiles = precacheFiles;
+
       let swContent = fs.readFileSync(swFile, 'utf-8');
       const buildId = Date.now().toString(36);
       const assetsJson = JSON.stringify(assetFiles);
@@ -32,6 +48,9 @@ function injectServiceWorkerAssetsPlugin(): Plugin {
       );
       fs.writeFileSync(swFile, swContent, 'utf-8');
       console.log(`[PWA Plugin] Injected ${assetFiles.length} hashed build assets & build ID (${buildId}) into dist/sw.js for offline precache.`);
+      if (skippedFallbacks > 0) {
+        console.log(`[PWA Plugin] Skipped ${skippedFallbacks} legacy raster fallback(s) from precache (WebP sibling exists).`);
+      }
     }
   };
 }

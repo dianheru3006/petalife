@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { CSSProperties, FC } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SavedLink, LinkStatus } from '../../lib/types';
 import { detectPlatform, getYouTubeThumbnail, cn } from '../../lib/utils';
@@ -30,6 +30,39 @@ import { VaultReadingSections } from './VaultReadingSections';
 import type { LibraryMochiActivity } from './LibraryMochi';
 import { LibraryMochi } from './LibraryMochi';
 import libraryBg from '../../assets/library-front-bg.jpg';
+import libraryBgWebp from '../../assets/library-front-bg.webp';
+
+/**
+ * R4-PERF-01: latar diorama Pustaka dulu 180 KB JPEG mentah (hampir 5x Beranda).
+ * Kini WebP 75 KB pada 1376x768 (SSIM 0.979 vs sumber 1672x941) dengan fallback
+ * JPEG untuk WebView lama yang belum mengenal WebP.
+ *
+ * R4-PERF-02: layer dasar dan occluder meja WAJIB memakai URL yang sama persis.
+ * Dengan begitu WebView hanya men-decode satu bitmap dan memakai ulang tekstur
+ * yang sudah ada, bukan mengalokasikan tekstur kedua untuk gambar yang identik.
+ */
+const LibraryDioramaArt: FC<{
+  className: string;
+  style?: CSSProperties;
+  decorative?: boolean;
+  priority?: boolean;
+}> = ({ className, style, decorative = false, priority = false }) => (
+  <picture>
+    <source srcSet={libraryBgWebp} type="image/webp" />
+    <img
+      src={libraryBg}
+      alt={decorative ? '' : 'Perpustakaan kecil Mochi dengan rak buku dan ruang baca yang hangat'}
+      aria-hidden={decorative || undefined}
+      width={1376}
+      height={768}
+      loading="eager"
+      decoding={priority ? 'sync' : 'async'}
+      fetchPriority={priority ? 'high' : 'auto'}
+      className={className}
+      style={style}
+    />
+  </picture>
+);
 
 export interface VaultPageProps {
   links: SavedLink[];
@@ -412,7 +445,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   );
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-4 pb-6">
+    <div className="w-full max-w-md mx-auto space-y-4">
       {!selectedLink && (
         <header className="flex min-h-11 items-center justify-between gap-2 px-2">
           <div className="min-w-0">
@@ -425,7 +458,7 @@ export const VaultPage: FC<VaultPageProps> = ({
         /* =========================================================================
            READING VIEW (HALAMAN BACA MATERI) - HARMONIZED WITH PETALIFE SECOND BRAIN
            ========================================================================= */
-        <div className="space-y-4 anim-page-enter pb-24">
+        <div className="space-y-4 anim-page-enter">
           {/* Top Bar: Back to Shelf & Counter */}
           <div className="flex items-center justify-between gap-2 px-1">
             <button
@@ -777,12 +810,14 @@ export const VaultPage: FC<VaultPageProps> = ({
            ========================================================================= */
         <div className="space-y-4">
           {/* Library diorama, with Mochi animated separately from the artwork. */}
-          <div className={`relative h-[220px] min-[380px]:h-[235px] overflow-hidden rounded-[32px] border-2 shadow-md ${isNightMode ? 'border-[#D5C6AF] bg-[#E5D8C3]' : 'border-[#E8DFCF] bg-[#EEE1CD]'}`}>
-            <img
-              src={libraryBg}
-              alt="Perpustakaan kecil Mochi dengan rak buku dan ruang baca yang hangat"
-              width={1672}
-              height={941}
+          {/* R4-PERF-03: `contain: paint` membatasi invalidasi paint Mochi yang beranimasi
+              agar tidak memicu repaint seluruh artwork 1376x768 di luar kartu diorama. */}
+          <div
+            className={`relative h-[220px] min-[380px]:h-[235px] overflow-hidden rounded-[32px] border-2 shadow-md ${isNightMode ? 'border-[#D5C6AF] bg-[#E5D8C3]' : 'border-[#E8DFCF] bg-[#EEE1CD]'}`}
+            style={{ contain: 'paint' }}
+          >
+            <LibraryDioramaArt
+              priority
               className={`absolute inset-0 h-full w-full object-cover object-center ${isNightMode ? 'brightness-[0.72] saturate-[0.85]' : ''}`}
             />
 
@@ -847,13 +882,10 @@ export const VaultPage: FC<VaultPageProps> = ({
                 <LibraryMochi activity={mochiActivity} seated />
               </span>
             </button>
-            {/* Repeat only the foreground tabletop to occlude the seated sprite naturally. */}
-            <img
-              src={libraryBg}
-              alt=""
-              aria-hidden="true"
-              width={1672}
-              height={941}
+            {/* Repeat only the foreground tabletop to occlude the seated sprite naturally.
+                URL identik dengan layer dasar => bitmap hasil decode dipakai ulang. */}
+            <LibraryDioramaArt
+              decorative
               className={`pointer-events-none absolute inset-0 z-10 h-full w-full object-cover object-center ${isNightMode ? 'brightness-[0.72] saturate-[0.85]' : ''}`}
               style={{ clipPath: 'inset(76% 0 0 0)' }}
             />

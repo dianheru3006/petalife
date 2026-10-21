@@ -1148,6 +1148,19 @@
   transform-origin: 50% 85%;
 }
 
+/* R4-PERF-05: sprite Mochi beranimasi terus-menerus. Tanpa layer sendiri, tiap
+   frame memaksa WebView menggambar ulang kartu diorama beserta artwork
+   1376x768 di belakangnya. Promosikan hanya sprite kecilnya ke kompositor,
+   lalu kembalikan ke `auto` saat animasi dimatikan (prefers-reduced-motion).
+   Hanya 2 sprite hidup sekaligus, sehingga biaya memori layer tetap terbatas. */
+.library-mochi-breathe,
+.library-mochi-bob,
+.library-mochi-seated,
+.notes-writer-breathe {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
 /* Respect Reduced Motion & User Pause Motion Preference */
 @media (prefers-reduced-motion: reduce) {
   .library-mochi-breathe,
@@ -1226,6 +1239,15 @@
   .anim-tv-crt-static {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* Animasi mati => layer kompositor tidak lagi berguna; lepaskan memorinya. */
+  .library-mochi-breathe,
+  .library-mochi-bob,
+  .library-mochi-seated,
+  .notes-writer-breathe {
+    will-change: auto;
+    backface-visibility: visible;
   }
 }
 

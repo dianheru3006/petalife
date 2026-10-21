@@ -967,6 +967,11 @@ export const PetRoom: FC<PetRoomProps> = ({
           <img
             src={roomBg}
             alt="Rumah Mochi 3D Living Room"
+            width={768}
+            height={1376}
+            loading="eager"
+            decoding="sync"
+            fetchPriority="high"
             className="w-full h-full object-cover object-center pointer-events-none"
           />
         </picture>

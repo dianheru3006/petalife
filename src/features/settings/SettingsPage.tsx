@@ -96,7 +96,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-4 pb-8 select-none">
+    <div className="max-w-md mx-auto space-y-4 select-none">
       {/* 1. Header */}
       <div className="px-1">
         <h1 className="text-xl sm:text-2xl font-black text-[#2E2E3A] tracking-tight">Pengaturan Mochi</h1>

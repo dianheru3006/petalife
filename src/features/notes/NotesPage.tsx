@@ -188,7 +188,7 @@ export const NotesPage: FC<NotesPageProps> = ({
   };
 
   return (
-    <div className="mx-auto w-full max-w-md pb-8">
+    <div className="mx-auto w-full max-w-md">
       {notice && (
         <div role="status" className="mb-3 flex items-center gap-2 rounded-2xl border border-[#C9DEC9] bg-[#F1F8EF] px-4 py-3 text-sm font-semibold text-[#315D3B]">
           <Check className="h-4 w-4" />{notice}
@@ -244,21 +244,22 @@ export const NotesPage: FC<NotesPageProps> = ({
         </div>
       ) : (
         <>
-          <header className="flex items-center justify-between gap-3 px-2 pb-3 pt-1">
-            <div>
+          <header className="flex min-h-11 items-center justify-between gap-2 px-2 pb-2 pt-1">
+            <div className="min-w-0">
               <p className="text-xs font-medium text-[#5B5660]">Ruang pikirmu</p>
               <h1 className="font-display text-[20px] font-extrabold leading-tight text-[#2E2E3A]">Catatan</h1>
             </div>
-            <button type="button" onClick={() => openEditor()} aria-label="Buat catatan baru" className="flex h-11 w-11 items-center justify-center rounded-full border border-[#D8C7B4] bg-[#F5ECDD] text-[#5D4633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
-              <Plus className="h-5 w-5" />
-            </button>
           </header>
 
+          {/* R4-PERF-03: `contain: paint` mengurung repaint sprite Mochi yang beranimasi
+              supaya artwork 1200x675 tidak ikut digambar ulang tiap frame. */}
           <section aria-label="Mochi menulis catatan" className={cn(
             'relative mb-4 h-[220px] min-[380px]:h-[235px] overflow-hidden rounded-[32px] border-2 shadow-md',
             isNightMode ? 'border-[#D5C6AF] bg-[#E5D8C3]' : 'border-[#E8DFCF] bg-[#EEE1CD]',
-          )}>
-            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} className={cn('absolute inset-0 h-full w-full object-cover object-center', isNightMode && 'brightness-[0.72] saturate-[0.85]')} />
+          )}
+            style={{ contain: 'paint' }}
+          >
+            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} loading="eager" decoding="sync" fetchPriority="high" className={cn('absolute inset-0 h-full w-full object-cover object-center', isNightMode && 'brightness-[0.72] saturate-[0.85]')} />
             <div role="status" aria-live="polite" className="pointer-events-none absolute left-1/2 top-2 z-20 w-max max-w-[calc(100%-24px)] -translate-x-1/2 rounded-2xl border border-[#EAE3D5] bg-white/95 px-4 py-1.5 text-center text-xs font-bold leading-snug text-[#3A3340] shadow-md backdrop-blur-md">
               {mochiGreetings[mochiGreetingIndex % mochiGreetings.length]}
               <span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#EAE3D5] bg-white" />
@@ -303,7 +304,7 @@ export const NotesPage: FC<NotesPageProps> = ({
               </div>
             )}
           </section>
-          <div className="flex justify-end pb-4 pt-5">
+          <div className="flex justify-end pt-4">
             <button type="button" onClick={() => openEditor()} className="inline-flex min-h-12 items-center gap-2.5 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white shadow-[0_8px_20px_#4A342D38] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
               <Plus className="h-5 w-5" /> Catatan baru
             </button>
