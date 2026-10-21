@@ -835,13 +835,13 @@ export const VaultPage: FC<VaultPageProps> = ({
               </div>
             </div>
 
-            {/* Interactive Mochi Button (Seated comfortably on the reading armchair on the left) */}
+            {/* Interactive Mochi Button (Snugly seated on the plush reading armchair on the left) */}
             <button
               type="button"
               onClick={handleMochiTap}
               aria-label="Ajak Mochi berinteraksi di perpustakaan"
               title="Ketuk Mochi untuk berinteraksi!"
-              className="group absolute bottom-0 left-[24%] -translate-x-1/2 h-[72%] w-[38%] max-w-[150px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
+              className="group absolute bottom-[30%] min-[380px]:bottom-[32%] left-[23%] -translate-x-1/2 h-[55%] min-[380px]:h-[57%] w-[33%] max-w-[125px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform rotate-[4deg]"
             >
               <LibraryMochi activity={mochiActivity} />
             </button>
