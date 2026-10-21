@@ -171,5 +171,11 @@ describe('Service Worker Persistent CSS Backup Cache (Sol ADR-003)', () => {
     expect(source).toContain('`${STABLE_CSS_KEY}?${BUILD_ID}`');
     expect(source).not.toMatch(/backupCache\.put\(STABLE_CSS_KEY/);
     expect(source).not.toMatch(/backupCache\.match\(STABLE_CSS_KEY\)/);
+
+    // R4-PERF-07: `cache.add('./x')` tanpa base URL bisa gagal senyap di dalam
+    // SW sehingga shell cache kosong. Precache WAJIB memakai URL absolut.
+    expect(source).toContain('const precacheUrl = (path) => new URL(path, self.registration.scope).href');
+    expect(source).toMatch(/cache\.add\(absolute\)/);
+    expect(source).not.toMatch(/cache\.add\(url\)/);
   });
 });

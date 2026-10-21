@@ -469,7 +469,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                 setEditingLinkId(null);
                 window.scrollTo({ top: 0, behavior: 'instant' });
               }}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-white border border-[#EAE3D5] px-4 py-2 text-xs font-bold text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-[#D97736] cursor-pointer"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white border border-[#EAE3D5] px-4 py-2 text-xs font-bold text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 text-[#BA5218]" />
               <span>Kembali ke Rak</span>

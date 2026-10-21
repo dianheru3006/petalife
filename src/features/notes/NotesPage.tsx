@@ -197,11 +197,17 @@ export const NotesPage: FC<NotesPageProps> = ({
 
       {selectedNote ? (
         <div className="space-y-4 anim-page-enter">
-          <div className="flex items-center justify-between gap-3 px-1">
-            <button type="button" onClick={goBack} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#E7DED0] bg-white px-4 text-sm font-bold text-[#493D32] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
-              <ArrowLeft className="h-4 w-4" /> Kembali ke papan
+          {/* Top Bar: Back to Corkboard & Date */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <button
+              type="button"
+              onClick={goBack}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#EAE3D5] bg-white px-4 py-2 text-xs font-bold text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4 text-[#BA5218]" />
+              <span>Kembali ke Papan</span>
             </button>
-            <span className="text-xs text-[#71665A]">{formatDate(selectedNote.createdAt)}</span>
+            <span className="text-xs font-semibold text-[#7A6E60]">{formatDate(selectedNote.createdAt)}</span>
           </div>
 
           <article className="notes-lined-paper min-h-[50vh] rounded-[28px] border border-[#E8DCCB] bg-[#FFFCF7] p-6 shadow-[0_10px_30px_#6C503017] sm:p-7">
