@@ -69,7 +69,16 @@ describe('perf budget: tipografi self-hosted', () => {
 describe('perf budget: boot frame sebelum React', () => {
   it('ada di index.html dan disembunyikan murni oleh CSS saat #root terisi', () => {
     expect(indexHtml).toContain('id="boot-frame"');
-    expect(indexHtml).toMatch(/#root:not\(:empty\)\s*~\s*#boot-frame\s*\{[^}]*visibility:\s*hidden/);
+    expect(indexHtml).toMatch(/#root:not\(:empty\)\s*~\s*#boot-frame\s*\{[^}]*display:\s*none/);
+  });
+
+  it('tidak bergantung pada transisi untuk menghilang', () => {
+    // Transisi bisa tertahan di WebView yang throttled dan meninggalkan overlay
+    // yang menutupi aplikasi. Pelepasan wajib instan (display) — bukan opacity.
+    const styleBlock = indexHtml.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+    const hideRule = styleBlock.match(/#root:not\(:empty\)\s*~\s*#boot-frame\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(hideRule).not.toMatch(/transition/);
+    expect(hideRule).not.toMatch(/opacity/);
   });
 
   it('tidak menambah satu pun request jaringan', () => {

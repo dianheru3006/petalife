@@ -42,17 +42,14 @@
         flex-direction: column;
         background: #FDFBF7;
         pointer-events: none;
-        opacity: 1;
-        visibility: visible;
-        transition: opacity 180ms ease-out, visibility 0s linear 180ms;
         overflow: hidden;
       }
+      /* Lepas instan, bukan fade. Transisi opacity/visibility bisa tertahan di
+         WebView yang sedang throttled (frame transisi tidak berjalan), dan
+         overlay yang tertinggal akan menutupi aplikasi walau klik tetap lolos.
+         Karena geometrinya identik, pertukaran tanpa animasi tidak terlihat. */
       #root:not(:empty) ~ #boot-frame {
-        opacity: 0;
-        visibility: hidden;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        #boot-frame { transition: none; }
+        display: none;
       }
       .bf-wrap {
         width: 100%;
@@ -83,7 +80,10 @@
       .bf-pill-wide { width: 88px; }
       .bf-pill-narrow { width: 56px; }
       .bf-stage {
-        margin-top: 16px;
+        /* 16px space-y-4 + 5px beda baseline header nyata (diukur dari DOM
+           PetRoom pada viewport 439px): kartu frame dan kartu asli mendarat
+           di y yang sama sehingga tidak ada lompatan saat React mengambil alih. */
+        margin-top: 21px;
         width: 100%;
         aspect-ratio: 9 / 13;
         max-height: 560px;
@@ -98,7 +98,7 @@
         bottom: calc(1.35rem + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
         width: calc(100% - 1.75rem);
         max-width: 348px;
-        height: 62px;
+        height: 66px;
         border-radius: 999px;
         background: rgba(250, 247, 242, 0.92);
         border: 1px solid rgba(255, 255, 255, 0.85);
