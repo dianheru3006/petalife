@@ -468,9 +468,11 @@ export async function synthesizeLink(
     try {
       const controller = new AbortController();
       const isShortVideo = platform === 'instagram' || platform === 'tiktok';
-      // P1: Client timeout 280s for async short videos to cover up to 2 queued jobs @ 120s worker deadline + headroom
-      // YouTube uses 75s (synchronous server 65s deadline)
-      const defaultTimeout = isShortVideo ? 280000 : (platform === 'youtube' ? 75000 : 14000);
+      // REL-02: YouTube memakai antrean asinkron seperti Instagram/TikTok, jadi
+      // 280 s menutup dua job berurutan (@240 s) plus jeda polling. Jalur
+      // sinkron (bila server dipaksa `sync: true`) masih butuh 120 s.
+      const isYouTube = platform === 'youtube';
+      const defaultTimeout = (isShortVideo || isYouTube) ? 280000 : 14000;
       timeout = setTimeout(() => controller.abort(), options.timeoutMs || defaultTimeout);
 
       // R3-PROD-01: initData Telegram bila ada, jika tidak sesi anonim (token 20 menit).
@@ -515,8 +517,8 @@ export async function synthesizeLink(
         } catch (pollErr: any) {
           // If aborted or network dropped, DO NOT clear active job!
           if (pollErr?.name === 'AbortError') throw pollErr;
-          gatewayErrorType = 'server_error';
-          gatewayErrorMessage = 'Pemantauan status proses terputus.';
+          gatewayErrorType = 'network_error';
+          gatewayErrorMessage = 'Pemantauan status proses terputus dari browser.';
           gatewayErrorAction = 'Proses tetap berjalan di backend. Buka kembali aplikasi untuk melihat hasil.';
         }
       }
@@ -528,7 +530,9 @@ export async function synthesizeLink(
           body: JSON.stringify({
             url: cleanUrl,
             context: userContext, // P0: strictly genuine user context only; never pass title metadata as evidence!
-            async: isShortVideo
+            // REL-02: YouTube ikut antrean asinkron agar koneksi tunnel/klien
+            // tidak bisa membuang hasil yang sudah selesai dihitung backend.
+            async: isShortVideo || isYouTube
           }),
           signal: controller.signal,
         };
@@ -617,7 +621,11 @@ export async function synthesizeLink(
           gatewayErrorType = 'rate_limited';
           gatewayErrorMessage = 'Mochi sedang sibuk.';
           gatewayErrorAction = 'Coba lagi setelah jeda; kuota batas permintaan tercapai.';
-        } else if (res.status === 502 || res.status === 503 || res.status === 504) {
+        } else if (res.status === 504) {
+          gatewayErrorType = 'timeout';
+          gatewayErrorMessage = 'Server belum selesai memproses materi dalam batas waktunya.';
+          gatewayErrorAction = 'Simpan bookmark lalu Sintesis Ulang; materi panjang tetap diproses di latar belakang.';
+        } else if (res.status === 502 || res.status === 503) {
           gatewayErrorType = 'server_error';
           gatewayErrorMessage = 'Sintesis server belum tersedia.';
           gatewayErrorAction = 'Simpan bookmark, lalu Sintesis ulang.';
@@ -627,34 +635,43 @@ export async function synthesizeLink(
           gatewayErrorAction = 'Periksa konfigurasi gateway atau coba lagi.';
         }
 
-        if (json) {
-          if (json.success && json.data && json.data.title) {
-            return formatSynthesizedData(
-              json.data,
-              cleanUrl,
-              platform,
-              domain,
-              meta,
-              userContext,
-              captureMethod,
-              res?.status || 200
-            );
-          } else {
-            gatewayErrorType = 'invalid_response';
-            gatewayErrorMessage = json.message || json.error || 'AI menghasilkan format respons yang tidak valid.';
-            gatewayErrorAction = 'Tekan Sintesis Ulang untuk mencoba kembali.';
-          }
+      }
+
+      // REL-02: hasil resume job ATAU respons langsung WAJIB dikembalikan di sini.
+      // Sebelumnya blok ini berada di dalam `if (!json)`, sehingga job yang selesai
+      // saat aplikasi ditutup dibuang dan kartu Vault diisi sintesis lokal.
+      if (json) {
+        if (json.success && json.data && json.data.title) {
+          return formatSynthesizedData(
+            json.data,
+            cleanUrl,
+            platform,
+            domain,
+            meta,
+            userContext,
+            captureMethod,
+            gatewayHttpStatus || 200
+          );
         }
+        gatewayErrorType = 'invalid_response';
+        gatewayErrorMessage = json.message || json.error || 'AI menghasilkan format respons yang tidak valid.';
+        gatewayErrorAction = 'Tekan Sintesis Ulang untuk mencoba kembali.';
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
         gatewayErrorType = 'timeout';
-        gatewayErrorMessage = 'Pemrosesan terlalu lama (timeout).';
-        gatewayErrorAction = 'Coba lagi.';
+        if (platform === 'youtube') {
+          // Jujur: batas waktu klien habis, tetapi server belum tentu mati.
+          gatewayErrorMessage = 'Server masih menyusun ringkasan materi panjang.';
+          gatewayErrorAction = 'Job tetap berjalan di latar belakang. Buka kembali Petalife beberapa saat lagi untuk mengambil hasilnya.';
+        } else {
+          gatewayErrorMessage = 'Server belum merespons dalam batas waktu.';
+          gatewayErrorAction = 'Coba lagi; jika berulang, periksa koneksi ke Brain Gateway.';
+        }
       } else {
         gatewayErrorType = 'network_error';
-        gatewayErrorMessage = 'Browser belum dapat menghubungi Brain Gateway.';
-        gatewayErrorAction = 'Periksa koneksi dan URL; Coba lagi.';
+        gatewayErrorMessage = 'Browser belum dapat menghubungi Brain Gateway (server tidak merespons).';
+        gatewayErrorAction = 'Periksa koneksi dan URL gateway, lalu coba lagi.';
       }
     } finally {
       if (timeout) clearTimeout(timeout);

@@ -48,7 +48,7 @@ describe('aiSynthesisService', () => {
     expect(result.qualityStatus).toBe('gateway_error');
     expect(result.gatewayErrorType).toBe('network_error');
     expect(result.isFromRemoteAI).toBe(false);
-    expect(result.content.notes).toContain('Browser belum dapat menghubungi Brain Gateway.');
+    expect(result.content.notes).toContain('Browser belum dapat menghubungi Brain Gateway (server tidak merespons).');
   });
 
   it('handles 401 Unauthorized with honest session requirement message', async () => {
@@ -360,7 +360,54 @@ describe('aiSynthesisService', () => {
     expect(stagesReported.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('P0: does NOT send async: true for YouTube, but sends async: true for Instagram/TikTok', async () => {
+  it('REL-02: a completed background job is returned on reopen instead of being discarded', async () => {
+    saveActiveJob({
+      jobId: 'job_resume_1',
+      pollUrl: 'https://brain.example.com/api/petalife/job-status/job_resume_1',
+      url: 'https://youtu.be/resume1234',
+      timestamp: Date.now(),
+      apiBase: 'https://brain.example.com'
+    });
+
+    let summarizePosts = 0;
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('summarize-link') && init?.method === 'POST') summarizePosts += 1;
+      const payload = String(url).includes('job-status')
+        ? {
+            success: true,
+            jobId: 'job_resume_1',
+            status: 'completed',
+            stage: 'completed',
+            data: {
+              title: 'Job Tersimpan',
+              category: 'Finansial',
+              coreThesis: 'Menabung kecil secara konsisten lebih aman daripada mengejar hasil instan.',
+              keyTakeaways: [{ concept: 'Konsistensi', explanation: 'Mulai dari nominal yang tidak memberatkan.' }],
+              actionableInsights: ['Sisihkan nominal kecil setiap hari.'],
+              reflectionPrompt: 'Apa kebiasaan kecil yang bisa kamu mulai?',
+              qualityStatus: 'grounded',
+              evidenceLevel: 'full_text'
+            }
+          }
+        : { success: true, token: 'anon-resume', expiresIn: 1200, tier: 'anonymous' };
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => payload
+      };
+    });
+
+    const result = await synthesizeLink('https://youtu.be/resume1234', 'youtube', 'youtu.be', {
+      timeoutMs: 5000
+    });
+
+    expect(result.qualityStatus).toBe('grounded');
+    expect(result.content.title).toBe('Job Tersimpan');
+    expect(summarizePosts).toBe(0);
+  });
+
+  it('REL-02: sends async: true for YouTube and Instagram/TikTok so the tunnel never blocks on long synthesis', async () => {
     let capturedYouTubeBody: any = null;
     let capturedInstagramBody: any = null;
 
@@ -388,7 +435,7 @@ describe('aiSynthesisService', () => {
     });
 
     await synthesizeLink('https://youtu.be/test1234', 'youtube', 'youtu.be');
-    expect(capturedYouTubeBody.async).toBe(false);
+    expect(capturedYouTubeBody.async).toBe(true);
     expect(capturedYouTubeBody.context).toBe('');
 
     await synthesizeLink('https://www.instagram.com/reel/test1234/', 'instagram', 'instagram.com');
