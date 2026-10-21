@@ -835,18 +835,28 @@ export const VaultPage: FC<VaultPageProps> = ({
               </div>
             </div>
 
-            {/* The desk masks the lower body while the chair supports Mochi from behind. */}
+            {/* Seat Mochi behind the desk, with the chair back visible around the body. */}
             <button
               type="button"
               onClick={handleMochiTap}
               aria-label="Ajak Mochi berinteraksi di perpustakaan"
               title="Ketuk Mochi untuk berinteraksi!"
-              className="group absolute bottom-[20%] left-[21%] -translate-x-1/2 h-[55%] min-[380px]:h-[57%] w-[33%] max-w-[125px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
+              className="group absolute bottom-[17%] left-[21%] -translate-x-1/2 h-[55%] min-[380px]:h-[57%] w-[33%] max-w-[125px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
             >
               <span className="library-mochi-seated block h-full w-full">
                 <LibraryMochi activity={mochiActivity} seated />
               </span>
             </button>
+            {/* Repeat only the foreground tabletop to occlude the seated sprite naturally. */}
+            <img
+              src={libraryBg}
+              alt=""
+              aria-hidden="true"
+              width={1672}
+              height={941}
+              className={`pointer-events-none absolute inset-0 z-10 h-full w-full object-cover object-center ${isNightMode ? 'brightness-[0.72] saturate-[0.85]' : ''}`}
+              style={{ clipPath: 'inset(76% 0 0 0)' }}
+            />
           </div>
 
           {/* Feedback Toasts */}
