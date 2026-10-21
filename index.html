@@ -21,10 +21,13 @@
          Urutan eksekusi tetap benar: defer dieksekusi sebelum modul React (juga deferred). -->
     <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
     <title>Petalife — Cozy Virtual Pet & Learning Vault</title>
-    <!-- Friendly typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- R5-PERF-01: tipografi self-hosted (2 file variabel, 66 KB) menggantikan
+         10 face statis dari Google Fonts (332 KB) + 2 koneksi pihak ketiga.
+         Preload agar swap font selesai sebelum React commit, bukan sesudahnya.
+         Vite menulis ulang href ini menjadi aset ber-hash saat build. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="./assets/plus-jakarta-sans-latin-variable-B2KjpZfh.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="./assets/nunito-latin-variable-CjueodBP.woff2" />
+    <style>#boot-frame{z-index:60;pointer-events:none;opacity:1;visibility:visible;background:#fdfbf7;flex-direction:column;transition:opacity .18s ease-out,visibility 0s linear .18s;display:flex;position:fixed;top:0;bottom:0;left:0;right:0;overflow:hidden}#root:not(:empty)~#boot-frame{opacity:0;visibility:hidden}@media (prefers-reduced-motion:reduce){#boot-frame{transition:none}}.bf-wrap{width:100%;max-width:28rem;margin:0 auto;padding:14px}.bf-head{justify-content:space-between;align-items:center;gap:8px;min-height:44px;padding:0 8px;display:flex}.bf-lines{flex-direction:column;gap:7px;display:flex}.bf-bar{background:#e7e1d6;border-radius:8px;display:block}.bf-bar-greet{width:68px;height:11px}.bf-bar-title{background:#e0d8cb;width:142px;height:22px}.bf-pills{gap:8px;display:flex}.bf-pill{background:#f4efe6;border:1px solid #eae3d5;border-radius:999px;height:30px;display:block}.bf-pill-wide{width:88px}.bf-pill-narrow{width:56px}.bf-stage{aspect-ratio:9/13;background:#eee1cd;border:2px solid #e8dfcf;border-radius:32px;width:100%;max-height:560px;margin-top:16px}.bf-nav{left:50%;bottom:calc(1.35rem + var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))));background:#faf7f2eb;border:1px solid #ffffffd9;border-radius:999px;justify-content:space-between;align-items:center;width:calc(100% - 1.75rem);max-width:348px;height:62px;padding:8px 12px;display:flex;position:fixed;transform:translate(-50%);box-shadow:0 16px 40px #2e2e3a1f,0 2px 8px #0000000a}.bf-dot{background:#0000000b;border-radius:999px;width:36px;height:36px;display:block}.bf-dot-active{background:#ede7dc;width:76px}</style>
     <!-- Defensive cleanup for dev environments: immediately unregister any stale production Service Workers -->
     <script>
       if ('serviceWorker' in navigator && (
@@ -45,14 +48,39 @@
         }
       }
     </script>
-    <script type="module" crossorigin src="./assets/index-C5QZ-D27.js"></script>
+    <script type="module" crossorigin src="./assets/index-CubNS_U6.js"></script>
     <link rel="modulepreload" crossorigin href="./assets/rolldown-runtime-WkwZ5CU-.js">
     <link rel="modulepreload" crossorigin href="./assets/icons-B7DPsROO.js">
     <link rel="modulepreload" crossorigin href="./assets/react-CaS005AF.js">
     <link rel="modulepreload" crossorigin href="./assets/db-D1xEoOiV.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-rCxRUWjE.css">
+    <link rel="stylesheet" crossorigin href="./assets/index-DEmqw92B.css">
   </head>
   <body class="bg-[#FDFBF7] text-[#2E2E3A] antialiased selection:bg-[#FED7C5] selection:text-[#2E2E3A] min-h-screen">
-    <div id="root"></div>
+    <div id="root"></div>
+    <!-- R5-PERF-02: frame yang terlihat sebelum React mount. Bentuknya sengaja
+         netral (header + kartu besar + nav) karena Beranda, Pustaka, dan Catatan
+         semuanya dibuka dengan header pendek + satu kartu diorama besar. -->
+    <div id="boot-frame" aria-hidden="true">
+      <div class="bf-wrap">
+        <div class="bf-head">
+          <div class="bf-lines">
+            <span class="bf-bar bf-bar-greet"></span>
+            <span class="bf-bar bf-bar-title"></span>
+          </div>
+          <div class="bf-pills">
+            <span class="bf-pill bf-pill-wide"></span>
+            <span class="bf-pill bf-pill-narrow"></span>
+          </div>
+        </div>
+        <div class="bf-stage"></div>
+      </div>
+      <div class="bf-nav">
+        <span class="bf-dot bf-dot-active"></span>
+        <span class="bf-dot"></span>
+        <span class="bf-dot"></span>
+        <span class="bf-dot"></span>
+        <span class="bf-dot"></span>
+      </div>
+    </div>
   </body>
 </html>
