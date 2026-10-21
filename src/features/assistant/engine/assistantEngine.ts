@@ -192,21 +192,24 @@ export async function queryAssistant(
         signal: controller.signal,
       };
 
-      let res = await fetch(apiUrl, requestInit);
-      if (res.status === 401 && !headers['X-Telegram-Init-Data']) {
-        const refreshed = await getAnonSessionToken(apiBase, controller.signal, { force: true });
-        if (refreshed) {
-          headers['X-Petalife-Session'] = refreshed;
-          res = await fetch(apiUrl, requestInit);
+      try {
+        let res = await fetch(apiUrl, requestInit);
+        if (res.status === 401 && !headers['X-Telegram-Init-Data']) {
+          const refreshed = await getAnonSessionToken(apiBase, controller.signal, { force: true });
+          if (refreshed) {
+            headers['X-Petalife-Session'] = refreshed;
+            res = await fetch(apiUrl, requestInit);
+          }
         }
-      }
-      clearTimeout(timeout);
 
-      if (res.ok) {
-        const data = (await res.json()) as AssistantResponse;
-        if (data && data.replyText) {
-          return data;
+        if (res.ok) {
+          const data = (await res.json()) as AssistantResponse;
+          if (data && data.replyText) {
+            return data;
+          }
         }
+      } finally {
+        clearTimeout(timeout);
       }
     } catch {
       // Graceful offline fallback to local grounded engine

@@ -564,7 +564,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
     // 2. Terrarium Micro-Tremor Animation
     setIsTerrariumShaking(true);
-    setTimeout(() => setIsTerrariumShaking(false), 680);
+    feedTimersRef.current.push(setTimeout(() => setIsTerrariumShaking(false), 680));
 
     // 3. Trigger Mochi Dizzy Action
     setForcedAction({ id: now, action: 'dizzy' });
@@ -727,7 +727,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             } else {
               setQuickSuccess(`🎉 Ringkasan berhasil disimpan ke Pustaka!`);
             }
-            setTimeout(() => setQuickSuccess(null), 3500);
+            feedTimersRef.current.push(setTimeout(() => setQuickSuccess(null), 3500));
             return;
           } finally {
             setIsSavingLink(false);
