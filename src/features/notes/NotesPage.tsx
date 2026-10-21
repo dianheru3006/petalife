@@ -266,7 +266,12 @@ export const NotesPage: FC<NotesPageProps> = ({
             style={{ contain: 'paint' }}
           >
             <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} loading="eager" decoding="sync" fetchPriority="high" className={cn('absolute inset-0 h-full w-full object-cover object-center', isNightMode && 'brightness-[0.72] saturate-[0.85]')} />
-            <div role="status" aria-live="polite" className="pointer-events-none absolute left-1/2 top-2 z-20 w-max max-w-[calc(100%-24px)] -translate-x-1/2 rounded-2xl border border-[#EAE3D5] bg-white/95 px-4 py-1.5 text-center text-xs font-bold leading-snug text-[#3A3340] shadow-md backdrop-blur-md">
+            <div
+              role="status"
+              aria-live="polite"
+              onClick={() => setMochiGreetingIndex(index => index + 1)}
+              className="absolute bottom-[68%] left-1/2 z-20 w-max max-w-[calc(100%-24px)] -translate-x-1/2 cursor-pointer select-none rounded-2xl border border-[#EAE3D5] bg-white/95 px-4 py-1.5 text-center text-xs font-bold leading-snug text-[#3A3340] shadow-md backdrop-blur-md active:scale-95 motion-safe:transition-transform"
+            >
               {mochiGreetings[mochiGreetingIndex % mochiGreetings.length]}
               <span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#EAE3D5] bg-white" />
             </div>
