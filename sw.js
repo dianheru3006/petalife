@@ -1,6 +1,6 @@
 // Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
 const CACHE_PREFIX = 'petalife-shell-';
-const BUILD_ID = 'mvhsqmxg';
+const BUILD_ID = 'mvi5ms8w';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
 const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
@@ -28,7 +28,7 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/AssistantPage-CTtg6OdD.js","./assets/Button-Cdkrc8Oj.js","./assets/db-D1xEoOiV.js","./assets/icons-B7DPsROO.js","./assets/index-CubNS_U6.js","./assets/index-DEmqw92B.css","./assets/library-front-bg-BpVUQZy_.webp","./assets/notes-study-bg-CoMVUSgG.webp","./assets/NotesPage-w4fYCpIp.js","./assets/nunito-latin-variable-CjueodBP.woff2","./assets/plus-jakarta-sans-latin-variable-B2KjpZfh.woff2","./assets/react-CaS005AF.js","./assets/rolldown-runtime-WkwZ5CU-.js","./assets/room-bg-DO9PK5HB.webp","./assets/SettingsPage-Cvu5OCAd.js","./assets/VaultPage-Dca4Jb8L.js"];
+const BUILD_ASSETS = ["./assets/AssistantPage-DB5dFWlr.js","./assets/Button-D70_uufR.js","./assets/db-D1xEoOiV.js","./assets/icons-Cwi5R6Ga.js","./assets/index-Cj_RmbWs.css","./assets/index-D1vK_7EL.js","./assets/library-front-bg-BpVUQZy_.webp","./assets/notes-study-bg-CoMVUSgG.webp","./assets/NotesPage-BCpDxR8_.js","./assets/nunito-latin-variable-CjueodBP.woff2","./assets/plus-jakarta-sans-latin-variable-B2KjpZfh.woff2","./assets/react-C5fSWncO.js","./assets/rolldown-runtime-WkwZ5CU-.js","./assets/room-bg-DO9PK5HB.webp","./assets/SettingsPage-CPV1sSfW.js","./assets/VaultPage-CEd_bOkT.js"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
 
@@ -138,8 +138,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin static assets or Google Fonts
-  if (url.origin === self.location.origin || url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com')) {
+  // Same-origin static assets only. AUDIT-FIX (P1): the old branch also matched
+  // two third-party font CDNs, which would have silently cached a remote font
+  // request forever. Petalife is fully self-hosted (two variable WOFF2 files),
+  // and the network policy test now forbids those origins from coming back.
+  if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
