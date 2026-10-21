@@ -2,8 +2,9 @@ import type { FC } from 'react';
 
 /**
  * Mochi's cozy study desk pose for Catatan.
- * Crafted with unified 3D clay aesthetic, soft pastel desk mat for figure-ground contrast,
- * and innocent kawaii facial expression without harsh eyebrows.
+ * - Unified 3D clay body with clipPath-contained forehead gleam (zero contour bleeding).
+ * - Warm Terracotta Coral notebook cover contrasting crisply against the Pastel Sage desk mat.
+ * - Pure innocent kawaii chibi expression without harsh eyebrows.
  */
 export const NotesMochi: FC = () => (
   <svg viewBox="0 0 150 170" aria-hidden="true" className="h-full w-full overflow-visible drop-shadow-[0_8px_14px_rgba(80,50,30,0.22)] select-none">
@@ -15,6 +16,17 @@ export const NotesMochi: FC = () => (
         <stop offset="67%" stopColor="#F5A834" />
         <stop offset="100%" stopColor="#C96E14" />
       </radialGradient>
+
+      {/* Head contour clipPath ensuring specular gleam NEVER bleeds past cranial contour */}
+      <clipPath id="notesMochiBodyClip">
+        <path
+          d="M75 42
+             C108 42 126 68 124 104
+             C122 136 102 148 75 148
+             C48 148 28 136 26 104
+             C24 68 42 42 75 42 Z"
+        />
+      </clipPath>
 
       {/* 3D Volumetric Specular Forehead Gleam */}
       <linearGradient id="notesMochiGleam" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -41,11 +53,17 @@ export const NotesMochi: FC = () => (
         <stop offset="100%" stopColor="#4CAF50" />
       </linearGradient>
 
-      {/* Point 5: Soothing Pastel Sage Desk Mat (Optical contrast separator) */}
+      {/* Soothing Pastel Sage Desk Mat (Optical contrast separator) */}
       <linearGradient id="notesDeskMat" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor="#96B8A7" />
         <stop offset="50%" stopColor="#86A998" />
         <stop offset="100%" stopColor="#719483" />
+      </linearGradient>
+
+      {/* Warm Terracotta Coral Notebook Cover (Contrasts sharply with the Sage mat) */}
+      <linearGradient id="notesBookCover" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#E2744B" />
+        <stop offset="100%" stopColor="#C4562D" />
       </linearGradient>
 
       {/* Crisp Ivory Paper for the Spiral Pad */}
@@ -63,7 +81,7 @@ export const NotesMochi: FC = () => (
     {/* Desk Mat Contact Shadow on Honey Oak Table */}
     <ellipse cx="75" cy="159" rx="56" ry="6" fill="#322219" opacity="0.18" filter="url(#notesMochiShadow)" />
 
-    {/* Point 5: Pastel Sage Desk Mat (grounded stationary desk element) */}
+    {/* Pastel Sage Desk Mat */}
     <g>
       <rect
         x="18"
@@ -114,14 +132,16 @@ export const NotesMochi: FC = () => (
         strokeWidth="1.6"
       />
 
-      {/* Volumetric Forehead Gleam */}
-      <ellipse cx="58" cy="64" rx="27" ry="16" transform="rotate(-16 58 64)" fill="url(#notesMochiGleam)" />
+      {/* Volumetric Forehead Gleam (Strictly clipped inside body contour - zero bleed) */}
+      <g clipPath="url(#notesMochiBodyClip)">
+        <ellipse cx="62" cy="66" rx="23" ry="14" transform="rotate(-15 62 66)" fill="url(#notesMochiGleam)" />
+      </g>
 
       {/* Airbrushed Rosy Cheeks */}
       <ellipse cx="44" cy="108" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
       <ellipse cx="106" cy="108" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
 
-      {/* Point 3: Permanent harsh eyebrows REMOVED. Eyes are pure, innocent, and lovable chibi */}
+      {/* Innocent, lovable chibi blinking eyes */}
       <g className="notes-writer-blink" style={{ transformOrigin: '57px 96px' }}>
         <ellipse cx="57" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
         <circle cx="54" cy="92" r="2.8" fill="white" />
@@ -141,8 +161,8 @@ export const NotesMochi: FC = () => (
         <path d="M121 64l4-5M127 72l6-1M118 57l1-6" />
       </g>
 
-      {/* Ring-bound notebook resting on the pastel desk mat */}
-      <path d="M38 127 Q75 122 112 127 L114 151 Q76 146 37 151Z" fill="#91A88A" stroke="#5E7C59" strokeWidth="1" />
+      {/* Ring-bound notebook resting on the pastel desk mat with Warm Terracotta cover */}
+      <path d="M38 127 Q75 122 112 127 L114 151 Q76 146 37 151Z" fill="url(#notesBookCover)" stroke="#9A3E1E" strokeWidth="1" />
       <path d="M42 125 Q75 121 108 125 L109 146 Q76 142 41 147Z" fill="url(#notesMochiPaper)" stroke="#D7C6AB" strokeWidth="1" />
       <path d="M44 131 Q75 128 106 131" fill="none" stroke="#C5B294" strokeWidth="1" />
       <circle cx="51" cy="126" r="1.5" fill="#A39377" />

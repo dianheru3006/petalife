@@ -222,30 +222,24 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
             <path d="M86 96 Q92 89 98 96" />
           </g>
         ) : activity === 'scribbling' ? (
-          /* Focused Scholarly Sparkling Eyes (◕ ◕) */
+          /* Focused Scholarly Sparkling Eyes (◕ ◕) - Unified deep chocolate #2C1A14 */
           <g>
             <ellipse cx="58" cy="94" rx="7.5" ry="9" fill="#2C1A14" />
             <circle cx="55.8" cy="90" r="3" fill="#FFFFFF" />
             <circle cx="61" cy="97" r="1.5" fill="#FFFFFF" />
-            <polygon points="58,84 59.5,86.5 62,87 60,89 60.5,91.5 58,90 55.5,91.5 56,89 54,87 56.5,86.5" fill="#F4A261" />
 
             <ellipse cx="92" cy="94" rx="7.5" ry="9" fill="#2C1A14" />
             <circle cx="89.8" cy="90" r="3" fill="#FFFFFF" />
             <circle cx="95" cy="97" r="1.5" fill="#FFFFFF" />
-            <polygon points="92,84 93.5,86.5 96,87 94,89 94.5,91.5 92,90 89.5,91.5 90,89 88,87 90.5,86.5" fill="#F4A261" />
           </g>
         ) : (
-          /* Default Expressive Reading Eyes with Natural Double-Blink & Reading Gaze Shifts */
+          /* Default Expressive Reading Eyes - Unified deep chocolate #2C1A14 with Natural Blink */
           <g className="library-mochi-gaze">
             {/* Left Eye (Independent blink origin at 58px 94px) */}
             <g className="library-mochi-blink" style={{ transformOrigin: '58px 94px' }}>
               <ellipse cx="58" cy="94" rx="7" ry="8.8" fill="#2C1A14" />
               <circle cx="55.8" cy="90.5" r="2.8" fill="#FFFFFF" />
               <circle cx="60.5" cy="97" r="1.3" fill="#FFFFFF" />
-              <polygon
-                points="58,85 59.2,87 61,87.5 59.5,89 59.8,91 58,90 56.2,91 56.5,89 55,87.5 56.8,87"
-                fill="#F4A261"
-              />
             </g>
 
             {/* Right Eye (Independent blink origin at 92px 94px) */}
@@ -253,23 +247,19 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
               <ellipse cx="92" cy="94" rx="7" ry="8.8" fill="#2C1A14" />
               <circle cx="89.8" cy="90.5" r="2.8" fill="#FFFFFF" />
               <circle cx="94.5" cy="97" r="1.3" fill="#FFFFFF" />
-              <polygon
-                points="92,85 93.2,87 95,87.5 93.5,89 93.8,91 92,90 90.2,91 90.5,89 89,87.5 90.8,87"
-                fill="#F4A261"
-              />
             </g>
           </g>
         )}
 
-        {/* 2g. Golden Wire Reading Glasses */}
+        {/* 2g. Golden Wire Reading Glasses (Clear optical glass - zero pupil discoloration) */}
         <g>
-          {/* Left Lens Glass Glow & Frame */}
-          <circle cx="58" cy="94" r="13" fill="#BEE3F8" fillOpacity="0.22" />
+          {/* Left Lens Clear Glass & Frame */}
+          <circle cx="58" cy="94" r="13" fill="none" />
           <circle cx="58" cy="94" r="13" fill="none" stroke="#6C4E31" strokeWidth="2.2" />
           <circle cx="58" cy="94" r="13" fill="none" stroke="#D97736" strokeWidth="1" opacity="0.6" />
 
-          {/* Right Lens Glass Glow & Frame */}
-          <circle cx="92" cy="94" r="13" fill="#BEE3F8" fillOpacity="0.22" />
+          {/* Right Lens Clear Glass & Frame */}
+          <circle cx="92" cy="94" r="13" fill="none" />
           <circle cx="92" cy="94" r="13" fill="none" stroke="#6C4E31" strokeWidth="2.2" />
           <circle cx="92" cy="94" r="13" fill="none" stroke="#D97736" strokeWidth="1" opacity="0.6" />
 

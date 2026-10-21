@@ -827,21 +827,21 @@ export const VaultPage: FC<VaultPageProps> = ({
                     <ArrowRight className="w-3 h-3 shrink-0" />
                   </button>
                 )}
-                {/* Speech bubble tail pointer pointing down toward Mochi */}
+                {/* Speech bubble tail pointer pointing down toward Mochi at the armchair */}
                 <div
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]"
+                  className="absolute -bottom-1 left-[24%] -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]"
                   aria-hidden="true"
                 />
               </div>
             </div>
 
-            {/* Interactive Mochi Button */}
+            {/* Interactive Mochi Button (Seated comfortably on the reading armchair on the left) */}
             <button
               type="button"
               onClick={handleMochiTap}
               aria-label="Ajak Mochi berinteraksi di perpustakaan"
               title="Ketuk Mochi untuk berinteraksi!"
-              className="group absolute bottom-0 left-1/2 -translate-x-1/2 h-[72%] w-[38%] max-w-[150px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
+              className="group absolute bottom-0 left-[24%] -translate-x-1/2 h-[72%] w-[38%] max-w-[150px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
             >
               <LibraryMochi activity={mochiActivity} />
             </button>
