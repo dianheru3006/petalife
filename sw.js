@@ -1,6 +1,6 @@
 // Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
 const CACHE_PREFIX = 'petalife-shell-';
-const BUILD_ID = 'mvhpniwt';
+const BUILD_ID = 'mvhqfrge';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
 const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
@@ -28,9 +28,15 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/AssistantPage-BSyBOXc_.js","./assets/Button-CKoyazDR.js","./assets/db-D1xEoOiV.js","./assets/icons-B7DPsROO.js","./assets/index-BEIKTJya.css","./assets/index-CqGIMbwy.js","./assets/library-front-bg-BEdk3tus.jpg","./assets/notes-study-bg-CoMVUSgG.webp","./assets/NotesPage-B7yk6UM9.js","./assets/react-CaS005AF.js","./assets/rolldown-runtime-WkwZ5CU-.js","./assets/room-bg-B7tupBkv.jpg","./assets/room-bg-DO9PK5HB.webp","./assets/SettingsPage-DEzt2cQ3.js","./assets/VaultPage-DUqHd198.js"];
+const BUILD_ASSETS = ["./assets/AssistantPage-QTTh5FnP.js","./assets/Button-BxYjiTye.js","./assets/db-D1xEoOiV.js","./assets/icons-B7DPsROO.js","./assets/index-D2OWTx5V.js","./assets/index-DLkT23xZ.css","./assets/library-front-bg-BpVUQZy_.webp","./assets/notes-study-bg-CoMVUSgG.webp","./assets/NotesPage-DREu7LB8.js","./assets/react-CaS005AF.js","./assets/rolldown-runtime-WkwZ5CU-.js","./assets/room-bg-DO9PK5HB.webp","./assets/SettingsPage-BfNG4z6d.js","./assets/VaultPage-D0-FUmp0.js"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
+
+// R4-PERF-07: di dalam Service Worker, URL relatif tidak punya document base.
+// `cache.add('./assets/x.js')` bisa gagal senyap sehingga shell cache kosong
+// (offline mati total) meski install "sukses". Selalu resolusi eksplisit
+// terhadap scope SW; ini juga membuat precache benar di GitHub Pages subpath.
+const precacheUrl = (path) => new URL(path, self.registration.scope).href;
 
 // Message listener for user-approved update activation
 self.addEventListener('message', (event) => {
@@ -45,13 +51,14 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then(async (cache) => {
       // R2-PWA-02: addAll bersifat atomik — satu aset 404 membatalkan SELURUH install.
       // Cache per-item agar PWA tetap memiliki shell walau satu ikon/manifest hilang.
-      await Promise.all(ALL_PRECACHE.map((url) =>
-        cache.add(url).catch((e) => console.warn('[Petalife SW] skip precache', url, e && e.message))
-      ));
+      await Promise.all(ALL_PRECACHE.map((url) => {
+        const absolute = precacheUrl(url);
+        return cache.add(absolute).catch((e) => console.warn('[Petalife SW] skip precache', absolute, e && e.message));
+      }));
       // Mirror the active CSS stylesheet into a persistent non-purged cache
       const cssAsset = BUILD_ASSETS.find((a) => a.endsWith('.css'));
       if (cssAsset) {
-        const cssRes = await cache.match(cssAsset);
+        const cssRes = await cache.match(precacheUrl(cssAsset));
         if (cssRes) {
           const backupCache = await caches.open(PERSISTENT_CSS_BACKUP_CACHE);
           await backupCache.put(versionedCssKey(), cssRes.clone());
