@@ -1142,6 +1142,12 @@
   animation: library-mochi-glasses-shine 6.5s ease-in-out infinite;
 }
 
+/* A quiet three-quarter reading pose aligned with the chair in the Pustaka art. */
+.library-mochi-seated {
+  transform: perspective(480px) rotateY(-18deg) rotate(-6deg);
+  transform-origin: 50% 85%;
+}
+
 /* Respect Reduced Motion & User Pause Motion Preference */
 @media (prefers-reduced-motion: reduce) {
   .library-mochi-breathe,

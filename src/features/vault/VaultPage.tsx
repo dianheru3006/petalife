@@ -829,21 +829,23 @@ export const VaultPage: FC<VaultPageProps> = ({
                 )}
                 {/* Speech bubble tail pointer pointing down toward Mochi at the armchair */}
                 <div
-                  className="absolute -bottom-1 left-[24%] -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]"
+                  className="absolute -bottom-1 left-[18%] -translate-x-1/2 w-2 h-2 bg-white rotate-45 border-r border-b border-[#EAE3D5]"
                   aria-hidden="true"
                 />
               </div>
             </div>
 
-            {/* Interactive Mochi Button (Organic 3/4 pose seated snugly on the plush reading armchair) */}
+            {/* The desk masks the lower body while the chair supports Mochi from behind. */}
             <button
               type="button"
               onClick={handleMochiTap}
               aria-label="Ajak Mochi berinteraksi di perpustakaan"
               title="Ketuk Mochi untuk berinteraksi!"
-              className="group absolute bottom-[30%] min-[380px]:bottom-[32%] left-[23%] -translate-x-1/2 h-[55%] min-[380px]:h-[57%] w-[33%] max-w-[125px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform rotate-[3.5deg]"
+              className="group absolute bottom-[20%] left-[21%] -translate-x-1/2 h-[55%] min-[380px]:h-[57%] w-[33%] max-w-[125px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
             >
-              <LibraryMochi activity={mochiActivity} seated />
+              <span className="library-mochi-seated block h-full w-full">
+                <LibraryMochi activity={mochiActivity} seated />
+              </span>
             </button>
           </div>
 
