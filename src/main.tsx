@@ -4,6 +4,11 @@ import './index.css'
 import App from './App.tsx'
 import { registerServiceWorker } from './registerServiceWorker'
 import { prewarmInactiveTabsOnIdle } from './lib/perf/prewarmTabs'
+import { initReducedMotion } from './lib/preferences/appPreferences'
+
+// AUDIT-FIX (P2): apply the saved "Kurangi Animasi" preference before the first
+// paint so no idle sprite animation starts for a frame and then stops.
+initReducedMotion()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

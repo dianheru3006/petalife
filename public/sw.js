@@ -138,8 +138,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin static assets or Google Fonts
-  if (url.origin === self.location.origin || url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com')) {
+  // Same-origin static assets only. AUDIT-FIX (P1): the old branch also matched
+  // two third-party font CDNs, which would have silently cached a remote font
+  // request forever. Petalife is fully self-hosted (two variable WOFF2 files),
+  // and the network policy test now forbids those origins from coming back.
+  if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {

@@ -4,6 +4,8 @@ import type { Note } from '../../lib/types';
 import { ArrowLeft, Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { NotesMochi } from './NotesMochi';
+import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
+import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import notesStudyBg from '../../assets/notes-study-bg.webp';
 
 export interface NotesPageProps {
@@ -57,6 +59,9 @@ export const NotesPage: FC<NotesPageProps> = ({
   const triggerRef = useRef<HTMLElement | null>(null);
   const noteButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const isSavingRef = useRef(isSaving);
+  // R2-UX-01 pattern: measure the virtual keyboard so the editor sheet never
+  // disappears behind it in the Telegram Android WebView.
+  const keyboardInset = useVisualViewportInset();
 
   useEffect(() => {
     isSavingRef.current = isSaving;
@@ -186,6 +191,33 @@ export const NotesPage: FC<NotesPageProps> = ({
       if (id) noteButtonRefs.current.get(id)?.focus();
     });
   };
+
+  // AUDIT-FIX (P0): Telegram's hardware back used to close the whole Mini App
+  // even with the editor (and an unsaved draft) open. The editor outranks the
+  // note detail page, which outranks the corkboard.
+  useTelegramBackButton([
+    {
+      id: 'note-editor',
+      isOpen: isEditorOpen,
+      priority: 30,
+      onBack: () => {
+        if (!isSavingRef.current) setIsEditorOpen(false);
+      },
+    },
+    {
+      id: 'note-detail',
+      isOpen: Boolean(selectedNoteId),
+      priority: 20,
+      onBack: goBack,
+    },
+  ]);
+
+  // Auto-dismiss the success notice so it cannot pile up across actions.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -324,8 +356,19 @@ export const NotesPage: FC<NotesPageProps> = ({
       )}
 
       {isEditorOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#2B241FCC] p-0 sm:items-center sm:p-4" onMouseDown={event => { if (event.target === event.currentTarget && !isSaving) setIsEditorOpen(false); }}>
-          <div ref={editorRef} role="dialog" aria-modal="true" aria-labelledby="note-editor-title" className="anim-modal-sheet max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] bg-[#FFFCF7] p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] shadow-2xl sm:rounded-[30px] sm:p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#2B241FCC] p-0 sm:items-center sm:p-4"
+          style={keyboardInset ? { paddingBottom: `${keyboardInset}px` } : undefined}
+          onMouseDown={event => { if (event.target === event.currentTarget && !isSaving) setIsEditorOpen(false); }}
+        >
+          <div
+            ref={editorRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="note-editor-title"
+            style={keyboardInset ? { maxHeight: `calc(100dvh - ${keyboardInset}px - 0.5rem)` } : undefined}
+            className="anim-modal-sheet max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] bg-[#FFFCF7] p-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] shadow-2xl sm:rounded-[30px] sm:p-6"
+          >
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-[#806C55]">Papan catatan Mochi</p>
@@ -338,7 +381,7 @@ export const NotesPage: FC<NotesPageProps> = ({
                 <input ref={titleRef} value={titleInput} onChange={event => setTitleInput(event.target.value)} maxLength={140} placeholder="Ide yang ingin kamu ingat" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-medium text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
               </label>
               <label className="block text-sm font-bold text-[#493D32]">Isi catatan
-                <textarea value={bodyInput} onChange={event => setBodyInput(event.target.value)} rows={7} placeholder="Tulis pelajaran, ide, atau refleksi di sini..." className="mt-1.5 w-full resize-y rounded-xl border border-[#DDCDBB] bg-white p-4 text-sm font-normal leading-relaxed text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
+                <textarea value={bodyInput} onChange={event => setBodyInput(event.target.value)} rows={7} onFocus={event => { const field = event.currentTarget; setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250); }} placeholder="Tulis pelajaran, ide, atau refleksi di sini..." className="mt-1.5 w-full resize-y rounded-xl border border-[#DDCDBB] bg-white p-4 text-sm font-normal leading-relaxed text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
               </label>
               <label className="block text-sm font-bold text-[#493D32]">Tag <span className="font-normal text-[#766A5F]">(opsional, pisahkan dengan koma)</span>
                 <input value={tagsInput} onChange={event => setTagsInput(event.target.value)} placeholder="belajar, ide, refleksi" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-normal text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />

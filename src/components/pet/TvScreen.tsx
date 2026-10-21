@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TV_CHANNELS } from './tvChannelsData';
 
 interface TvScreenProps {
@@ -10,8 +10,21 @@ interface TvScreenProps {
 export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) => {
   const [channelIdx, setChannelIdx] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
+  // AUDIT-FIX (P2): each 260 ms flicker timer was untracked. Tapping the screen
+  // twice quickly left two timers racing — the first cleared the flicker early,
+  // and one could fire after unmount. One timer, always cleared, wins.
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentChannel = TV_CHANNELS[channelIdx];
+
+  const flashChannelSwitch = () => {
+    setIsSwitching(true);
+    if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+    switchTimerRef.current = setTimeout(() => {
+      switchTimerRef.current = null;
+      setIsSwitching(false);
+    }, 260);
+  };
 
   // Auto-cycle channels every 25 seconds during daytime mode when tab is visible
   useEffect(() => {
@@ -25,11 +38,7 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
 
       interval = setInterval(() => {
         setChannelIdx(prev => (prev + 1) % TV_CHANNELS.length);
-        setIsSwitching(true);
-
-        setTimeout(() => {
-          setIsSwitching(false);
-        }, 260);
+        flashChannelSwitch();
       }, 25000);
     };
 
@@ -49,10 +58,16 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
 
     return () => {
       if (interval) clearInterval(interval);
+      if (switchTimerRef.current) {
+        clearTimeout(switchTimerRef.current);
+        switchTimerRef.current = null;
+      }
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibility);
       }
     };
+    // flashChannelSwitch only touches refs/state setters and is stable in behaviour.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNightMode]);
 
   const handleScreenClick = () => {
@@ -63,14 +78,10 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
 
     const nextIdx = (channelIdx + 1) % TV_CHANNELS.length;
     setChannelIdx(nextIdx);
-    setIsSwitching(true);
+    flashChannelSwitch();
 
     const nextChannel = TV_CHANNELS[nextIdx];
     onTvInteraction?.(nextChannel.speechText);
-
-    setTimeout(() => {
-      setIsSwitching(false);
-    }, 260);
   };
 
   const handleKeyDown = (e: KeyboardEvent<SVGPolygonElement>) => {

@@ -18,7 +18,7 @@ import {
   ArrowRight,
   PawPrint,
 } from 'lucide-react';
-import { canFeedPet, getPetContextualStatus, getDisplayStats } from '../../features/pet/engine/petEngine';
+import { canFeedPet, getPetContextualStatus, getDisplayStats, type FeedResult } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
 import { detectPlatform, cn, getUserDisplayName } from '../../lib/utils';
 import roomBg from '../../assets/room-bg.jpg';
@@ -34,7 +34,8 @@ import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 
 export interface PetRoomProps {
   pet: Pet;
-  onFeed: () => void;
+  /** Returns the engine result so the UI can report the real XP and rejection reason. */
+  onFeed: () => FeedResult | null | void;
   onNavigate: (tab: NavigationTab) => void;
   savedLinks?: SavedLink[];
   onAddLink?: (newLink: SavedLink) => Promise<LinkRewardResult | void>;
@@ -72,6 +73,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   const [speech, setSpeech] = useState<string>('Kenyang dan senang.');
   const [showSpeech, setShowSpeech] = useState<boolean>(false);
   const speechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const [lastFedText, setLastFedText] = useState<string | null>(null);
   const [localNight, setLocalNight] = useState<boolean>(false);
@@ -135,7 +137,9 @@ export const PetRoom: FC<PetRoomProps> = ({
   useEffect(() => {
     return () => {
       if (fabCloseTimeoutRef.current) clearTimeout(fabCloseTimeoutRef.current);
+      if (speechTimerRef.current) clearTimeout(speechTimerRef.current);
       youtubeStageTimersRef.current.forEach(clearTimeout);
+      feedTimersRef.current.forEach(clearTimeout);
     };
   }, []);
 
@@ -409,18 +413,30 @@ export const PetRoom: FC<PetRoomProps> = ({
       return; // Anti-spam guard
     }
 
-    onFeed();
+    const result = onFeed();
+
+    // AUDIT-FIX (P0): the engine can reject a feed (full belly, 2s cooldown,
+    // another feed already in flight). Announcing "+25 XP" on a rejected feed
+    // was simply false — the real award is 5 XP once per day.
+    if (result && !result.success) {
+      triggerSpeech(result.reason ?? 'Mochi belum bisa makan sekarang.', 3500);
+      return;
+    }
+
     triggerSpeech(currentSnack.feedSpeech, 4000);
-    setLastFedText(`+25 XP • ${currentSnack.shortName}!`);
+    const xpAwarded = result?.xpAwarded ?? 0;
+    setLastFedText(xpAwarded > 0
+      ? `+${xpAwarded} XP • ${currentSnack.shortName}!`
+      : `${currentSnack.shortName} • Nyam!`);
 
     // Transition to another delicious snack variant after feeding!
-    setTimeout(() => {
+    feedTimersRef.current.push(setTimeout(() => {
       setSnackIndex(prev => (prev + 1) % SNACK_VARIANTS.length);
-    }, 1200);
+    }, 1200));
 
-    setTimeout(() => {
+    feedTimersRef.current.push(setTimeout(() => {
       setLastFedText(null);
-    }, 2800);
+    }, 2800));
   };
 
   const handlePetTap = (action?: MochiAction) => {

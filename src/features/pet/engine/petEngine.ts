@@ -311,15 +311,23 @@ export function togglePetSleep(pet: Pet, isSleeping?: boolean, now = Date.now())
 
 /**
  * Pure function to award XP and resolve recursive level-ups.
+ *
+ * AUDIT-FIX (P1): a single non-finite value used to poison the pet permanently.
+ * `NaN + 5` stays NaN, the while-loop never runs, and every later award keeps
+ * NaN forever (level never rises, meter shows blank). Corrupted localStorage or
+ * a hostile backup could reach here, so every input is normalised first and an
+ * unusable threshold is recomputed instead of looping on a non-positive number.
  */
 export function awardXp(pet: Pet, xpAmount: number): XpAwardResult {
-  if (xpAmount <= 0) {
+  if (!Number.isFinite(xpAmount) || xpAmount <= 0) {
     return { pet, leveledUp: false, levelsGained: 0 };
   }
 
-  let currentExp = pet.exp + xpAmount;
-  let currentLevel = pet.level;
-  let currentThreshold = pet.expToNextLevel || calculateExpThreshold(currentLevel);
+  let currentExp = (Number.isFinite(pet.exp) && pet.exp >= 0 ? pet.exp : 0) + xpAmount;
+  let currentLevel = Number.isFinite(pet.level) && pet.level >= 1 ? Math.floor(pet.level) : 1;
+  let currentThreshold = Number.isFinite(pet.expToNextLevel) && pet.expToNextLevel > 0
+    ? pet.expToNextLevel
+    : calculateExpThreshold(currentLevel);
   let levelsGained = 0;
 
   while (currentExp >= currentThreshold) {

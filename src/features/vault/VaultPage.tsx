@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 import { synthesizeLink } from '../../lib/services/aiSynthesisService';
+import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import { formatStructuredNotes, getNoteViewSections, noteTextForDraft } from '../../lib/utils/noteView';
 import { VaultBookArtwork } from './VaultBookArtwork';
 import { VaultReadingSections } from './VaultReadingSections';
@@ -68,7 +69,7 @@ export interface VaultPageProps {
   links: SavedLink[];
   onAddLink?: (link: SavedLink) => Promise<LinkRewardResult | void>;
   onUpdateLink?: (id: string, updates: Partial<SavedLink>) => Promise<SavedLink | void>;
-  onDeleteLink: (id: string) => void;
+  onDeleteLink: (id: string) => void | Promise<void>;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
   isNightMode?: boolean;
 }
@@ -126,6 +127,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [currentDay, setCurrentDay] = useState(() => new Date().toDateString());
 
   // Mochi interactive activities and speech in diorama
@@ -135,9 +137,35 @@ export const VaultPage: FC<VaultPageProps> = ({
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // AUDIT-FIX (P2): one ref per toast kind. The old per-action `setTimeout`
+  // closures could clear a newer toast early (save edit → then delete) and fired
+  // after unmount. A single timer per channel makes the latest message authoritative.
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string, duration = 3000) => {
+    setSuccessToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      toastTimerRef.current = null;
+      setSuccessToast(null);
+    }, duration);
+  }, []);
+
+  const showError = useCallback((message: string, duration = 4000) => {
+    setUrlError(message);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => {
+      errorTimerRef.current = null;
+      setUrlError(null);
+    }, duration);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
 
@@ -232,41 +260,21 @@ export const VaultPage: FC<VaultPageProps> = ({
   }, []);
 
   // Telegram Mini App Native BackButton Integration
-  useEffect(() => {
-    const tg = (window as unknown as {
-      Telegram?: {
-        WebApp?: {
-          BackButton?: {
-            show?: () => void;
-            hide?: () => void;
-            onClick?: (cb: () => void) => void;
-            offClick?: (cb: () => void) => void;
-          };
-        };
-      };
-    })?.Telegram?.WebApp;
+  // AUDIT-FIX (P0): unified with the shared layered hook so every screen behaves
+  // identically, and the delete confirmation is dismissed before the page.
+  const closeReadingView = () => {
+    setSelectedLinkId(null);
+    setPlayingVideoId(null);
+    setEditingLinkId(null);
+    setConfirmDeleteId(null);
+    setUrlError(null);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
 
-    const backButton = tg?.BackButton;
-    if (!backButton) return;
-
-    if (selectedLinkId) {
-      const handleBack = () => {
-        setSelectedLinkId(null);
-        setPlayingVideoId(null);
-        setEditingLinkId(null);
-        setConfirmDeleteId(null);
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      };
-      backButton.show?.();
-      backButton.onClick?.(handleBack);
-      return () => {
-        backButton.offClick?.(handleBack);
-        backButton.hide?.();
-      };
-    } else {
-      backButton.hide?.();
-    }
-  }, [selectedLinkId]);
+  useTelegramBackButton([
+    { id: 'vault-delete-confirm', isOpen: Boolean(confirmDeleteId), priority: 30, onBack: () => setConfirmDeleteId(null) },
+    { id: 'vault-reading', isOpen: Boolean(selectedLinkId), priority: 20, onBack: closeReadingView },
+  ]);
 
   // Card edit mode states
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
@@ -288,6 +296,28 @@ export const VaultPage: FC<VaultPageProps> = ({
     setEditThumbnailUrl(link.thumbnailUrl || '');
   };
 
+  /**
+   * AUDIT-FIX (P1): deletion was fire-and-forget — the reading view closed and
+   * the confirmation vanished even when IndexedDB rejected the write, so the
+   * material reappeared after a reload with no explanation. Await it, keep the
+   * view on failure, and surface a retryable message.
+   */
+  const handleConfirmDelete = async (id: string) => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    setUrlError(null);
+    try {
+      await onDeleteLink(id);
+      setConfirmDeleteId(null);
+      if (selectedLinkId === id) closeReadingView();
+      showToast('Materi dihapus dari Pustaka.');
+    } catch {
+      showError('Materi belum terhapus. Periksa penyimpanan perangkat lalu coba lagi.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSaveEdit = async (id: string) => {
     if (onUpdateLink) {
       try {
@@ -298,10 +328,9 @@ export const VaultPage: FC<VaultPageProps> = ({
           thumbnailUrl: editThumbnailUrl.trim() || undefined,
         });
         setEditingLinkId(null);
-        setSuccessToast('Catatan berhasil diperbarui.');
-        setTimeout(() => setSuccessToast(null), 3000);
+        showToast('Catatan berhasil diperbarui.');
       } catch {
-        setUrlError('Gagal menyimpan perubahan. Coba lagi.');
+        showError('Gagal menyimpan perubahan. Coba lagi.');
       }
     }
   };
@@ -335,15 +364,12 @@ export const VaultPage: FC<VaultPageProps> = ({
         });
       }
       if (res.qualityStatus === 'grounded') {
-        setSuccessToast('🎉 Sintesis 4 lapis berhasil diperbarui dari Brain Gateway!');
-        setTimeout(() => setSuccessToast(null), 3500);
+        showToast('🎉 Sintesis 4 lapis berhasil diperbarui dari Brain Gateway!', 3500);
       } else if (res.qualityStatus === 'gateway_error') {
-        setUrlError(res.gatewayErrorMessage || 'Koneksi gateway gagal.');
-        setTimeout(() => setUrlError(null), 4000);
+        showError(res.gatewayErrorMessage || 'Koneksi gateway gagal.');
       }
     } catch {
-      setUrlError('Gagal melakukan sintesis ulang. Periksa koneksi.');
-      setTimeout(() => setUrlError(null), 4000);
+      showError('Gagal melakukan sintesis ulang. Periksa koneksi.');
     } finally {
       setRetryingLinkId(null);
     }
@@ -754,14 +780,11 @@ export const VaultPage: FC<VaultPageProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    onDeleteLink(selectedLink.id);
-                    setSelectedLinkId(null);
-                    setConfirmDeleteId(null);
-                  }}
-                  className="min-h-10 rounded-xl bg-[#A82B53] px-4 text-xs font-bold text-white shadow-xs cursor-pointer active:scale-95 transition-all"
+                  disabled={isDeleting}
+                  onClick={() => void handleConfirmDelete(selectedLink.id)}
+                  className="min-h-10 rounded-xl bg-[#A82B53] px-4 text-xs font-bold text-white shadow-xs cursor-pointer active:scale-95 transition-all disabled:opacity-60 disabled:pointer-events-none"
                 >
-                  Ya, Hapus Materi
+                  {isDeleting ? 'Menghapus…' : 'Ya, Hapus Materi'}
                 </button>
               </div>
             </div>
@@ -776,6 +799,8 @@ export const VaultPage: FC<VaultPageProps> = ({
                 onClick={() => {
                   setSelectedLinkId(filteredLinks[selectedIndex - 1].id);
                   setPlayingVideoId(null);
+                  setEditingLinkId(null);
+                  setConfirmDeleteId(null);
                   window.scrollTo({ top: 0, behavior: 'instant' });
                 }}
                 className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-[#2E2E3A] hover:bg-[#F2ECE1] active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
@@ -794,6 +819,8 @@ export const VaultPage: FC<VaultPageProps> = ({
                 onClick={() => {
                   setSelectedLinkId(filteredLinks[selectedIndex + 1].id);
                   setPlayingVideoId(null);
+                  setEditingLinkId(null);
+                  setConfirmDeleteId(null);
                   window.scrollTo({ top: 0, behavior: 'instant' });
                 }}
                 className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-[#2E2E3A] hover:bg-[#F2ECE1] active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
@@ -1012,7 +1039,7 @@ export const VaultPage: FC<VaultPageProps> = ({
               <p className="text-xs text-[#8C8275]">
                 {searchQuery || selectedCategory !== 'All' || selectedStatusFilter !== 'all'
                   ? 'Coba ubah kata kunci pencarian atau reset filter tag.'
-                  : 'Tempel tautan baru dari tombol (+) di atas untuk mengisi rak Mochi!'}
+                  : 'Buka tab Beranda lalu tempel tautan baru di kolom “Tempel tautan materi” untuk mengisi rak Mochi!'}
               </p>
             </div>
           )}

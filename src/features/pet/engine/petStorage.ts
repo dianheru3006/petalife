@@ -53,18 +53,47 @@ export function getStorage(): Storage {
 
 /**
  * Validates whether the loaded object resembles a valid Pet instance.
+ *
+ * AUDIT-FIX (P1): `typeof NaN === 'number'` and `typeof Infinity === 'number'`.
+ * The old guard accepted both, so one corrupted field made every decay/meter
+ * NaN forever (Math.max(50, NaN) === NaN) with no path back to a sane pet.
+ * Every numeric field that feeds the engine must be finite and non-negative.
  */
-function isValidPet(obj: unknown): obj is Pet {
+export function isValidPet(obj: unknown): obj is Pet {
   if (!obj || typeof obj !== 'object') return false;
   const p = obj as Record<string, unknown>;
+  const finiteNonNegative = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
   return (
     typeof p.name === 'string' &&
-    typeof p.level === 'number' &&
-    typeof p.exp === 'number' &&
-    typeof p.hunger === 'number' &&
-    typeof p.mood === 'number' &&
-    typeof p.energy === 'number'
+    finiteNonNegative(p.level) &&
+    finiteNonNegative(p.exp) &&
+    finiteNonNegative(p.hunger) &&
+    finiteNonNegative(p.mood) &&
+    finiteNonNegative(p.energy)
   );
+}
+
+/**
+ * AUDIT-FIX (P1): clamps every stat back into its legal range at the storage
+ * boundary. A pet saved with hunger 1e9 (old build, hand-edited localStorage,
+ * or a crafted backup) would otherwise keep an impossible energy value because
+ * the awake branch only has a lower bound.
+ */
+export function sanitizeLoadedPet(pet: Pet): Pet {
+  const stats = (value: number) => (Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0);
+  const level = Number.isFinite(pet.level) && pet.level >= 1 ? Math.floor(pet.level) : 1;
+  return {
+    ...pet,
+    level,
+    exp: Number.isFinite(pet.exp) && pet.exp >= 0 ? pet.exp : 0,
+    expToNextLevel: Number.isFinite(pet.expToNextLevel) && (pet.expToNextLevel as number) > 0
+      ? (pet.expToNextLevel as number)
+      : level * 75 + 50,
+    hunger: stats(pet.hunger),
+    mood: stats(pet.mood),
+    energy: stats(pet.energy),
+    streakDays: Number.isFinite(pet.streakDays) && pet.streakDays >= 0 ? Math.floor(pet.streakDays) : 0,
+  };
 }
 
 /**
@@ -99,9 +128,9 @@ export function loadStoredPet(
     // Migration: Upgrade legacy v1 envelope to v2 seamlessly without losing level, exp, or streak
     if (parsed && parsed.version === 1 && isValidPet(parsed.pet)) {
       const migratedPet: Pet = {
-        ...parsed.pet,
-        hunger: Math.max(50, parsed.pet.hunger),
-        energy: Math.max(85, parsed.pet.energy),
+        ...sanitizeLoadedPet(parsed.pet),
+        hunger: Math.min(100, Math.max(50, parsed.pet.hunger)),
+        energy: Math.min(100, Math.max(85, parsed.pet.energy)),
         isSleeping: false,
         sleepSchedule: { startHour: 23, endHour: 7 },
         lastDecayAt: now,
@@ -118,10 +147,12 @@ export function loadStoredPet(
       return { pet: defaultPet, hasDecayed: false, isFirstRun: false };
     }
 
-    // Apply time decay based on elapsed real-world time
-    const initialHunger = parsed.pet.hunger;
-    const initialEnergy = parsed.pet.energy;
-    const decayedPet = calculateTimeDecay(parsed.pet, now);
+    // Apply time decay based on elapsed real-world time (after clamping so a
+    // saved out-of-range stat cannot survive the round-trip).
+    const safePet = sanitizeLoadedPet(parsed.pet);
+    const initialHunger = safePet.hunger;
+    const initialEnergy = safePet.energy;
+    const decayedPet = calculateTimeDecay(safePet, now);
     const hasDecayed = decayedPet.hunger < initialHunger || decayedPet.energy < initialEnergy;
 
     return {

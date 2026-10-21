@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { SavedLink, LinkQualityStatus } from '../../lib/types';
 import { ExternalLink, Play, Globe, Pencil, X } from 'lucide-react';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
+import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import { detectPlatform, getYouTubeThumbnail } from '../../lib/utils';
 import { formatStructuredNotes, getNoteViewSections, noteSummary, noteTextForDraft } from '../../lib/utils/noteView';
 import { getFocusableElements, resolveFocusTargetIndex, resolveInitialFocusIndex } from '../../lib/utils/focusTrap';
@@ -139,6 +140,12 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
+
+  // AUDIT-FIX (P0): the hardware back gesture used to close the Mini App while
+  // this sheet held an unsaved AI draft. The sheet now outranks every page.
+  useTelegramBackButton([
+    { id: 'mochi-note-sheet', isOpen, priority: 40, onBack: onClose },
+  ]);
 
   if (!isOpen || !link) return null;
 

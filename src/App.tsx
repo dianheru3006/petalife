@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
-import { feedPet, awardXp, calculateTimeDecay, togglePetSleep } from './features/pet/engine/petEngine';
+import { feedPet, awardXp, calculateTimeDecay, togglePetSleep, type FeedResult } from './features/pet/engine/petEngine';
 import { loadStoredPet, saveStoredPet } from './features/pet/engine/petStorage';
 import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksRepository';
 import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
@@ -55,13 +55,6 @@ export function App() {
     return () => window.removeEventListener('petalife:update-available', handleUpdate);
   }, []);
 
-  // Sync night mode when pet sleep state changes
-  useEffect(() => {
-    if (Boolean(pet.isSleeping) !== isNightMode) {
-      setIsNightMode(Boolean(pet.isSleeping));
-    }
-  }, [pet.isSleeping]);
-
   // Synchronize Telegram Mini App header and background with Petalife theme
   useEffect(() => {
     try {
@@ -83,12 +76,14 @@ export function App() {
     }
   }, [isNightMode]);
 
+  // AUDIT-FIX (P1): the old version ran `setIsNightMode` inside the `setPet`
+  // updater. React may invoke an updater twice (StrictMode / concurrent replay),
+  // and side effects inside an updater are never safe. Compute the next pet
+  // once, then commit it through the single write-through path.
   const handleToggleNightMode = () => {
-    setPet(prev => {
-      const updated = togglePetSleep(prev);
-      setIsNightMode(Boolean(updated.isSleeping));
-      return updated;
-    });
+    const next = togglePetSleep(petRef.current);
+    setIsNightMode(Boolean(next.isSleeping));
+    persistPetChange(() => next);
   };
 
   // Re-check and rollover daily habits when date crosses midnight without manual reload
@@ -211,10 +206,31 @@ export function App() {
     return false;
   };
 
-  // Periodic passive decay while user keeps application open (every 60 seconds)
+  /**
+   * Drops a transient pose ('happy', 'feeding') back to idle/sleeping.
+   * AUDIT-FIX (P1): the review reward scheduled a bare `setPet` timeout that was
+   * never cleared — it fired after unmount and, worse, rebuilt the pet from a
+   * snapshot taken before any XP earned in the meantime.
+   */
+  const scheduleIdlePose = (delayMs: number) => {
+    if (transientStateTimerRef.current) clearTimeout(transientStateTimerRef.current);
+    transientStateTimerRef.current = setTimeout(() => {
+      transientStateTimerRef.current = null;
+      persistPetChange(current => ({
+        ...current,
+        state: current.isSleeping ? 'sleeping' : 'idle',
+      }));
+    }, delayMs);
+  };
+
+  // Periodic passive decay while user keeps application open (every 60 seconds).
+  // AUDIT-FIX (P1): decay used the plain `setPet` path, leaving `petRef` one
+  // render behind. A reward claim landing in that window rebuilt the pet from the
+  // stale snapshot and silently erased the decay (or a fresh feed). Every pet
+  // mutation now goes through `persistPetChange`.
   useEffect(() => {
     const timer = setInterval(() => {
-      setPet(prev => calculateTimeDecay(prev));
+      persistPetChange(prev => calculateTimeDecay(prev));
     }, 60000);
     return () => clearInterval(timer);
   }, []);
@@ -245,28 +261,54 @@ export function App() {
     });
   };
 
+  // AUDIT-FIX (P0): feeding had three compounding defects.
+  //   1. `fulfillDailyGoal('goal-2')` ran unconditionally, so a feed rejected by
+  //      the engine (full belly / 2s cooldown) still completed the daily habit
+  //      and paid its XP every single tap.
+  //   2. The engine result was discarded, so PetRoom always announced "+25 XP"
+  //      while the real award is 5 XP once per day.
+  //   3. Two taps inside one frame both reached the engine before React could
+  //      render `state: 'feeding'`; only the engine cooldown prevented a double
+  //      feed. An explicit in-flight latch makes the intent local and testable.
+  const feedInFlightRef = useRef(false);
+  const feedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transientStateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (feedResetTimerRef.current) {
+      clearTimeout(feedResetTimerRef.current);
+      feedResetTimerRef.current = null;
+    }
+    if (transientStateTimerRef.current) {
+      clearTimeout(transientStateTimerRef.current);
+      transientStateTimerRef.current = null;
+    }
+  }, []);
+
   // 1. Feeding Interaction via Engine (Sol Economy: +5 XP for 1st daily care, 0 XP for repeats)
-  const handleFeedPet = () => {
-    setPet(prev => {
-      const todayKey = getTodayDateString();
-      const result = feedPet(prev, Date.now(), todayKey);
-      if (!result.success) {
-        return prev;
-      }
+  const handleFeedPet = (): FeedResult | null => {
+    if (feedInFlightRef.current) return null;
 
-      // Return to idle (or sleeping if pet was sleeping) after feeding animation completes
-      setTimeout(() => {
-        setPet(current => ({
-          ...current,
-          state: current.isSleeping ? 'sleeping' : 'idle',
-        }));
-      }, 1600);
+    const result = feedPet(petRef.current, Date.now(), getTodayDateString());
+    if (!result.success) return result;
 
-      return result.pet;
-    });
+    feedInFlightRef.current = true;
+    persistPetChange(() => result.pet);
 
-    // Fulfill daily morning snack habit outside setState
-    fulfillDailyGoal('goal-2');
+    // Return to idle (or sleeping if pet was sleeping) after the feeding animation
+    if (feedResetTimerRef.current) clearTimeout(feedResetTimerRef.current);
+    feedResetTimerRef.current = setTimeout(() => {
+      feedResetTimerRef.current = null;
+      feedInFlightRef.current = false;
+      persistPetChange(current => ({
+        ...current,
+        state: current.isSleeping ? 'sleeping' : 'idle',
+      }));
+    }, 1600);
+
+    // Only an accepted feed counts as the daily morning-snack habit.
+    void fulfillDailyGoal('goal-2');
+    return result;
   };
 
   // 3. Vault Actions with IndexedDB Persistence & Sol XP Economy (5 XP per link save, max 2/day)
@@ -314,6 +356,9 @@ export function App() {
       setSavedLinks(prev => prev.filter(l => l.id !== id));
     } catch (err) {
       console.error('[App] Failed to delete link from repository:', err);
+      // AUDIT-FIX (P1): swallow here meant the Vault could not distinguish
+      // "deleted" from "failed to delete" — it closed the reading view either way.
+      throw err;
     }
   };
 
@@ -344,12 +389,7 @@ export function App() {
           if (!persisted) {
             await releaseRewardClaim(reviewLedgerKey);
           } else {
-            setTimeout(() => {
-              setPet(current => ({
-                ...current,
-                state: current.isSleeping ? 'sleeping' : 'idle',
-              }));
-            }, 1800);
+            scheduleIdlePose(1800);
 
             // Check learning variety bonus (10 XP if >= 2 distinct learning categories today)
             const varietyResult = await claimLearningVarietyBonus(todayKey);
@@ -472,8 +512,41 @@ export function App() {
       };
 
       setChatMessages(prev => [...prev, aiMsg]);
-    } catch {
-      // In case of unexpected rejection, fall back cleanly
+    } catch (err) {
+      // AUDIT-FIX (P1): this used to swallow the rejection, so the user saw their
+      // message but no reply at all. Surface an honest, recoverable bubble.
+      console.error('[App] Assistant failed to answer:', err);
+      const fallback: ChatMessage = {
+        id: `ai-error-${Date.now()}`,
+        sender: 'assistant',
+        text: 'Mochi belum bisa menjawab sekarang. Periksa koneksi lalu coba lagi ya. 🌱',
+        timestamp: 'Just now',
+      };
+      setChatMessages(prev => [...prev, fallback]);
+    }
+  };
+
+  /**
+   * AUDIT-FIX (P0): Settings can now replace the local dataset (import/reset).
+   * The React state must be rebuilt from disk, otherwise the UI keeps showing
+   * the pre-restore Vault until the Mini App is closed and reopened.
+   * Deliberately does NOT call initializeDatabase(): that would re-seed the demo
+   * fixtures into a deliberately empty database after a full reset.
+   */
+  const handleDataRestored = async () => {
+    try {
+      const [reloadedLinks, reloadedNotes] = await Promise.all([getAllLinks(), getAllNotes()]);
+      setSavedLinks(reloadedLinks);
+      setNotes(reloadedNotes);
+
+      const restoredPet = loadStoredPet(initialPet).pet;
+      petRef.current = restoredPet;
+      setPet(restoredPet);
+      setIsNightMode(Boolean(restoredPet.isSleeping));
+      setStorageError(null);
+    } catch (err) {
+      console.error('[App] Failed to reload data after restore:', err);
+      setStorageError('Data berhasil dipulihkan, tetapi tampilan gagal dimuat ulang. Muat ulang halaman.');
     }
   };
 
@@ -572,7 +645,13 @@ export function App() {
             isNightMode={isNightMode}
           />
         )}
-        {currentTab === 'settings' && <SettingsPage />}
+        {currentTab === 'settings' && (
+          <SettingsPage
+            nightMode={isNightMode}
+            onToggleNightMode={handleToggleNightMode}
+            onDataRestored={handleDataRestored}
+          />
+        )}
         </Suspense>
       </div>
     </AppLayout>

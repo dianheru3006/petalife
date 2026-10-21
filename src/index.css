@@ -1334,3 +1334,33 @@
   .notes-writer-thought { opacity: 0; }
 }
 
+
+/* AUDIT-FIX (P2): global motion switch. The container already honoured the OS
+   preference for the Notes sprite only, while dozens of always-on sprite/TV
+   animations kept running on a Helio G85. Settings -> Tampilan exposes the
+   same kill switch explicitly via html[data-reduce-motion="true"].
+   animation: none keeps elements at their base styles (never a hidden end
+   keyframe); transitions collapse to instant so state changes stay readable. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation: none !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* AUDIT-FIX (P2): the floating BottomNav is fixed and 66px tall. Without scroll
+   padding, browser/Telegram "scroll into view" stops with the focused button
+   behind the nav bar (tapping it hits the nav instead). Applies to keyboard
+   focus, scrollIntoView and anchor jumps alike. */
+html {
+  scroll-padding-bottom: calc(7.5rem + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
+}

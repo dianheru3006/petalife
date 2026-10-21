@@ -2,12 +2,13 @@ import type { FC } from 'react';
 import type { Pet, SavedLink, DailyGoal, NavigationTab } from '../../lib/types';
 import { PetRoom } from '../../components/pet/PetRoom';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
+import type { FeedResult } from '../pet/engine/petEngine';
 
 export interface DashboardPageProps {
   pet: Pet;
   savedLinks: SavedLink[];
   dailyGoals?: DailyGoal[];
-  onFeedPet: () => void;
+  onFeedPet: () => FeedResult | null;
   onToggleGoal?: (id: string) => void;
   onNavigate: (tab: NavigationTab) => void;
   onAddLink?: (newLink: SavedLink) => Promise<LinkRewardResult | void>;

@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage, NavigationTab } from '../../lib/types';
 import { Button } from '../../components/ui/Button';
 import { Send, Sparkles, User, ArrowRight } from 'lucide-react';
@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils';
 
 export interface AssistantPageProps {
   messages: ChatMessage[];
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string) => void | Promise<unknown>;
   onNavigate: (tab: NavigationTab) => void;
   isNightMode?: boolean;
 }
@@ -20,6 +20,8 @@ export const AssistantPage: FC<AssistantPageProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const threadRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const suggestedPrompts = [
     'How is Mochi doing today? 🐾',
@@ -29,19 +31,33 @@ export const AssistantPage: FC<AssistantPageProps> = ({
     'What should I review next? 📖',
   ];
 
-  const handleSend = (textToSend?: string) => {
+  /**
+   * AUDIT-FIX (P1): the typing indicator was a fixed 600 ms timer, so it vanished
+   * long before a real answer and multiple in-flight sends overlapped. It now
+   * tracks the actual promise, clears the input immediately, and blocks re-entry.
+   */
+  const handleSend = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
-    if (!text) return;
+    if (!text || isTyping) return;
 
-    onSendMessage(text);
     setInputText('');
     setIsTyping(true);
-
-    // Responsive assistant reply transition
-    setTimeout(() => {
+    try {
+      await onSendMessage(text);
+    } finally {
       setIsTyping(false);
-    }, 600);
+    }
   };
+
+  // AUDIT-FIX (P1): the thread never scrolled, so every reply after the first
+  // screen stayed hidden below the fold. Respect reduced-motion for the scroll.
+  useEffect(() => {
+    const node = bottomRef.current;
+    if (!node) return;
+    const reduceMotion = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    node.scrollIntoView({ block: 'end', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }, [messages.length, isTyping]);
 
   return (
     <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-185px)] min-h-0">
@@ -62,9 +78,11 @@ export const AssistantPage: FC<AssistantPageProps> = ({
 
       {/* Messages Thread Container with screen reader announcement area */}
       <div
+        ref={threadRef}
         className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 mb-3 scrollbar-thin"
         aria-live="polite"
         aria-atomic="false"
+        aria-busy={isTyping}
       >
         {messages.map(msg => {
           const isAssistant = msg.sender === 'assistant';
@@ -120,6 +138,9 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           );
         })}
 
+        {/* Scroll anchor: keeps the newest message visible. */}
+        <div ref={bottomRef} aria-hidden="true" />
+
         {/* Typing indicator */}
         {isTyping && (
           <div className="flex items-center gap-3">
@@ -151,8 +172,10 @@ export const AssistantPage: FC<AssistantPageProps> = ({
             <button
               key={i}
               type="button"
-              onClick={() => handleSend(prompt)}
+              onClick={() => void handleSend(prompt)}
+              disabled={isTyping}
               className={cn(
+                'disabled:opacity-50 disabled:pointer-events-none',
                 'text-xs border px-3 py-1.5 rounded-full whitespace-nowrap shadow-2xs transition-colors cursor-pointer font-medium',
                 isNightMode
                   ? 'bg-[#FAF6EE] hover:bg-[#F2ECE0] text-[#3A3A4A] border-[#DDD2C2]'
@@ -166,11 +189,10 @@ export const AssistantPage: FC<AssistantPageProps> = ({
       </div>
 
       {/* Chat Input Bar */}
-      <form
-        onSubmit={e => {
-          e.preventDefault();
-          handleSend();
-        }}
+      <form          onSubmit={e => {
+            e.preventDefault();
+            void handleSend();
+          }}
         className={cn(
           'shrink-0 flex items-center gap-2 p-2 rounded-2xl border shadow-xs transition-colors duration-700',
           isNightMode
@@ -187,7 +209,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
         />
         <Button
           type="submit"
-          disabled={!inputText.trim()}
+          disabled={!inputText.trim() || isTyping}
           aria-label="Kirim pesan"
           title="Kirim pesan"
           variant="peach"
