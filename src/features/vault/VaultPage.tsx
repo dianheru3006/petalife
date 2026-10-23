@@ -224,19 +224,19 @@ export const VaultPage: FC<VaultPageProps> = ({
     if (links.length > 0) {
       const randomLink = links[Math.floor(Math.random() * links.length)];
       setRecommendedLink(randomLink);
-      setMochiSpeech(`Rekomendasi bacaan Mochi hari ini: "${randomLink.title}"! Yuk buka dan baca intisarinya! 📖✨`);
+      setMochiSpeech('Pilihan Mochi hari ini! 📖✨');
       speechTimeoutRef.current = setTimeout(() => {
         setMochiSpeech(null);
         setRecommendedLink(null);
         setMochiActivity('reading');
-      }, 8500);
+      }, 5500);
     } else {
       setRecommendedLink(null);
-      setMochiSpeech('Semangat belajar! Rak buku ini siap diisi materi baru bersama Mochi! ✨');
+      setMochiSpeech('Semangat belajarnya! ✨');
       speechTimeoutRef.current = setTimeout(() => {
         setMochiSpeech(null);
         setMochiActivity('reading');
-      }, 4500);
+      }, 4000);
     }
 
     // Reset idle timer so it doesn't immediately overwrite the user's tapped pose
@@ -873,9 +873,9 @@ export const VaultPage: FC<VaultPageProps> = ({
                   setRecommendedLink(null);
                   if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
                 }}
-                className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] w-auto max-w-[320px] sm:max-w-[340px] text-center leading-snug relative select-none pointer-events-auto cursor-pointer"
+                className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-md border border-[#EAE3D5] text-xs font-bold text-[#3A3340] w-auto max-w-[280px] sm:max-w-[320px] text-center leading-tight relative select-none pointer-events-auto cursor-pointer"
               >
-                <span className="whitespace-normal sm:whitespace-nowrap">{mochiSpeech}</span>
+                <span className="block whitespace-nowrap">{mochiSpeech}</span>
                 {recommendedLink && (
                   <button
                     type="button"
@@ -889,10 +889,10 @@ export const VaultPage: FC<VaultPageProps> = ({
                       if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
                       window.scrollTo({ top: 0, behavior: 'instant' });
                     }}
-                    className="flex items-center justify-center gap-1.5 text-[10px] font-black text-[#BA5218] mt-1 mx-auto bg-[#FFEFE8] hover:bg-[#FED7C5] px-3 py-0.5 rounded-full border border-[#FED7C5]/60 shadow-2xs active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                    className="flex items-center justify-center gap-1.5 text-[10px] font-black text-[#BA5218] mt-1 mx-auto bg-[#FFEFE8] hover:bg-[#FED7C5] px-2.5 py-0.5 rounded-full border border-[#FED7C5]/60 shadow-2xs active:scale-95 transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218]"
                     aria-label={`Buka materi: ${recommendedLink.title}`}
                   >
-                    <span className="truncate max-w-[230px] sm:max-w-[260px]">Buka: {recommendedLink.title}</span>
+                    <span className="truncate max-w-[190px] sm:max-w-[220px]">Buka: {recommendedLink.title}</span>
                     <ArrowRight className="w-3 h-3 shrink-0" />
                   </button>
                 )}
