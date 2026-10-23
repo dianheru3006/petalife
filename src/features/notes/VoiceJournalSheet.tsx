@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, X } from 'lucide-react';
+import { Mic, Square, X } from 'lucide-react';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import {
-  releaseMicrophoneSession,
+  parkMicrophoneSession,
   startVoiceRecording,
   type VoiceRecording,
 } from '../../lib/services/voiceRecorderService';
@@ -29,8 +29,6 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const startPendingRef = useRef(false);
-  const heldRef = useRef(false);
-  const startYRef = useRef(0);
   const recordingRef = useRef<VoiceRecording | null>(null);
   const runIdRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -43,7 +41,6 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
 
   const cancel = () => {
     runIdRef.current += 1;
-    heldRef.current = false;
     clearTimer();
     recordingRef.current?.cancel();
     recordingRef.current = null;
@@ -53,10 +50,9 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     haptic('cancel');
   };
 
-  // Only the recording gesture opens the microphone; close releases it.
+  // The track stays muted briefly across drafts so a second journal can reuse permission.
   useEffect(() => {
     const onBlur = () => {
-      heldRef.current = false;
       if (recordingRef.current) {
         runIdRef.current += 1;
         recordingRef.current.cancel();
@@ -72,11 +68,10 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     return () => {
       window.removeEventListener('blur', onBlur);
       runIdRef.current += 1;
-      heldRef.current = false;
       if (timerRef.current) clearTimeout(timerRef.current);
       recordingRef.current?.cancel();
       abortRef.current?.abort();
-      releaseMicrophoneSession();
+      parkMicrophoneSession();
     };
   }, []);
 
@@ -88,7 +83,6 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
   const finish = async () => {
     if (!recordingRef.current) return;
     const runId = runIdRef.current;
-    heldRef.current = false;
     clearTimer();
     const recording = recordingRef.current;
     recordingRef.current = null;
@@ -115,7 +109,6 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     if (stage !== 'idle' || startPendingRef.current) return;
     startPendingRef.current = true;
     const runId = ++runIdRef.current;
-    heldRef.current = true;
     setError(null);
     setNotice(null);
     setStage('requesting');
@@ -124,12 +117,8 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     const pending = startVoiceRecording();
     void pending.then(recording => {
       startPendingRef.current = false;
-      if (runId !== runIdRef.current || !heldRef.current) {
+      if (runId !== runIdRef.current) {
         recording.cancel();
-        if (runId === runIdRef.current) {
-          setStage('idle');
-          setNotice('Mikrofon siap. Tahan tombol sekali lagi untuk merekam.');
-        }
         return;
       }
       recordingRef.current = recording;
@@ -138,28 +127,10 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     }).catch(cause => {
       startPendingRef.current = false;
       if (runId !== runIdRef.current) return;
-      heldRef.current = false;
       const denied = cause instanceof DOMException && ['NotAllowedError', 'PermissionDeniedError'].includes(cause.name);
       setStage('idle');
       setError(denied ? 'Izin mikrofon ditolak. Izinkan akses di Telegram lalu coba lagi.' : cause instanceof Error ? cause.message : 'Mikrofon tidak dapat dibuka.');
     });
-  };
-
-  const start = (event: React.PointerEvent<HTMLButtonElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    startYRef.current = event.clientY;
-    begin();
-  };
-
-  const release = () => {
-    if (!heldRef.current) return;
-    heldRef.current = false;
-    if (recordingRef.current) void finish();
-  };
-
-  const pointerCancel = () => {
-    if (recordingRef.current) cancel();
-    else release();
   };
 
   return (
@@ -172,28 +143,24 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
           </div>
           <button type="button" aria-label="Tutup jurnal suara" onClick={() => { cancel(); onClose(); }} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#E8DCCB] bg-white text-[#493D32] focus-visible:outline-2 focus-visible:outline-[#BA5218]"><X className="h-5 w-5" /></button>
         </div>
-        <p className="mt-4 text-sm leading-6 text-[#5A5149]">Tahan tombol untuk bercerita. Lepaskan untuk membuat draf jurnal. Geser ke atas untuk membatalkan.</p>
+        <p className="mt-4 text-sm leading-6 text-[#5A5149]">Ketuk mikrofon untuk mulai bercerita. Ketuk lagi saat selesai; Mochi akan menyiapkan draf jurnal.</p>
 
           <div className="mt-7 flex flex-col items-center gap-4">
             <button
               type="button"
-              aria-label={stage === 'recording' ? 'Lepaskan untuk menyelesaikan rekaman' : 'Tahan untuk mulai merekam'}
-              disabled={stage === 'processing'}
-              onPointerDown={start}
-              onPointerUp={release}
-              onPointerCancel={pointerCancel}
-              onPointerMove={event => { if (heldRef.current && startYRef.current - event.clientY > 60) cancel(); }}
-              onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); if (stage === 'idle') begin(); else if (stage === 'recording') void finish(); } }}
-              style={{ touchAction: 'none' }}
+              aria-label={stage === 'recording' ? 'Ketuk untuk menyelesaikan rekaman' : 'Ketuk untuk mulai merekam'}
+              disabled={stage === 'requesting' || stage === 'processing'}
+              onClick={() => { if (stage === 'recording') void finish(); else if (stage === 'idle') begin(); }}
               className={`relative flex h-24 w-24 items-center justify-center rounded-full text-white shadow-[0_10px_24px_#4A342D38] transition-transform focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BA5218] ${stage === 'recording' ? 'scale-110 bg-[#BA5218]' : 'bg-[#5D4633]'} disabled:opacity-50`}
-            ><Mic className="h-9 w-9" /></button>
+            >{stage === 'recording' ? <Square className="h-8 w-8" fill="currentColor" /> : <Mic className="h-9 w-9" />}</button>
             <p role="status" aria-live="polite" className="min-h-6 text-center text-sm font-bold text-[#493D32]">
-              {stage === 'recording' ? 'Mendengarkan… lepaskan untuk selesai' : stage === 'processing' ? 'Mochi sedang merapikan cerita…' : stage === 'requesting' ? 'Menunggu izin mikrofon…' : 'Tahan tombol untuk mulai'}
+              {stage === 'recording' ? 'Merekam… ketuk untuk selesai' : stage === 'processing' ? 'Mochi sedang merapikan cerita…' : stage === 'requesting' ? 'Menunggu izin mikrofon…' : 'Ketuk untuk mulai merekam'}
             </p>
           </div>
 
         {error && <p role="alert" className="mt-4 rounded-xl bg-[#FFF0E8] p-3 text-sm text-[#873E1F]">{error}</p>}
         {notice && <p role="status" className="mt-4 rounded-xl bg-[#EAF6EE] p-3 text-sm text-[#285C3D]">{notice}</p>}
+        <p className="mt-4 text-center text-xs leading-5 text-[#7A6E60]">Di sela rekaman, mikrofon dibisukan. Akses dilepas saat keluar dari Catatan atau setelah 5 menit tidak dipakai.</p>
         <p className="mt-6 text-center text-xs leading-5 text-[#7A6E60]">Audio dikirim ke server Mochi dan Gemini untuk diproses, tanpa disimpan sebagai berkas oleh Petalife. Draf hanya tersimpan setelah kamu menyetujuinya.</p>
       </section>
     </div>

@@ -8,6 +8,13 @@ export interface VoiceRecording {
 let activeSessionStream: MediaStream | null = null;
 let pendingStreamRequest: Promise<MediaStream> | null = null;
 let sessionGeneration = 0;
+const MIC_IDLE_GRACE_MS = 5 * 60 * 1000;
+let idleReleaseTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearIdleReleaseTimer(): void {
+  if (idleReleaseTimer) clearTimeout(idleReleaseTimer);
+  idleReleaseTimer = null;
+}
 
 function hasLiveAudio(stream: MediaStream): boolean {
   return stream.getAudioTracks().some(track => track.readyState === 'live');
@@ -22,6 +29,7 @@ export async function requestMicrophonePermission(): Promise<MediaStream> {
     throw new Error('Perekam suara tidak tersedia di perangkat ini.');
   }
   if (activeSessionStream && hasLiveAudio(activeSessionStream)) {
+    clearIdleReleaseTimer();
     return activeSessionStream;
   }
   if (pendingStreamRequest) return pendingStreamRequest;
@@ -40,11 +48,26 @@ export async function requestMicrophonePermission(): Promise<MediaStream> {
   return pending;
 }
 
-/**
- * Cleanly releases all audio tracks when the VoiceJournalSheet is closed/unmounted.
- */
+/** Mute the live track between drafts; cap the idle session to five minutes. */
+export function parkMicrophoneSession(): void {
+  if (pendingStreamRequest) {
+    releaseMicrophoneSession();
+    return;
+  }
+  if (!activeSessionStream || !hasLiveAudio(activeSessionStream)) {
+    releaseMicrophoneSession();
+    return;
+  }
+  activeSessionStream.getAudioTracks().forEach(track => { track.enabled = false; });
+  clearIdleReleaseTimer();
+  const stream = activeSessionStream;
+  idleReleaseTimer = setTimeout(() => releaseMicrophoneSession(stream), MIC_IDLE_GRACE_MS);
+}
+
+/** Release hardware when leaving Notes, on pagehide, or after idle timeout. */
 export function releaseMicrophoneSession(expectedStream?: MediaStream): void {
   if (expectedStream && activeSessionStream !== expectedStream) return;
+  clearIdleReleaseTimer();
   sessionGeneration += 1;
   activeSessionStream?.getTracks().forEach(track => track.stop());
   activeSessionStream = null;
@@ -78,6 +101,7 @@ export async function startVoiceRecording(): Promise<VoiceRecording> {
   if (!mimeType) throw new Error('Format rekaman perangkat ini belum didukung.');
 
   const stream = await requestMicrophonePermission();
+  stream.getAudioTracks().forEach(track => { track.enabled = true; });
 
   let recorder: MediaRecorder;
   try {
@@ -101,6 +125,7 @@ export async function startVoiceRecording(): Promise<VoiceRecording> {
     } else chunks.push(event.data);
   };
   recorder.onstop = () => {
+    if (activeSessionStream === stream) parkMicrophoneSession();
     const audio = cancelled ? null : new Blob(chunks, { type: mimeType.split(';')[0] });
     chunks.length = 0;
     settle(audio);

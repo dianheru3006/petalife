@@ -8,6 +8,7 @@ import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import { speakMochiReply, type VoiceJournalDraft } from '../../lib/services/voiceJournalService';
+import { releaseMicrophoneSession } from '../../lib/services/voiceRecorderService';
 import notesStudyBg from '../../assets/notes-study-bg.webp';
 
 const VoiceJournalSheet = lazy(() => import('./VoiceJournalSheet').then(module => ({ default: module.VoiceJournalSheet })));
@@ -45,6 +46,14 @@ const formatDate = (timestamp?: number) => {
 export const NotesPage: FC<NotesPageProps> = ({
   notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false, equippedCosmetics,
 }) => {
+  useEffect(() => {
+    const onPageHide = () => releaseMicrophoneSession();
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      releaseMicrophoneSession();
+    };
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
