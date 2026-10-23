@@ -55,17 +55,13 @@ describe('Vault Pustaka & Reading Mode Contracts', () => {
   it('supports canonical librarian Mochi activities in vault diorama', () => {
     const activities: LibraryMochiActivity[] = [
       'reading',
-      'page-flip',
       'adjusting-glasses',
-      'eureka-nod',
       'drowsy',
       'cheering',
     ];
-    expect(activities).toHaveLength(6);
+    expect(activities).toHaveLength(4);
     expect(activities).toContain('reading');
-    expect(activities).toContain('page-flip');
     expect(activities).toContain('adjusting-glasses');
-    expect(activities).toContain('eureka-nod');
     expect(activities).toContain('drowsy');
     expect(activities).toContain('cheering');
   });

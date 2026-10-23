@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 
-export type LibraryMochiActivity = 'reading' | 'page-flip' | 'adjusting-glasses' | 'eureka-nod' | 'drowsy' | 'cheering';
+export type LibraryMochiActivity = 'reading' | 'adjusting-glasses' | 'drowsy' | 'cheering';
 
 export interface LibraryMochiProps {
   activity?: LibraryMochiActivity;
@@ -10,13 +10,11 @@ export interface LibraryMochiProps {
 
 /**
  * An adorable, lively 3D dumpling Librarian Mochi for the Pustaka diorama.
- * Supports multiple interactive activities:
+ * Supports serene, peaceful interactive activities:
  * - 'reading' (default): Serene studying, natural eye blink.
- * - 'page-flip': Turns book page smoothly with paw.
  * - 'adjusting-glasses': Reaches up to touch gold wire frames with lens gleam.
- * - 'eureka-nod': Rhythmic head nod with sparkling idea star and curious gleam.
  * - 'drowsy': Sleepy eye curves, tiny zZz bubble floating up from long study session.
- * - 'cheering': Joyful sparkling smile, jumping with book recommendations.
+ * - 'cheering': Joyful sparkling smile, jumping with book recommendations on click.
  */
 export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMochiClick, seated = false }) => {
   return (
@@ -104,14 +102,8 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
       <ellipse cx="75" cy="158" rx="46" ry="8" fill="#322219" opacity="0.28" filter="url(#mochiFloorBlur)" />
       <ellipse cx="75" cy="156" rx="32" ry="5.5" fill="#20140D" opacity="0.32" filter="url(#mochiFloorBlur)" />
 
-      {/* 2. Main Animated Character Group with Squash-and-Stretch Breathing / Nodding */}
-      <g className={
-        activity === 'cheering'
-          ? 'anim-mochi-hop'
-          : activity === 'eureka-nod'
-          ? 'anim-mochi-nod'
-          : 'library-mochi-breathe'
-      }>
+      {/* 2. Main Animated Character Group with Squash-and-Stretch Breathing */}
+      <g className={activity === 'cheering' ? 'anim-mochi-hop' : 'library-mochi-breathe'}>
 
         {/* 2a. Sprout Stem & Leaves (Emerges naturally above the beret crown) */}
         <g
@@ -208,15 +200,6 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
           />
         </g>
 
-        {/* Floating Eureka Idea Sparkle (Rendered when in 'eureka-nod' activity) */}
-        {activity === 'eureka-nod' && (
-          <g className="anim-eureka-sparkle" transform="translate(108, 30)">
-            <path d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#FBBF24" />
-            <circle cx="0" cy="0" r="2.2" fill="#FFFBEB" />
-            <circle cx="8" cy="-5" r="1.2" fill="#FDE047" opacity="0.85" />
-          </g>
-        )}
-
         {/* The seated pose turns Mochi's gaze with the angled chair. */}
         <g transform={seated ? 'translate(15 0) scale(0.88 1)' : undefined}>
           {/* 2e. Rosy Blushing Cheeks */}
@@ -239,28 +222,6 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
             <g stroke="#2C1A14" strokeWidth="3.2" strokeLinecap="round" fill="none">
               <path d="M52 96 Q58 89 64 96" />
               <path d="M86 96 Q92 89 98 96" />
-            </g>
-          ) : activity === 'eureka-nod' ? (
-            /* Eureka Sparkling Curious Eyes (◕ ◕) - Bright inquisitive gleam */
-            <g>
-              <ellipse cx="58" cy="93" rx="7.5" ry="9" fill="#2C1A14" />
-              <circle cx="55.8" cy="89" r="3.2" fill="#FFFFFF" />
-              <circle cx="61.2" cy="96" r="1.6" fill="#FFFFFF" />
-
-              <ellipse cx="92" cy="93" rx="7.5" ry="9" fill="#2C1A14" />
-              <circle cx="89.8" cy="89" r="3.2" fill="#FFFFFF" />
-              <circle cx="95.2" cy="96" r="1.6" fill="#FFFFFF" />
-            </g>
-          ) : activity === 'page-flip' ? (
-            /* Glancing Down toward Turning Page */
-            <g>
-              <ellipse cx="59.5" cy="95.5" rx="7" ry="8.8" fill="#2C1A14" />
-              <circle cx="57.5" cy="92.5" r="2.8" fill="#FFFFFF" />
-              <circle cx="62" cy="98" r="1.3" fill="#FFFFFF" />
-
-              <ellipse cx="93.5" cy="95.5" rx="7" ry="8.8" fill="#2C1A14" />
-              <circle cx="91.5" cy="92.5" r="2.8" fill="#FFFFFF" />
-              <circle cx="96" cy="98" r="1.3" fill="#FFFFFF" />
             </g>
           ) : (
             /* Default Expressive Reading Eyes - Unified deep chocolate #2C1A14 with Natural Blink */
@@ -386,9 +347,9 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
             <line x1="82" y1="135" x2="105" y2="137" stroke="#9C8B72" strokeWidth="1" strokeLinecap="round" opacity="0.65" />
             <line x1="87" y1="140" x2="105" y2="142" stroke="#9C8B72" strokeWidth="1" strokeLinecap="round" opacity="0.65" />
 
-            {/* Active Page Flip Curl or Gentle Flutter */}
+            {/* Gentle Fluttering Turning Page */}
             <path
-              className={activity === 'page-flip' ? 'anim-page-flip-curl' : 'library-mochi-page'}
+              className="library-mochi-page"
               d="M76 127.5 Q93 122 109 126 L107.5 145 Q91 141 76 147 Z"
               fill="#FFFDF7"
               stroke="#DDD3C0"
@@ -411,19 +372,7 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
           />
 
           {/* Right Paw and Dynamic Action Position */}
-          {activity === 'page-flip' ? (
-            /* Paw lifted touching page corner to turn page */
-            <ellipse
-              cx="106"
-              cy="141"
-              rx="6.5"
-              ry="5.5"
-              fill="url(#mochiLibrarianBody)"
-              stroke="#C87A22"
-              strokeWidth="1.2"
-              transform="rotate(-18 106 141)"
-            />
-          ) : activity === 'adjusting-glasses' ? (
+          {activity === 'adjusting-glasses' ? (
             /* Paw Raised to Glasses Rim */
             <ellipse
               cx="104"

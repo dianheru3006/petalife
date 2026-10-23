@@ -77,9 +77,7 @@ export interface VaultPageProps {
 
 export const MOCHI_ACTIVITIES: LibraryMochiActivity[] = [
   'reading',
-  'page-flip',
   'adjusting-glasses',
-  'eureka-nod',
   'drowsy',
   'cheering',
 ];
@@ -90,20 +88,10 @@ export const MOCHI_SPEECH_POOLS: Record<LibraryMochiActivity, string[]> = {
     'Buku adalah jendela dunia... banyak wawasan baru tersimpan di sini.',
     'Mochi senang sekali berada di perpustakaan yang hangat ini.',
   ],
-  'page-flip': [
-    'Buka halaman berikutnya... makin dibaca makin seru!',
-    'Satu lembar lagi, intisari di bab ini menarik banget.',
-    'Lembaran buku perpustakaan beraroma wangi dan menenangkan.',
-  ],
   'adjusting-glasses': [
     'Hmm... kacamata pustakawan Mochi sudah kelihatan pas kan?',
     'Analisis mendalam butuh ketelitian ekstra... sekarang Mochi paham.',
     'Fokus membaca intisari empat lapis biar makin tercerahkan.',
-  ],
-  'eureka-nod': [
-    'Aha! Gagasan di catatan ini brilian banget, Mochi baru sadar!',
-    'Analisis yang tajam! Mochi setuju banget sama poin kunci ini.',
-    'Paham sekarang! Pola pikir ini bisa kita terapkan sehari-hari.',
   ],
   drowsy: [
     'Hoaaam... membaca banyak lembaran bikin kelopak mata Mochi berat.',
@@ -185,10 +173,7 @@ export const VaultPage: FC<VaultPageProps> = ({
 
     const idleSequence: LibraryMochiActivity[] = [
       'reading',
-      'page-flip',
-      'reading',
       'adjusting-glasses',
-      'eureka-nod',
       'reading',
       'drowsy',
     ];
