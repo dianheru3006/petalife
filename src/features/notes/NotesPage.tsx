@@ -4,6 +4,7 @@ import type { Note } from '../../lib/types';
 import { ArrowLeft, Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { NotesMochi } from './NotesMochi';
+import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import notesStudyBg from '../../assets/notes-study-bg.webp';
@@ -54,6 +55,8 @@ export const NotesPage: FC<NotesPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [mochiGreetingIndex, setMochiGreetingIndex] = useState(0);
+  const [isMochiHopping, setIsMochiHopping] = useState(false);
+  const hopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -78,6 +81,22 @@ export const NotesPage: FC<NotesPageProps> = ({
   const mochiGreetings = notes.length === 0
     ? ['Mochi siap mencatat ide pertamamu.', 'Satu ide kecil bisa jadi awal yang besar.']
     : [`Lagi nyatet... sudah ${notes.length} catatan.`, 'Punya ide baru? Tulis di papan, ya!'];
+
+  const handleMochiTap = () => {
+    proceduralAudio.playAnimaleseChirp('Catatan Mochi');
+    setMochiGreetingIndex(index => index + 1);
+    setIsMochiHopping(true);
+    if (hopTimeoutRef.current) clearTimeout(hopTimeoutRef.current);
+    hopTimeoutRef.current = setTimeout(() => {
+      setIsMochiHopping(false);
+    }, 600);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hopTimeoutRef.current) clearTimeout(hopTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isEditorOpen) return;
@@ -301,14 +320,19 @@ export const NotesPage: FC<NotesPageProps> = ({
             <div
               role="status"
               aria-live="polite"
-              onClick={() => setMochiGreetingIndex(index => index + 1)}
+              onClick={handleMochiTap}
               className="absolute bottom-[68%] left-1/2 z-20 w-max max-w-[calc(100%-24px)] -translate-x-1/2 cursor-pointer select-none rounded-2xl border border-[#EAE3D5] bg-white/95 px-4 py-1.5 text-center text-xs font-bold leading-snug text-[#3A3340] shadow-md backdrop-blur-md active:scale-95 motion-safe:transition-transform"
             >
               {mochiGreetings[mochiGreetingIndex % mochiGreetings.length]}
               <span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#EAE3D5] bg-white" />
             </div>
-            <button type="button" onClick={() => setMochiGreetingIndex(index => index + 1)} aria-label="Ajak Mochi berinteraksi di meja catatan" className="absolute bottom-0 left-1/2 h-[72%] w-[38%] max-w-[150px] -translate-x-1/2 cursor-pointer rounded-2xl motion-safe:transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-[#BA5218]">
-              <NotesMochi />
+            <button
+              type="button"
+              onClick={handleMochiTap}
+              aria-label="Ajak Mochi berinteraksi di meja catatan"
+              className="absolute bottom-0 left-1/2 h-[72%] w-[38%] max-w-[150px] -translate-x-1/2 cursor-pointer rounded-2xl motion-safe:transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+            >
+              <NotesMochi isHopping={isMochiHopping} />
             </button>
           </section>
 

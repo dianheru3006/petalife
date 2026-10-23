@@ -1,12 +1,16 @@
 import type { FC } from 'react';
 
+export interface NotesMochiProps {
+  isHopping?: boolean;
+}
+
 /**
  * Mochi's cozy study desk pose for Catatan.
  * - Unified 3D clay body with clipPath-contained forehead gleam (zero contour bleeding).
  * - Warm Terracotta Coral notebook cover contrasting crisply against the Pastel Sage desk mat.
  * - Pure innocent kawaii chibi expression without harsh eyebrows.
  */
-export const NotesMochi: FC = () => (
+export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false }) => (
   <svg viewBox="0 0 150 170" aria-hidden="true" className="h-full w-full overflow-visible drop-shadow-[0_8px_14px_rgba(80,50,30,0.22)] select-none">
     <defs>
       {/* Mochi's Canonical 3D Dumpling Body */}
@@ -112,9 +116,9 @@ export const NotesMochi: FC = () => (
     <ellipse cx="75" cy="155" rx="42" ry="6.5" fill="#24332B" opacity="0.26" filter="url(#notesMochiShadow)" />
 
     {/* Breathing & Squash-and-Stretch Animation Group */}
-    <g className="notes-writer-breathe">
+    <g className={isHopping ? 'anim-mochi-hop' : 'notes-writer-breathe'}>
       {/* Sprout with 3D gradient leaves */}
-      <g className="notes-writer-sprout" style={{ transformOrigin: '79px 37px' }}>
+      <g className={isHopping ? 'anim-sprout-joy' : 'notes-writer-sprout'} style={{ transformOrigin: '79px 37px' }}>
         <path d="M76 46 Q77 29 86 18" fill="none" stroke="url(#notesSprout3D)" strokeWidth="3.2" strokeLinecap="round" />
         <path d="M86 19 Q75 9 73 21 Q79 27 86 19Z" fill="url(#notesLeafHighlight)" stroke="#2E7D32" strokeWidth="1" />
         <path d="M86 19 Q98 8 101 19 Q94 26 86 19Z" fill="url(#notesSprout3D)" stroke="#2E7D32" strokeWidth="1" />
@@ -141,20 +145,33 @@ export const NotesMochi: FC = () => (
       <ellipse cx="44" cy="108" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
       <ellipse cx="106" cy="108" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
 
-      {/* Innocent, lovable chibi blinking eyes */}
-      <g className="notes-writer-blink" style={{ transformOrigin: '57px 96px' }}>
-        <ellipse cx="57" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
-        <circle cx="54" cy="92" r="2.8" fill="white" />
-        <circle cx="60" cy="99" r="1.3" fill="white" />
-      </g>
-      <g className="notes-writer-blink" style={{ transformOrigin: '93px 96px' }}>
-        <ellipse cx="93" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
-        <circle cx="90" cy="92" r="2.8" fill="white" />
-        <circle cx="96" cy="99" r="1.3" fill="white" />
-      </g>
+      {/* Eyes: Joyful squint arcs when hopping, innocent blinking eyes normally */}
+      {isHopping ? (
+        <g stroke="#2C1A14" strokeWidth="3.2" strokeLinecap="round" fill="none">
+          <path d="M51 97 Q57 90 63 97" />
+          <path d="M87 97 Q93 90 99 97" />
+        </g>
+      ) : (
+        <>
+          <g className="notes-writer-blink" style={{ transformOrigin: '57px 96px' }}>
+            <ellipse cx="57" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
+            <circle cx="54" cy="92" r="2.8" fill="white" />
+            <circle cx="60" cy="99" r="1.3" fill="white" />
+          </g>
+          <g className="notes-writer-blink" style={{ transformOrigin: '93px 96px' }}>
+            <ellipse cx="93" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
+            <circle cx="90" cy="92" r="2.8" fill="white" />
+            <circle cx="96" cy="99" r="1.3" fill="white" />
+          </g>
+        </>
+      )}
 
-      {/* Sweet Smile Mouth (unified #2C1A14) */}
-      <path d="M70 112 Q75 116 80 112" fill="none" stroke="#2C1A14" strokeWidth="2.2" strokeLinecap="round" />
+      {/* Sweet Smile Mouth */}
+      {isHopping ? (
+        <path d="M70 109 Q75 119 80 109 Z" fill="#FF7575" stroke="#2C1A14" strokeWidth="2" strokeLinejoin="round" />
+      ) : (
+        <path d="M70 112 Q75 116 80 112" fill="none" stroke="#2C1A14" strokeWidth="2.2" strokeLinecap="round" />
+      )}
 
       {/* Creative Idea Sparkles */}
       <g className="notes-writer-thought" fill="none" stroke="#AD7549" strokeWidth="2" strokeLinecap="round">
