@@ -9,6 +9,16 @@ export interface VoiceJournalDraft {
   reply: string;
 }
 
+function journalFailureMessage(status: number): string {
+  if (status === 401) return 'Sesi Telegram sudah tidak berlaku. Tutup lalu buka kembali Petalife.';
+  if (status === 403) return 'Jurnal suara hanya tersedia di Mini App Telegram.';
+  if (status === 404) return 'Server Mochi belum menyediakan fitur jurnal suara.';
+  if (status === 413) return 'Rekaman terlalu besar. Coba lebih singkat.';
+  if (status === 429) return 'Mochi sedang sibuk atau batas jurnal hari ini tercapai. Coba lagi nanti.';
+  if (status === 502 || status === 503 || status === 504) return 'Server Mochi belum dapat memproses suara. Coba lagi nanti.';
+  return `Jurnal suara belum berhasil diproses (HTTP ${status}).`;
+}
+
 export async function createVoiceJournalDraft(audio: Blob, signal?: AbortSignal): Promise<VoiceJournalDraft> {
   if (!audio.size || audio.size > 2 * 1024 * 1024) throw new Error('Rekaman terlalu besar. Coba lebih singkat.');
   const initData = (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp?.initData;
@@ -28,11 +38,12 @@ export async function createVoiceJournalDraft(audio: Blob, signal?: AbortSignal)
     });
     const payload = await response.json().catch(() => null) as { success?: boolean; journal?: VoiceJournalDraft; error?: string } | null;
     if (!response.ok || !payload?.success || !payload.journal) {
-      throw new Error(payload?.error || (response.status === 413 ? 'Rekaman terlalu besar. Coba lebih singkat.' : 'Jurnal belum berhasil dibuat. Coba lagi.'));
+      throw new Error(payload?.error || journalFailureMessage(response.status));
     }
     return payload.journal;
   } catch (error) {
     if (controller.signal.aborted) throw new Error('Permintaan dibatalkan atau terlalu lama. Coba lagi.');
+    if (error instanceof TypeError) throw new Error('Tidak dapat menghubungi server Mochi. Periksa jaringan lalu coba lagi.');
     throw error;
   } finally {
     window.clearTimeout(timeout);

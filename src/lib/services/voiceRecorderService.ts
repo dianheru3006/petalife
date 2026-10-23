@@ -26,8 +26,8 @@ export async function requestMicrophonePermission(): Promise<MediaStream> {
 /**
  * Cleanly releases all audio tracks when the VoiceJournalSheet is closed/unmounted.
  */
-export function releaseMicrophoneSession(): void {
-  if (activeSessionStream) {
+export function releaseMicrophoneSession(expectedStream?: MediaStream): void {
+  if (activeSessionStream && (!expectedStream || activeSessionStream === expectedStream)) {
     activeSessionStream.getTracks().forEach(track => track.stop());
     activeSessionStream = null;
   }

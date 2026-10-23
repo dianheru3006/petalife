@@ -16,6 +16,25 @@ interface VoiceJournalSheetProps {
 }
 
 type Stage = 'permission_prompt' | 'idle' | 'recording' | 'processing';
+const MIC_HINT_KEY = 'petalife_mic_granted';
+
+function hasMicrophoneActivationHint(): boolean {
+  try {
+    return sessionStorage.getItem(MIC_HINT_KEY) === '1' || localStorage.getItem(MIC_HINT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function rememberMicrophoneActivation(): void {
+  try { sessionStorage.setItem(MIC_HINT_KEY, '1'); } catch {}
+  try { localStorage.setItem(MIC_HINT_KEY, '1'); } catch {}
+}
+
+function forgetMicrophoneActivation(): void {
+  try { sessionStorage.removeItem(MIC_HINT_KEY); } catch {}
+  try { localStorage.removeItem(MIC_HINT_KEY); } catch {}
+}
 
 function haptic(kind: 'start' | 'success' | 'cancel') {
   const feedback = (window as unknown as { Telegram?: { WebApp?: { HapticFeedback?: {
@@ -27,8 +46,11 @@ function haptic(kind: 'start' | 'success' | 'cancel') {
 }
 
 export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) {
-  const [stage, setStage] = useState<Stage>('permission_prompt');
+  const [stage, setStage] = useState<Stage>(() => hasMicrophoneActivationHint() ? 'idle' : 'permission_prompt');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isGranting, setIsGranting] = useState(false);
+  const grantingRef = useRef(false);
   const heldRef = useRef(false);
   const startYRef = useRef(0);
   const recordingRef = useRef<VoiceRecording | null>(null);
@@ -53,38 +75,12 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     haptic('cancel');
   };
 
-  // Pre-check permission and warm stream on mount; release microphone hardware on unmount
+  // Read permission state without opening the microphone when the menu mounts.
   useEffect(() => {
     let isMounted = true;
-    const previouslyGranted = (() => {
-      try {
-        return sessionStorage.getItem('petalife_mic_granted') === '1' ||
-               localStorage.getItem('petalife_mic_granted') === '1';
-      } catch {
-        return false;
-      }
-    })();
-
-    if (previouslyGranted) {
-      requestMicrophonePermission().then(() => {
-        if (isMounted) setStage('idle');
-      }).catch(() => {
-        if (isMounted) setStage('permission_prompt');
-      });
-    } else {
-      checkMicrophonePermission().then(status => {
-        if (!isMounted) return;
-        if (status === 'granted') {
-          requestMicrophonePermission().then(() => {
-            if (isMounted) setStage('idle');
-          }).catch(() => {
-            if (isMounted) setStage('permission_prompt');
-          });
-        } else {
-          setStage('permission_prompt');
-        }
-      });
-    }
+    void checkMicrophonePermission().then(status => {
+      if (isMounted && status === 'granted') setStage('idle');
+    });
 
     return () => {
       isMounted = false;
@@ -103,16 +99,27 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
   } }]);
 
   const handleGrantPermission = async () => {
+    if (grantingRef.current) return;
+    grantingRef.current = true;
+    setIsGranting(true);
+    const runId = runIdRef.current;
     setError(null);
+    setNotice(null);
     try {
-      await requestMicrophonePermission();
-      try {
-        sessionStorage.setItem('petalife_mic_granted', '1');
-        localStorage.setItem('petalife_mic_granted', '1');
-      } catch {}
+      const stream = await requestMicrophonePermission();
+      if (runId !== runIdRef.current) {
+        releaseMicrophoneSession(stream);
+        return;
+      }
+      rememberMicrophoneActivation();
       setStage('idle');
     } catch (cause) {
+      if (runId !== runIdRef.current) return;
+      forgetMicrophoneActivation();
       setError(cause instanceof Error ? cause.message : 'Izin mikrofon belum diberikan. Silakan izinkan di browser/Telegram Anda.');
+    } finally {
+      grantingRef.current = false;
+      if (runId === runIdRef.current) setIsGranting(false);
     }
   };
 
@@ -147,14 +154,18 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     const runId = ++runIdRef.current;
     heldRef.current = true;
     setError(null);
+    setNotice(null);
     haptic('start');
 
-    // startVoiceRecording uses the pre-warmed session stream synchronously if available
     const pending = startVoiceRecording();
     void pending.then(recording => {
+      rememberMicrophoneActivation();
       if (runId !== runIdRef.current || !heldRef.current) {
         recording.cancel();
-        if (runId === runIdRef.current) setStage('idle');
+        if (runId === runIdRef.current) {
+          setStage('idle');
+          setNotice('Mikrofon siap. Tahan tombol sekali lagi untuk merekam.');
+        }
         return;
       }
       recordingRef.current = recording;
@@ -163,7 +174,9 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     }).catch(cause => {
       if (runId !== runIdRef.current) return;
       heldRef.current = false;
-      setStage('idle');
+      const denied = cause instanceof DOMException && ['NotAllowedError', 'PermissionDeniedError'].includes(cause.name);
+      if (denied) forgetMicrophoneActivation();
+      setStage(denied ? 'permission_prompt' : 'idle');
       setError(cause instanceof Error ? cause.message : 'Mikrofon tidak dapat dibuka.');
     });
   };
@@ -196,13 +209,14 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
           <div className="mt-7 flex flex-col items-center gap-4 text-center">
             <button
               type="button"
+              disabled={isGranting}
               onClick={() => void handleGrantPermission()}
               className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-[#5D4633] px-6 text-sm font-bold text-white shadow-md active:scale-95 transition-all"
             >
-              <Mic className="h-5 w-5" /> Aktifkan Mikrofon
+              <Mic className="h-5 w-5" /> {isGranting ? 'Menunggu izin…' : 'Aktifkan Mikrofon'}
             </button>
             <p className="text-xs text-[#7A6E60] max-w-xs leading-relaxed">
-              Ketuk untuk memberikan izin mikrofon sekali saja agar kamu bisa curhat lancar tanpa gangguan pop-up.
+              Ketuk untuk meminta akses mikrofon dari Telegram. Setelah siap, tahan tombol untuk merekam.
             </p>
           </div>
         ) : (
@@ -226,6 +240,7 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
         )}
 
         {error && <p role="alert" className="mt-4 rounded-xl bg-[#FFF0E8] p-3 text-sm text-[#873E1F]">{error}</p>}
+        {notice && <p role="status" className="mt-4 rounded-xl bg-[#EAF6EE] p-3 text-sm text-[#285C3D]">{notice}</p>}
         <p className="mt-6 text-center text-xs leading-5 text-[#7A6E60]">Audio dikirim ke server Mochi dan Gemini untuk diproses, tanpa disimpan sebagai berkas oleh Petalife. Draf hanya tersimpan setelah kamu menyetujuinya.</p>
       </section>
     </div>
