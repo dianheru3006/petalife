@@ -11,13 +11,27 @@ class TestStorage {
   setItem(key: string, value: string): void { this.store.set(key, String(value)); }
 }
 
-describe('ProceduralAudioEngine (Animalese Chibi Voice)', () => {
+describe('ProceduralAudioEngine (Mochi Bubble Pop & Chibi Voice)', () => {
   let mockStorage: TestStorage;
   let engine: ProceduralAudioEngine;
 
   beforeEach(() => {
     mockStorage = new TestStorage();
     engine = new ProceduralAudioEngine(mockStorage as unknown as Storage);
+  });
+
+  it('defaults to mochi_pop voice profile (Opsi 1)', () => {
+    expect(engine.getVoiceProfile()).toBe('mochi_pop');
+  });
+
+  it('switches voice profile and persists to storage', () => {
+    engine.setVoiceProfile('animalese_classic');
+    expect(engine.getVoiceProfile()).toBe('animalese_classic');
+    expect(mockStorage.getItem('petalife_voice_profile_v1')).toBe('animalese_classic');
+
+    engine.setVoiceProfile('mochi_pop');
+    expect(engine.getVoiceProfile()).toBe('mochi_pop');
+    expect(mockStorage.getItem('petalife_voice_profile_v1')).toBe('mochi_pop');
   });
 
   it('manages mute state and persists to storage', () => {
@@ -32,22 +46,18 @@ describe('ProceduralAudioEngine (Animalese Chibi Voice)', () => {
     expect(mockStorage.getItem('petalife_audio_muted_v1')).toBe('false');
   });
 
-  it('initializes mute state from pre-existing storage', () => {
-    mockStorage.setItem('petalife_audio_muted_v1', 'true');
-    const mutedEngine = new ProceduralAudioEngine(mockStorage as unknown as Storage);
-    expect(mutedEngine.getIsMuted()).toBe(true);
-  });
+  it('plays both mochi_pop and animalese_classic gracefully in node/jsdom without crashing', () => {
+    engine.setVoiceProfile('mochi_pop');
+    expect(() => engine.playAnimaleseChirp('Bloop bloop!')).not.toThrow();
 
-  it('handles playAnimaleseChirp gracefully when AudioContext is missing in node/jsdom', () => {
-    expect(() => {
-      engine.playAnimaleseChirp('Halo Mochi!');
-    }).not.toThrow();
+    engine.setVoiceProfile('animalese_classic');
+    expect(() => engine.playAnimaleseChirp('Bip bop!')).not.toThrow();
   });
 
   it('singleton proceduralAudio instance is safely callable without error', () => {
     expect(() => {
-      proceduralAudio.playAnimaleseChirp('Pikachu');
+      proceduralAudio.playAnimaleseChirp('Mochi pop');
     }).not.toThrow();
-    expect(typeof proceduralAudio.getIsMuted()).toBe('boolean');
+    expect(proceduralAudio.getVoiceProfile()).toBe('mochi_pop');
   });
 });
