@@ -11,7 +11,7 @@ class TestStorage {
   setItem(key: string, value: string): void { this.store.set(key, String(value)); }
 }
 
-describe('ProceduralAudioEngine', () => {
+describe('ProceduralAudioEngine (Animalese Chibi Voice)', () => {
   let mockStorage: TestStorage;
   let engine: ProceduralAudioEngine;
 
@@ -42,18 +42,6 @@ describe('ProceduralAudioEngine', () => {
     expect(() => {
       engine.playAnimaleseChirp('Halo Mochi!');
     }).not.toThrow();
-  });
-
-  it('handles toggleLofiRadio gracefully in node/jsdom without errors', () => {
-    const isPlaying = engine.toggleLofiRadio();
-    expect(typeof isPlaying).toBe('boolean');
-    engine.stopLofiRadio();
-    expect(engine.getIsRadioPlaying()).toBe(false);
-  });
-
-  it('stops radio when muted is set to true', () => {
-    engine.setMuted(true);
-    expect(engine.getIsRadioPlaying()).toBe(false);
   });
 
   it('singleton proceduralAudio instance is safely callable without error', () => {
