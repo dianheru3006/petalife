@@ -97,4 +97,39 @@ describe('Notes Feature & Corkboard Contracts', () => {
     expect(parseTags('   ,   ,   ')).toEqual(['general']);
     expect(parseTags('')).toEqual(['general']);
   });
+
+  it('aggregates popular tag counts correctly excluding general tag', () => {
+    const tagCounts = new Map<string, number>();
+    for (const note of sampleNotes) {
+      for (const tag of note.tags ?? []) {
+        const normalized = tag.replace(/^#/, '').trim().toLowerCase();
+        if (normalized && normalized !== 'general') {
+          tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+        }
+      }
+    }
+    const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
+
+    expect(popularTags).toEqual([
+      ['memasak', 1],
+      ['kuliner', 1],
+      ['coding', 1],
+      ['arsitektur', 1],
+    ]);
+    expect(tagCounts.has('general')).toBe(false);
+  });
+
+  it('filters notes accurately by selected tag pill', () => {
+    const filterByTag = (notesList: Note[], selectedTag: string) => {
+      if (selectedTag === 'All') return notesList;
+      return notesList.filter(note =>
+        (note.tags ?? []).some(t => t.replace(/^#/, '').trim().toLowerCase() === selectedTag.toLowerCase())
+      );
+    };
+
+    expect(filterByTag(sampleNotes, 'All')).toHaveLength(3);
+    expect(filterByTag(sampleNotes, 'coding')).toHaveLength(1);
+    expect(filterByTag(sampleNotes, 'coding')[0].id).toBe('note-2');
+    expect(filterByTag(sampleNotes, 'nonexistent')).toHaveLength(0);
+  });
 });

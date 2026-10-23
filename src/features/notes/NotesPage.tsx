@@ -42,6 +42,7 @@ export const NotesPage: FC<NotesPageProps> = ({
   notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -73,10 +74,29 @@ export const NotesPage: FC<NotesPageProps> = ({
   const sortedNotes = [...notes].sort(
     (a, b) => (b.updatedAtTimestamp || b.createdAt || 0) - (a.updatedAtTimestamp || a.createdAt || 0)
   );
+
+  const tagCounts = new Map<string, number>();
+  for (const note of notes) {
+    for (const tag of note.tags ?? []) {
+      const normalized = tag.replace(/^#/, '').trim().toLowerCase();
+      if (normalized && normalized !== 'general') {
+        tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+      }
+    }
+  }
+  const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
+
   const query = searchQuery.trim().toLocaleLowerCase('id-ID');
-  const filteredNotes = query
-    ? sortedNotes.filter(note => [note.title || '', note.body || '', ...(note.tags ?? [])].some(value => (value || '').toLocaleLowerCase('id-ID').includes(query)))
-    : sortedNotes;
+  const filteredNotes = sortedNotes.filter(note => {
+    const matchesQuery = !query || [note.title || '', note.body || '', ...(note.tags ?? [])].some(value =>
+      (value || '').toLocaleLowerCase('id-ID').includes(query)
+    );
+    const matchesTag = selectedTag === 'All' || (note.tags ?? []).some(
+      tag => tag.replace(/^#/, '').trim().toLowerCase() === selectedTag.toLowerCase()
+    );
+    return matchesQuery && matchesTag;
+  });
+
   const selectedNote = notes.find(note => note.id === selectedNoteId);
   const mochiGreetings = notes.length === 0
     ? ['Mochi siap mencatat ide pertamamu.', 'Satu ide kecil bisa jadi awal yang besar.']
@@ -269,9 +289,23 @@ export const NotesPage: FC<NotesPageProps> = ({
             <div className="whitespace-pre-wrap break-words text-[15px] leading-8 text-[#403A35]">{selectedNote.body || 'Belum ada isi catatan.'}</div>
             {(selectedNote.tags ?? []).some(tag => tag !== 'general') && (
               <div className="mt-8 flex flex-wrap gap-2 border-t border-[#E8DCCB] pt-4">
-                {(selectedNote.tags ?? []).filter(tag => tag !== 'general').map(tag => (
-                  <span key={tag} className="rounded-full bg-[#F2E9DB] px-3 py-1 text-xs font-semibold text-[#654C35]">#{tag}</span>
-                ))}
+                {(selectedNote.tags ?? []).filter(tag => tag !== 'general').map(tag => {
+                  const normalized = tag.replace(/^#/, '').trim();
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTag(normalized.toLowerCase());
+                        goBack();
+                      }}
+                      title={`Filter catatan dengan #${normalized}`}
+                      className="rounded-full bg-[#F2E9DB] hover:bg-[#EAE0CF] active:scale-95 px-3 py-1 text-xs font-semibold text-[#654C35] transition-all cursor-pointer"
+                    >
+                      #{normalized}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </article>
@@ -336,18 +370,93 @@ export const NotesPage: FC<NotesPageProps> = ({
             </button>
           </section>
 
-          <label className="relative mb-4 block">
+          <label className="relative mb-3 block">
             <span className="sr-only">Cari catatan</span>
             <Search aria-hidden="true" className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7A746B]" />
             <input type="search" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Cari judul, isi, atau #tag..." className="h-14 w-full rounded-full border border-[#E8E2D8] bg-white pl-12 pr-5 text-sm text-[#302D2B] placeholder:text-[#7A746B] shadow-[0_5px_15px_#4E3A2610] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
           </label>
 
-          <div className="mb-3 flex items-center gap-3 px-2 text-sm font-bold text-[#665B4E]"><span>Papan catatan {filteredNotes.length}</span><span aria-hidden="true" className="h-px flex-1 bg-[#EAE3D8]" /></div>
+          {/* Horizontal Tag Filtering Strip */}
+          {popularTags.length > 0 && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 mb-3 scrollbar-none select-none" aria-label="Filter tag catatan">
+              <button
+                type="button"
+                onClick={() => setSelectedTag('All')}
+                aria-pressed={selectedTag === 'All'}
+                className={cn(
+                  'min-h-10 shrink-0 rounded-full border px-3 text-xs font-bold cursor-pointer active:scale-95 motion-safe:transition-transform',
+                  selectedTag === 'All'
+                    ? 'border-[#BA5218] bg-[#BA5218] text-white shadow-xs'
+                    : 'border-[#EAE3D5] bg-white text-[#4E4E5E] hover:bg-[#FAF7F2]'
+                )}
+              >
+                Semua <span className="ml-1 opacity-80">({notes.length})</span>
+              </button>
+              {popularTags.map(([tag, count]) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setSelectedTag(selectedTag === tag ? 'All' : tag)}
+                  aria-pressed={selectedTag === tag}
+                  className={cn(
+                    'min-h-10 shrink-0 rounded-full border px-3 text-xs font-bold cursor-pointer active:scale-95 motion-safe:transition-transform',
+                    selectedTag === tag
+                      ? 'border-[#BA5218] bg-[#BA5218] text-white shadow-xs'
+                      : 'border-[#EAE3D5] bg-white text-[#4E4E5E] hover:bg-[#FAF7F2]'
+                  )}
+                >
+                  #{tag} <span className="ml-1 opacity-80">({count})</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="mb-3 flex items-center justify-between gap-3 px-2 text-sm font-bold text-[#665B4E]">
+            <div className="flex items-center gap-2">
+              <span>Papan catatan {filteredNotes.length}</span>
+              {selectedTag !== 'All' && (
+                <span className="rounded-full bg-[#FFEFE8] border border-[#FED7C5] px-2 py-0.5 text-xs text-[#BA5218]">
+                  #{selectedTag}
+                </span>
+              )}
+            </div>
+            {selectedTag !== 'All' && (
+              <button
+                type="button"
+                onClick={() => setSelectedTag('All')}
+                className="text-xs font-semibold text-[#806C55] hover:text-[#BA5218] underline cursor-pointer"
+              >
+                Reset filter
+              </button>
+            )}
+          </div>
+
           <section aria-label="Papan catatan" className="notes-corkboard relative min-h-[250px] rounded-[32px] border-2 border-[#D5B485] px-4 pb-7 pt-6 shadow-md">
             {filteredNotes.length === 0 ? (
               <div className="flex min-h-[185px] flex-col items-center justify-center rounded-xl bg-[#FFFDF8]/85 px-5 text-center shadow-sm">
-                <p className="font-display text-base font-extrabold text-[#493B2E]">{notes.length === 0 ? 'Papan masih kosong' : 'Tidak ada catatan yang cocok'}</p>
-                <p className="mt-1 text-sm leading-relaxed text-[#63594D]">{notes.length === 0 ? 'Tulis ide, pelajaran, atau refleksi pertamamu.' : 'Coba kata lain pada pencarian.'}</p>
+                <p className="font-display text-base font-extrabold text-[#493B2E]">
+                  {notes.length === 0
+                    ? 'Papan masih kosong'
+                    : selectedTag !== 'All'
+                    ? `Tidak ada catatan dengan #${selectedTag}`
+                    : 'Tidak ada catatan yang cocok'}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-[#63594D]">
+                  {notes.length === 0
+                    ? 'Tulis ide, pelajaran, atau refleksi pertamamu.'
+                    : selectedTag !== 'All'
+                    ? 'Coba pilih tag lain atau bersihkan filter pencarian.'
+                    : 'Coba kata lain pada pencarian.'}
+                </p>
+                {selectedTag !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTag('All')}
+                    className="mt-3 inline-flex min-h-9 items-center rounded-full bg-[#EAE0D0] px-4 text-xs font-bold text-[#563B31] hover:bg-[#DFCDB9] active:scale-95 transition-all cursor-pointer"
+                  >
+                    Tampilkan semua catatan
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-2 items-start gap-3.5">
@@ -364,7 +473,16 @@ export const NotesPage: FC<NotesPageProps> = ({
                     >
                       <span aria-hidden="true" className="absolute left-1/2 top-1 h-3.5 w-3.5 -translate-x-1/2 rounded-full border border-[#AF4838] bg-[radial-gradient(circle_at_35%_25%,#FFB7AA,#D35B48_65%,#9E3E31)] shadow-[1px_2px_3px_#50342655]" />
                       <span className="line-clamp-3 font-display text-[14px] font-extrabold leading-snug text-[#332D28]">{note.title}</span>
-                      {note.body && <span className="mt-2 line-clamp-4 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
+                      {note.body && <span className="mt-2 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
+                      {(note.tags ?? []).some(t => t !== 'general') && (
+                        <div className="mt-2.5 flex flex-wrap gap-1">
+                          {(note.tags ?? []).filter(t => t !== 'general').slice(0, 3).map(tag => (
+                            <span key={tag} className="text-[10px] font-bold text-[#7E6953] bg-[#0000000d] px-1.5 py-0.5 rounded">
+                              #{tag.replace(/^#/, '')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -407,9 +525,42 @@ export const NotesPage: FC<NotesPageProps> = ({
               <label className="block text-sm font-bold text-[#493D32]">Isi catatan
                 <textarea value={bodyInput} onChange={event => setBodyInput(event.target.value)} rows={7} onFocus={event => { const field = event.currentTarget; setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250); }} placeholder="Tulis pelajaran, ide, atau refleksi di sini..." className="mt-1.5 w-full resize-y rounded-xl border border-[#DDCDBB] bg-white p-4 text-sm font-normal leading-relaxed text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
               </label>
-              <label className="block text-sm font-bold text-[#493D32]">Tag <span className="font-normal text-[#766A5F]">(opsional, pisahkan dengan koma)</span>
-                <input value={tagsInput} onChange={event => setTagsInput(event.target.value)} placeholder="belajar, ide, refleksi" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-normal text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
-              </label>
+              <div>
+                <label className="block text-sm font-bold text-[#493D32]">Tag <span className="font-normal text-[#766A5F]">(opsional, pisahkan dengan koma)</span>
+                  <input value={tagsInput} onChange={event => setTagsInput(event.target.value)} placeholder="belajar, ide, refleksi" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-normal text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
+                </label>
+                {popularTags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-[#806C55]">Tag saran:</span>
+                    {popularTags.slice(0, 6).map(([tag]) => {
+                      const currentTags = tagsInput.split(',').map(t => t.trim().replace(/^#/, '').toLowerCase()).filter(Boolean);
+                      const isSelected = currentTags.includes(tag.toLowerCase());
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setTagsInput(currentTags.filter(t => t !== tag.toLowerCase()).join(', '));
+                            } else {
+                              const cleaned = tagsInput.trim().replace(/,\s*$/, '');
+                              setTagsInput(cleaned ? `${cleaned}, ${tag}` : tag);
+                            }
+                          }}
+                          className={cn(
+                            'px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer active:scale-95',
+                            isSelected
+                              ? 'border-[#BA5218] bg-[#FFEFE8] text-[#BA5218]'
+                              : 'border-[#E5D7C5] bg-[#F8F3EA] text-[#6E5A47] hover:bg-[#EFE5D5]'
+                          )}
+                        >
+                          #{tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <fieldset>
                 <legend className="mb-2 text-sm font-bold text-[#493D32]">Warna kertas</legend>
                 <div className="flex flex-wrap gap-2">
