@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'petalife.brainGatewayUrl.v1';
 const LAST_SYNTH_KEY = 'petalife.brainLastSynthesis.v1';
-export const DEFAULT_BRAIN_GATEWAY_URL = 'https://wallpaper-snake-unknown-sponsored.trycloudflare.com';
+export const DEFAULT_BRAIN_GATEWAY_URL = 'https://brain.tomogotchi.web.id';
 
 export type GatewayUrlSource = 'localStorage' | 'environment' | 'default' | 'none';
 
