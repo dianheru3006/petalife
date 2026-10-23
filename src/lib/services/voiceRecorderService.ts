@@ -5,19 +5,70 @@ export interface VoiceRecording {
   cancel(): void;
 }
 
-export async function startVoiceRecording(): Promise<VoiceRecording> {
+let activeSessionStream: MediaStream | null = null;
+
+/**
+ * Requests microphone permission via standard getUserMedia and caches the active stream
+ * during the voice journal session so subsequent recordings do not trigger WebView permission prompts.
+ */
+export async function requestMicrophonePermission(): Promise<MediaStream> {
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    throw new Error('Perekam suara tidak tersedia di perangkat ini.');
+  }
+  if (activeSessionStream && activeSessionStream.active && activeSessionStream.getAudioTracks().some(t => t.readyState === 'live')) {
+    return activeSessionStream;
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  activeSessionStream = stream;
+  return stream;
+}
+
+/**
+ * Cleanly releases all audio tracks when the VoiceJournalSheet is closed/unmounted.
+ */
+export function releaseMicrophoneSession(): void {
+  if (activeSessionStream) {
+    activeSessionStream.getTracks().forEach(track => track.stop());
+    activeSessionStream = null;
+  }
+}
+
+/**
+ * Checks current microphone permission state without triggering a prompt if supported.
+ */
+export async function checkMicrophonePermission(): Promise<'granted' | 'prompt' | 'denied' | 'unknown'> {
+  if (activeSessionStream && activeSessionStream.active && activeSessionStream.getAudioTracks().some(t => t.readyState === 'live')) {
+    return 'granted';
+  }
+  if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+    try {
+      const status = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      return status.state;
+    } catch {
+      // Some mobile webviews throw on 'microphone' permission name
+      return 'unknown';
+    }
+  }
+  return 'unknown';
+}
+
+export async function startVoiceRecording(reusableStream?: MediaStream | null): Promise<VoiceRecording> {
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
     throw new Error('Perekam suara tidak tersedia di perangkat ini.');
   }
   const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
     .find(type => MediaRecorder.isTypeSupported(type));
   if (!mimeType) throw new Error('Format rekaman perangkat ini belum didukung.');
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  const streamCandidate = reusableStream || activeSessionStream;
+  const isExternalStream = Boolean(streamCandidate && streamCandidate.active && streamCandidate.getAudioTracks().some(t => t.readyState === 'live'));
+  const stream = isExternalStream ? streamCandidate! : (await requestMicrophonePermission());
+
   let recorder: MediaRecorder;
   try {
     recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 32000 });
   } catch {
-    stream.getTracks().forEach(track => track.stop());
+    if (!isExternalStream) stream.getTracks().forEach(track => track.stop());
     throw new Error('Mikrofon belum bisa digunakan.');
   }
   const chunks: Blob[] = [];
@@ -35,7 +86,9 @@ export async function startVoiceRecording(): Promise<VoiceRecording> {
     } else chunks.push(event.data);
   };
   recorder.onstop = () => {
-    stream.getTracks().forEach(track => track.stop());
+    if (!isExternalStream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
     const audio = cancelled ? null : new Blob(chunks, { type: mimeType.split(';')[0] });
     chunks.length = 0;
     settle(audio);
@@ -47,7 +100,7 @@ export async function startVoiceRecording(): Promise<VoiceRecording> {
   try {
     recorder.start(1000);
   } catch {
-    stream.getTracks().forEach(track => track.stop());
+    if (!isExternalStream) stream.getTracks().forEach(track => track.stop());
     throw new Error('Rekaman gagal dimulai.');
   }
   return {
@@ -62,7 +115,7 @@ export async function startVoiceRecording(): Promise<VoiceRecording> {
       cancelled = true;
       chunks.length = 0;
       if (recorder.state !== 'inactive') recorder.stop();
-      stream.getTracks().forEach(track => track.stop());
+      if (!isExternalStream) stream.getTracks().forEach(track => track.stop());
     },
   };
 }

@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic, X } from 'lucide-react';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
-import { startVoiceRecording, type VoiceRecording } from '../../lib/services/voiceRecorderService';
+import {
+  checkMicrophonePermission,
+  requestMicrophonePermission,
+  releaseMicrophoneSession,
+  startVoiceRecording,
+  type VoiceRecording,
+} from '../../lib/services/voiceRecorderService';
 import { createVoiceJournalDraft, type VoiceJournalDraft } from '../../lib/services/voiceJournalService';
 
 interface VoiceJournalSheetProps {
@@ -9,7 +15,7 @@ interface VoiceJournalSheetProps {
   onDraft(draft: VoiceJournalDraft): void;
 }
 
-type Stage = 'idle' | 'permission' | 'recording' | 'processing';
+type Stage = 'permission_prompt' | 'idle' | 'recording' | 'processing';
 
 function haptic(kind: 'start' | 'success' | 'cancel') {
   const feedback = (window as unknown as { Telegram?: { WebApp?: { HapticFeedback?: {
@@ -21,7 +27,7 @@ function haptic(kind: 'start' | 'success' | 'cancel') {
 }
 
 export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) {
-  const [stage, setStage] = useState<Stage>('idle');
+  const [stage, setStage] = useState<Stage>('permission_prompt');
   const [error, setError] = useState<string | null>(null);
   const heldRef = useRef(false);
   const startYRef = useRef(0);
@@ -47,18 +53,47 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     haptic('cancel');
   };
 
-  useEffect(() => () => {
-    runIdRef.current += 1;
-    heldRef.current = false;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    recordingRef.current?.cancel();
-    abortRef.current?.abort();
+  // Pre-check permission and warm stream on mount; release microphone hardware on unmount
+  useEffect(() => {
+    let isMounted = true;
+    checkMicrophonePermission().then(status => {
+      if (!isMounted) return;
+      if (status === 'granted') {
+        requestMicrophonePermission().then(() => {
+          if (isMounted) setStage('idle');
+        }).catch(() => {
+          if (isMounted) setStage('permission_prompt');
+        });
+      } else {
+        setStage('permission_prompt');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      runIdRef.current += 1;
+      heldRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      recordingRef.current?.cancel();
+      abortRef.current?.abort();
+      releaseMicrophoneSession();
+    };
   }, []);
 
   useTelegramBackButton([{ id: 'voice-journal', isOpen: true, priority: 40, onBack: () => {
     cancel();
     onClose();
   } }]);
+
+  const handleGrantPermission = async () => {
+    setError(null);
+    try {
+      await requestMicrophonePermission();
+      setStage('idle');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Izin mikrofon belum diberikan. Silakan izinkan di browser/Telegram Anda.');
+    }
+  };
 
   const finish = async () => {
     if (!recordingRef.current) return;
@@ -77,7 +112,9 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
       const draft = await createVoiceJournalDraft(audio, controller.signal);
       if (runId === runIdRef.current && !controller.signal.aborted) onDraft(draft);
     } catch (cause) {
-      if (runId === runIdRef.current && !abortRef.current?.signal.aborted) setError(cause instanceof Error ? cause.message : 'Rekaman belum berhasil diproses.');
+      if (runId === runIdRef.current && !abortRef.current?.signal.aborted) {
+        setError(cause instanceof Error ? cause.message : 'Rekaman belum berhasil diproses.');
+      }
     } finally {
       abortRef.current = null;
       if (runId === runIdRef.current) setStage('idle');
@@ -89,8 +126,9 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     const runId = ++runIdRef.current;
     heldRef.current = true;
     setError(null);
-    setStage('permission');
     haptic('start');
+
+    // startVoiceRecording uses the pre-warmed session stream synchronously if available
     const pending = startVoiceRecording();
     void pending.then(recording => {
       if (runId !== runIdRef.current || !heldRef.current) {
@@ -132,23 +170,40 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
           <button type="button" aria-label="Tutup jurnal suara" onClick={() => { cancel(); onClose(); }} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#E8DCCB] bg-white text-[#493D32] focus-visible:outline-2 focus-visible:outline-[#BA5218]"><X className="h-5 w-5" /></button>
         </div>
         <p className="mt-4 text-sm leading-6 text-[#5A5149]">Tahan tombol untuk bercerita. Lepaskan untuk membuat draf jurnal. Geser ke atas untuk membatalkan.</p>
-        <div className="mt-7 flex flex-col items-center gap-4">
-          <button
-            type="button"
-            aria-label={stage === 'recording' ? 'Lepaskan untuk menyelesaikan rekaman' : 'Tahan untuk mulai merekam'}
-            disabled={stage === 'processing'}
-            onPointerDown={start}
-            onPointerUp={release}
-            onPointerCancel={cancel}
-            onPointerMove={event => { if (heldRef.current && startYRef.current - event.clientY > 60) cancel(); }}
-            onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); if (stage === 'idle') begin(); else if (stage === 'recording') void finish(); } }}
-            style={{ touchAction: 'none' }}
-            className={`relative flex h-24 w-24 items-center justify-center rounded-full text-white shadow-[0_10px_24px_#4A342D38] transition-transform focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BA5218] ${stage === 'recording' ? 'scale-110 bg-[#BA5218]' : 'bg-[#5D4633]'} disabled:opacity-50`}
-          ><Mic className="h-9 w-9" /></button>
-          <p role="status" aria-live="polite" className="min-h-6 text-center text-sm font-bold text-[#493D32]">
-            {stage === 'permission' ? 'Menunggu izin mikrofon…' : stage === 'recording' ? 'Mendengarkan… lepaskan untuk selesai' : stage === 'processing' ? 'Mochi sedang merapikan cerita…' : 'Tahan tombol untuk mulai'}
-          </p>
-        </div>
+
+        {stage === 'permission_prompt' ? (
+          <div className="mt-7 flex flex-col items-center gap-4 text-center">
+            <button
+              type="button"
+              onClick={() => void handleGrantPermission()}
+              className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-[#5D4633] px-6 text-sm font-bold text-white shadow-md active:scale-95 transition-all"
+            >
+              <Mic className="h-5 w-5" /> Aktifkan Mikrofon
+            </button>
+            <p className="text-xs text-[#7A6E60] max-w-xs leading-relaxed">
+              Ketuk untuk memberikan izin mikrofon sekali saja agar kamu bisa curhat lancar tanpa gangguan pop-up.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-7 flex flex-col items-center gap-4">
+            <button
+              type="button"
+              aria-label={stage === 'recording' ? 'Lepaskan untuk menyelesaikan rekaman' : 'Tahan untuk mulai merekam'}
+              disabled={stage === 'processing'}
+              onPointerDown={start}
+              onPointerUp={release}
+              onPointerCancel={cancel}
+              onPointerMove={event => { if (heldRef.current && startYRef.current - event.clientY > 60) cancel(); }}
+              onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); if (stage === 'idle') begin(); else if (stage === 'recording') void finish(); } }}
+              style={{ touchAction: 'none' }}
+              className={`relative flex h-24 w-24 items-center justify-center rounded-full text-white shadow-[0_10px_24px_#4A342D38] transition-transform focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BA5218] ${stage === 'recording' ? 'scale-110 bg-[#BA5218]' : 'bg-[#5D4633]'} disabled:opacity-50`}
+            ><Mic className="h-9 w-9" /></button>
+            <p role="status" aria-live="polite" className="min-h-6 text-center text-sm font-bold text-[#493D32]">
+              {stage === 'recording' ? 'Mendengarkan… lepaskan untuk selesai' : stage === 'processing' ? 'Mochi sedang merapikan cerita…' : 'Tahan tombol untuk mulai'}
+            </p>
+          </div>
+        )}
+
         {error && <p role="alert" className="mt-4 rounded-xl bg-[#FFF0E8] p-3 text-sm text-[#873E1F]">{error}</p>}
         <p className="mt-6 text-center text-xs leading-5 text-[#7A6E60]">Audio dikirim ke server Mochi dan Gemini untuk diproses, tanpa disimpan sebagai berkas oleh Petalife. Draf hanya tersimpan setelah kamu menyetujuinya.</p>
       </section>
