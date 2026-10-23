@@ -324,3 +324,31 @@ export async function getQuizHistory(database: PetalifeDatabase = db): Promise<Q
     return [];
   }
 }
+
+
+/**
+ * Diegetic Stats Helper (Point 1: Diegetic Living Room)
+ * Strictly read-only computation of vault collection count and gold coins.
+ * Guarantees zero data mutation and zero side-effects.
+ */
+export async function getDiegeticStats(database: PetalifeDatabase = db): Promise<{
+  goldCoins: number;
+  vaultCount: number;
+}> {
+  try {
+    const [linksCount, notesCount, ledgerEntries] = await Promise.all([
+      database.savedLinks.count(),
+      database.notes.count(),
+      database.rewardLedger.toArray(),
+    ]);
+    const totalXp = ledgerEntries.reduce((acc, curr) => acc + (curr.xpAwarded || 0), 0);
+    // 1 coin per 10 XP, minimum 1 coin so the table always has an aesthetic gold coin
+    const goldCoins = Math.max(1, Math.min(10, Math.floor(totalXp / 10) + 1));
+    return {
+      goldCoins,
+      vaultCount: linksCount + notesCount,
+    };
+  } catch {
+    return { goldCoins: 3, vaultCount: 0 };
+  }
+}

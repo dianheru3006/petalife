@@ -17,6 +17,8 @@ import {
   X,
   ArrowRight,
   PawPrint,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { canFeedPet, getPetContextualStatus, getDisplayStats, type FeedResult } from '../../features/pet/engine/petEngine';
 import { normalizeUrl, isValidUrl } from '../../lib/utils/urlUtils';
@@ -28,6 +30,8 @@ import { SNACK_VARIANTS } from './snackData';
 import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
+import { DiegeticRoomOverlay } from './DiegeticRoomOverlay';
+import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { MochiNoteSheet } from './MochiNoteSheet';
 import { synthesizeLink, getPendingActiveJobs, resumeActiveJob } from '../../lib/services/aiSynthesisService';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
@@ -113,6 +117,18 @@ export const PetRoom: FC<PetRoomProps> = ({
   const fabCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastShakeTimeRef = useRef<number>(0);
   const [isTerrariumShaking, setIsTerrariumShaking] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => proceduralAudio.getIsMuted());
+
+  const handleToggleMute = () => {
+    const nextMuted = !isMuted;
+    proceduralAudio.setMuted(nextMuted);
+    setIsMuted(nextMuted);
+    if (nextMuted) {
+      triggerSpeech('Suara dimatikan. Suasana hening dan tenang...', 2800);
+    } else {
+      triggerSpeech('Suara diaktifkan kembali! 🎶', 2800);
+    }
+  };
 
   const closeFab = () => {
     if (!isFabOpen || isFabClosing) return;
@@ -253,6 +269,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   const triggerSpeech = (text: string, durationMs = 3800) => {
     setSpeech(text);
     setShowSpeech(true);
+    proceduralAudio.playAnimaleseChirp(text);
     if (speechTimerRef.current) {
       clearTimeout(speechTimerRef.current);
     }
@@ -1030,7 +1047,7 @@ export const PetRoom: FC<PetRoomProps> = ({
           onTvInteraction={(speechText) => triggerSpeech(speechText, 3600)}
         />
 
-        {/* Live Wall Clock & Flip Calendar Overlay */}
+        {/* Live Wall Clock, Flip Calendar & Diegetic Living Room Overlay */}
         <svg
           viewBox="0 0 768 1376"
           preserveAspectRatio="xMidYMid slice"
@@ -1041,6 +1058,10 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
           <LiveCalendar
             onCalendarClick={(speechText) => triggerSpeech(speechText, 4000)}
+          />
+          <DiegeticRoomOverlay
+            isNightMode={activeNight}
+            onInteraction={(speechText) => triggerSpeech(speechText, 4200)}
           />
         </svg>
 
@@ -1124,6 +1145,23 @@ export const PetRoom: FC<PetRoomProps> = ({
                 aria-label="Buka lemari kostum Mochi"
               >
                 <Shirt className="w-5 h-5" />
+              </button>
+
+              {/* 4. Audio Mute / Unmute Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleMute();
+                  closeFab();
+                }}
+                className={cn(
+                  isFabClosing ? 'anim-fab-exit-3' : 'anim-fab-item-3',
+                  'w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-[#EAE3D5] shadow-xs flex items-center justify-center text-[#BA5218] hover:text-[#9E410E] active:scale-95 transition-all cursor-pointer hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]'
+                )}
+                title={isMuted ? 'Bunyikan Suara Mochi & Musik' : 'Matikan Suara Mochi & Musik (Mute)'}
+                aria-label={isMuted ? 'Bunyikan suara Mochi' : 'Matikan suara Mochi'}
+              >
+                {isMuted ? <VolumeX className="w-5 h-5 text-[#9E410E]" /> : <Volume2 className="w-5 h-5 text-[#BA5218]" />}
               </button>
             </div>
           )}
