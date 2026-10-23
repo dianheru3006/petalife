@@ -398,6 +398,15 @@ export const VaultPage: FC<VaultPageProps> = ({
   const todayLinks = filteredLinks.filter(link => new Date(link.createdAt).toDateString() === currentDay);
   const olderLinks = filteredLinks.filter(link => new Date(link.createdAt).toDateString() !== currentDay);
 
+  const hasActiveFilter = selectedCategory !== 'All' || selectedStatusFilter !== 'all' || Boolean(searchQuery.trim());
+
+  const handleResetFilter = () => {
+    setSelectedCategory('All');
+    setSelectedStatusFilter('all');
+    setSearchQuery('');
+    setIsStatusFilterOpen(false);
+  };
+
   const noteSections = (() => {
     if (!selectedLink) return [];
     const rawNotes = selectedLink.notes ? noteTextForDraft(selectedLink) : '';
@@ -695,14 +704,23 @@ export const VaultPage: FC<VaultPageProps> = ({
                 {/* Tags Pill List */}
                 {selectedLink.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-2">
-                    {selectedLink.tags.map(tag => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-[#F4EBDD] border border-[#E8DFCF] px-3 py-1 text-xs font-semibold text-[#624C38]"
-                      >
-                        #{tag.replace(/^#/, '')}
-                      </span>
-                    ))}
+                    {selectedLink.tags.map(tag => {
+                      const cleanTag = tag.replace(/^#/, '').toLowerCase();
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategory(cleanTag);
+                            closeReadingView();
+                          }}
+                          title={`Filter materi dengan #${cleanTag}`}
+                          className="rounded-full bg-[#F4EBDD] hover:bg-[#EAE0CF] active:scale-95 border border-[#E8DFCF] px-3 py-1 text-xs font-semibold text-[#624C38] transition-all cursor-pointer"
+                        >
+                          #{tag.replace(/^#/, '')}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -994,7 +1012,7 @@ export const VaultPage: FC<VaultPageProps> = ({
               <button
                 key={tag}
                 type="button"
-                onClick={() => setSelectedCategory(tag)}
+                onClick={() => setSelectedCategory(selectedCategory === tag ? 'All' : tag)}
                 aria-pressed={selectedCategory === tag}
                 className={`min-h-11 shrink-0 rounded-full border px-3 text-xs font-bold cursor-pointer active:scale-95 motion-safe:transition-transform ${
                   selectedCategory === tag
@@ -1031,6 +1049,37 @@ export const VaultPage: FC<VaultPageProps> = ({
             ))}
           </div>}
 
+          {/* 5. Summary / Active Filter Indicator & Reset Bar */}
+          <div className="flex items-center justify-between gap-3 px-2 pt-1 text-sm font-bold text-[#665B4E]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>Rak materi {filteredLinks.length}</span>
+              {selectedCategory !== 'All' && (
+                <span className="rounded-full bg-[#FFEFE8] border border-[#FED7C5] px-2.5 py-0.5 text-xs text-[#BA5218]">
+                  #{selectedCategory}
+                </span>
+              )}
+              {selectedStatusFilter !== 'all' && (
+                <span className="rounded-full bg-[#EFE9DF] border border-[#D5C6AF] px-2.5 py-0.5 text-xs text-[#4E4E5E]">
+                  {selectedStatusFilter === 'to_review' ? 'Belum dibaca' : selectedStatusFilter === 'in_progress' ? 'Dipelajari' : 'Selesai'}
+                </span>
+              )}
+              {searchQuery.trim() && (
+                <span className="rounded-full bg-white border border-[#EAE3D5] px-2.5 py-0.5 text-xs text-[#7A746B]">
+                  &ldquo;{searchQuery.trim()}&rdquo;
+                </span>
+              )}
+            </div>
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={handleResetFilter}
+                className="text-xs font-semibold text-[#806C55] hover:text-[#BA5218] underline cursor-pointer shrink-0"
+              >
+                Reset filter
+              </button>
+            )}
+          </div>
+
           {/* 6. The Bookshelves Grid */}
           {filteredLinks.length ? (
             <div className="space-y-6 pt-1">
@@ -1044,10 +1093,19 @@ export const VaultPage: FC<VaultPageProps> = ({
               </div>
               <p className="text-sm font-bold text-[#2E2E3A]">Belum ada materi di rak ini.</p>
               <p className="text-xs text-[#8C8275]">
-                {searchQuery || selectedCategory !== 'All' || selectedStatusFilter !== 'all'
-                  ? 'Coba ubah kata kunci pencarian atau reset filter tag.'
+                {hasActiveFilter
+                  ? 'Coba ubah kata kunci pencarian atau reset filter untuk melihat semua materi.'
                   : 'Buka tab Beranda lalu tempel tautan baru di kolom “Tempel tautan materi” untuk mengisi rak Mochi!'}
               </p>
+              {hasActiveFilter && (
+                <button
+                  type="button"
+                  onClick={handleResetFilter}
+                  className="mt-3 inline-flex min-h-9 items-center rounded-full bg-[#EAE0D0] px-4 text-xs font-bold text-[#563B31] hover:bg-[#DFCDB9] active:scale-95 transition-all cursor-pointer"
+                >
+                  Tampilkan semua materi
+                </button>
+              )}
             </div>
           )}
         </div>
