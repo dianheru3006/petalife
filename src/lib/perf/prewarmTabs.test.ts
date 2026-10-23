@@ -18,6 +18,11 @@ describe('shouldPrewarm', () => {
     expect(shouldPrewarm({ effectiveType: '4g' })).toBe(true);
     expect(shouldPrewarm({})).toBe(true);
   });
+
+  it('skips speculative tab loading on the 4 GB target device', () => {
+    expect(shouldPrewarm({ effectiveType: '4g', deviceMemory: 4 })).toBe(false);
+    expect(shouldPrewarm({ effectiveType: '4g', deviceMemory: 8 })).toBe(true);
+  });
 });
 
 describe('prewarmInactiveTabs', () => {

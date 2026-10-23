@@ -33,6 +33,7 @@ import { TvScreen } from './TvScreen';
 import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
 import { proceduralAudio } from '../../lib/audio/proceduralAudio';
+import { usePageVisible } from '../../lib/perf/usePageVisible';
 import { MochiNoteSheet } from './MochiNoteSheet';
 import { synthesizeLink, getPendingActiveJobs, resumeActiveJob } from '../../lib/services/aiSynthesisService';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
@@ -71,6 +72,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   totalReviewsCompleted,
   totalNotesCreated,
 }) => {
+  const pageVisible = usePageVisible();
   const isFull = !canFeedPet(pet);
   const isFeeding = pet.state === 'feeding';
   const contextualStatus = getPetContextualStatus(pet);
@@ -276,10 +278,11 @@ export const PetRoom: FC<PetRoomProps> = ({
       else setGreeting('Selamat malam');
     };
 
+    if (!pageVisible) return;
     updateDateTime();
     const interval = setInterval(updateDateTime, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [pageVisible]);
 
   // Helper to trigger Mochi's speech bubble and auto-hide after duration
   const triggerSpeech = (text: string, durationMs = 3800) => {
@@ -392,6 +395,7 @@ export const PetRoom: FC<PetRoomProps> = ({
 
   // Occasional gentle whisper: Mochi speaks briefly every 45-60 seconds, then hides again
   useEffect(() => {
+    if (!pageVisible) return;
     const whisperInterval = setInterval(() => {
       if (!isFeeding) {
         if (activeNight) {
@@ -416,15 +420,16 @@ export const PetRoom: FC<PetRoomProps> = ({
     }, 45000);
 
     return () => clearInterval(whisperInterval);
-  }, [isFeeding, activeNight, savedLinks.length]);
+  }, [pageVisible, isFeeding, activeNight, savedLinks.length]);
 
   // Idle gentle food alternation ("kadang onigiri, kadang varian makanan lain")
   useEffect(() => {
+    if (!pageVisible) return;
     const timer = setInterval(() => {
       setSnackIndex(prev => (prev + 1) % SNACK_VARIANTS.length);
     }, 18000);
     return () => clearInterval(timer);
-  }, []);
+  }, [pageVisible]);
 
   const handleCycleNextSnack = () => {
     const nextIdx = (snackIndex + 1) % SNACK_VARIANTS.length;

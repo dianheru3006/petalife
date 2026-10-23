@@ -11,6 +11,7 @@ import {
 } from './linksRepository';
 import {
   getAllNotes,
+  getNotesCount,
   createNote,
   updateNote,
   deleteNote,
@@ -207,6 +208,12 @@ describe('IndexedDB Repositories & Data Layer', () => {
   });
 
   describe('Notes Repository CRUD & Queries', () => {
+    it('counts notes without loading their bodies for the Home summary', async () => {
+      expect(await getNotesCount(testDb)).toBe(0);
+      await createNote({ title: 'One', body: 'Long body' }, testDb);
+      expect(await getNotesCount(testDb)).toBe(1);
+    });
+
     it('creates a note with timestamps, tags, and custom color', async () => {
       const note = await createNote(
         {

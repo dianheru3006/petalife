@@ -16,6 +16,11 @@ export async function getAllNotes(database: PetalifeDatabase = db): Promise<Note
   }
 }
 
+/** Count without materializing every note body during Home startup. */
+export async function getNotesCount(database: PetalifeDatabase = db): Promise<number> {
+  return database.notes.count();
+}
+
 export async function getNoteById(id: string, database: PetalifeDatabase = db): Promise<Note | undefined> {
   try {
     return await database.notes.get(id);

@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus, CosmeticSlot, CosmeticId, StudyProgress } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
 import { feedPet, awardXp, calculateTimeDecay, togglePetSleep, type FeedResult } from './features/pet/engine/petEngine';
 import { loadStoredPet, saveStoredPet } from './features/pet/engine/petStorage';
 import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksRepository';
-import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
+import { getAllNotes, getNotesCount, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
 import { recordStudyAction, getStudyProgress, getStudyStats } from './lib/db/studyEventsRepository';
 import { equipCosmetic, unequipCosmetic, syncPetCosmeticUnlocks } from './features/pet/engine/cosmetics';
 import { initializeDatabase } from './lib/db/seed';
@@ -17,7 +17,7 @@ import {
   releaseRewardClaim,
   type LinkRewardResult
 } from './lib/db/rewardLedgerRepository';
-import { queryAssistant } from './features/assistant/engine/assistantEngine';
+import { usePageVisible } from './lib/perf/usePageVisible';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
 import { SolidSproutIcon } from './components/common/SolidSproutIcon';
@@ -41,6 +41,10 @@ export function App() {
   const [pet, setPet] = useState<Pet>(() => loadStoredPet(initialPet).pet);
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [notesCount, setNotesCount] = useState(0);
+  const [notesLoaded, setNotesLoaded] = useState(false);
+  const notesLoadPromiseRef = useRef<Promise<Note[]> | null>(null);
+  const notesVersionRef = useRef(0);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
   const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(() => loadStoredDailyGoals());
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -53,6 +57,26 @@ export function App() {
     totalNotes: 0,
     allTimeEventsCount: 0,
   });
+  const pageVisible = usePageVisible();
+
+  const ensureNotesLoaded = useCallback((): Promise<Note[]> => {
+    if (notesLoaded) return Promise.resolve(notes);
+    if (!notesLoadPromiseRef.current) {
+      const version = notesVersionRef.current;
+      notesLoadPromiseRef.current = getAllNotes().then(loaded => {
+        if (version === notesVersionRef.current) {
+          setNotes(loaded);
+          setNotesCount(loaded.length);
+          setNotesLoaded(true);
+        }
+        return loaded;
+      }).catch(err => {
+        if (version === notesVersionRef.current) notesLoadPromiseRef.current = null;
+        throw err;
+      });
+    }
+    return notesLoadPromiseRef.current;
+  }, [notes, notesLoaded]);
 
   // PWA Update notification listener (Sol ADR-002)
   useEffect(() => {
@@ -149,7 +173,7 @@ export function App() {
     window.location.hash = tab;
   };
 
-  // Initialize IndexedDB and load links + notes on mount
+  // Home needs the note count, not every note body. Load bodies on first use.
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
@@ -157,15 +181,15 @@ export function App() {
         setIsLoading(true);
         // Idempotent seed if database is empty on first boot
         await initializeDatabase();
-        const [loadedLinks, loadedNotes, progress, stats] = await Promise.all([
+        const [loadedLinks, count, progress, stats] = await Promise.all([
           getAllLinks(),
-          getAllNotes(),
+          getNotesCount(),
           getStudyProgress(),
           getStudyStats(),
         ]);
         if (isMounted) {
           setSavedLinks(loadedLinks);
-          setNotes(loadedNotes);
+          setNotesCount(count);
           setStudyProgress(progress);
           setStudyStats(stats);
           setPet(prev => {
@@ -184,6 +208,8 @@ export function App() {
           setStorageError('Operating in temporary session mode: local IndexedDB is unavailable in this environment.');
           setSavedLinks(initialSavedLinks);
           setNotes(initialNotes);
+          setNotesCount(initialNotes.length);
+          setNotesLoaded(true);
         }
       } finally {
         if (isMounted) {
@@ -203,6 +229,16 @@ export function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoading || currentTab !== 'notes' || notesLoaded) return;
+    // Load the code chunk alongside the IndexedDB read on the first visit.
+    void import('./features/notes/NotesPage');
+    void ensureNotesLoaded().catch(err => {
+      console.error('[App] Failed to load notes:', err);
+      setStorageError('Catatan gagal dimuat. Buka ulang tab Catatan untuk mencoba lagi.');
+    });
+  }, [currentTab, isLoading, notesLoaded, ensureNotesLoaded]);
 
   // R2-DATA-01: ref agar mutasi XP tidak bergantung pada flush useEffect.
   const petRef = useRef<Pet>(pet);
@@ -266,11 +302,13 @@ export function App() {
   // stale snapshot and silently erased the decay (or a fresh feed). Every pet
   // mutation now goes through `persistPetChange`.
   useEffect(() => {
+    if (!pageVisible) return;
+    persistPetChange(prev => calculateTimeDecay(prev));
     const timer = setInterval(() => {
       persistPetChange(prev => calculateTimeDecay(prev));
     }, 60000);
     return () => clearInterval(timer);
-  }, []);
+  }, [pageVisible]);
 
   // Helper to mark daily goals completed and award XP cleanly outside setState
   const fulfillDailyGoal = async (goalId: string) => {
@@ -462,6 +500,7 @@ export function App() {
     // The editor may report success only after the note itself is durable.
     const created = await createNote(newNote);
     setNotes(prev => [created, ...prev]);
+    setNotesCount(prev => prev + 1);
 
     if (created.body && created.body.trim().length > 0) {
       try {
@@ -518,6 +557,7 @@ export function App() {
     try {
       await deleteNote(id);
       setNotes(prev => prev.filter(n => n.id !== id));
+      setNotesCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('[App] Failed to delete note from repository:', err);
       throw err;
@@ -568,9 +608,13 @@ export function App() {
     setChatMessages(prev => [...prev, userMsg]);
 
     try {
+      const [{ queryAssistant }, loadedNotes] = await Promise.all([
+        import('./features/assistant/engine/assistantEngine'),
+        ensureNotesLoaded(),
+      ]);
       const response = await queryAssistant(text, {
         links: savedLinks,
-        notes,
+        notes: loadedNotes,
         pet,
       });
 
@@ -613,7 +657,11 @@ export function App() {
         getStudyStats(),
       ]);
       setSavedLinks(reloadedLinks);
+      notesVersionRef.current += 1;
       setNotes(reloadedNotes);
+      setNotesCount(reloadedNotes.length);
+      setNotesLoaded(true);
+      notesLoadPromiseRef.current = Promise.resolve(reloadedNotes);
       setStudyProgress(reloadedProgress);
       setStudyStats(reloadedStats);
 
@@ -696,7 +744,7 @@ export function App() {
             onNavigate={handleSelectTab}
             onAddLink={handleAddLink}
             onUpdateLink={handleUpdateLink}
-            notesCount={notes.length}
+            notesCount={notesCount}
             isNightMode={isNightMode}
             onToggleNightMode={handleToggleNightMode}
             onEquipCosmetic={handleEquipCosmetic}
@@ -719,7 +767,7 @@ export function App() {
           />
         )}
 
-        {currentTab === 'notes' && (
+        {currentTab === 'notes' && (notesLoaded ? (
           <NotesPage
             notes={notes}
             onAddNote={handleAddNote}
@@ -728,7 +776,7 @@ export function App() {
             isNightMode={isNightMode}
             equippedCosmetics={pet.identity?.cosmetics?.equipped}
           />
-        )}
+        ) : <div className="p-6 text-center text-sm font-semibold text-[#8C8275]">Memuat Catatan…</div>)}
 
         {currentTab === 'assistant' && (
           <AssistantPage

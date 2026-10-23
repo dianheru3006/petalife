@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
+import { usePageVisible } from '../../lib/perf/usePageVisible';
 import {
   MOCHI_BODY_GRADIENT_STOPS,
   MOCHI_BODY_PATH,
@@ -68,6 +69,7 @@ export const MochiPet: FC<MochiPetProps> = ({
   const gazeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastForcedIdRef = useRef<number | null>(null);
 
+  const pageVisible = usePageVisible();
   const isFeeding = pet.state === 'feeding';
   const isSleeping = pet.state === 'sleeping';
   const effectiveGaze: GazeDirection = isSleeping || isFeeding ? 'center' : gaze;
@@ -80,7 +82,7 @@ export const MochiPet: FC<MochiPetProps> = ({
 
   // Natural idle looking around (bookshelf left <-> TV right <-> center)
   useEffect(() => {
-    if (isSleeping || isFeeding) {
+    if (!pageVisible || isSleeping || isFeeding) {
       return;
     }
 
@@ -104,11 +106,11 @@ export const MochiPet: FC<MochiPetProps> = ({
       clearInterval(interval);
       if (gazeTimerRef.current) clearTimeout(gazeTimerRef.current);
     };
-  }, [isSleeping, isFeeding, currentAction, fidget]);
+  }, [pageVisible, isSleeping, isFeeding, currentAction, fidget]);
 
   // Autonomous Fidget System (Spontaneous cute idle behaviors every 10-15s)
   useEffect(() => {
-    if (isSleeping || isFeeding) {
+    if (!pageVisible || isSleeping || isFeeding) {
       setFidget('none');
       if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
       if (nextFidgetTimerRef.current) clearTimeout(nextFidgetTimerRef.current);
@@ -150,7 +152,7 @@ export const MochiPet: FC<MochiPetProps> = ({
       if (nextFidgetTimerRef.current) clearTimeout(nextFidgetTimerRef.current);
       if (fidgetTimerRef.current) clearTimeout(fidgetTimerRef.current);
     };
-  }, [isSleeping, isFeeding, currentAction, pet.hunger, pet.energy]);
+  }, [pageVisible, isSleeping, isFeeding, currentAction, pet.hunger, pet.energy]);
 
   // Clean up action timer on unmount
   useEffect(() => {

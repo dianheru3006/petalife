@@ -22,10 +22,14 @@ const SLOW_EFFECTIVE_TYPES = new Set(['slow-2g', '2g', '3g']);
 export interface PrewarmNetworkInfo {
   saveData?: boolean;
   effectiveType?: string;
+  deviceMemory?: number;
 }
 
 export function shouldPrewarm(network: PrewarmNetworkInfo = {}): boolean {
   if (network.saveData) return false;
+  // The 4 GB phone is the primary target. Avoid retaining inactive chunks and
+  // images in its WebView before the user actually opens those tabs.
+  if (network.deviceMemory !== undefined && network.deviceMemory <= 4) return false;
   const effectiveType = (network.effectiveType || '').toLowerCase();
   return !SLOW_EFFECTIVE_TYPES.has(effectiveType);
 }
@@ -88,12 +92,18 @@ export function prewarmInactiveTabsOnIdle(): void {
   if (typeof window === 'undefined' || didPrewarm) return;
   didPrewarm = true;
 
-  const connection = (navigator as Navigator & { connection?: PrewarmNetworkInfo }).connection;
-  if (!shouldPrewarm({ saveData: connection?.saveData, effectiveType: connection?.effectiveType })) {
+  const device = navigator as Navigator & { connection?: PrewarmNetworkInfo; deviceMemory?: number };
+  const connection = device.connection;
+  if (!shouldPrewarm({
+    saveData: connection?.saveData,
+    effectiveType: connection?.effectiveType,
+    deviceMemory: device.deviceMemory,
+  })) {
     return;
   }
 
   const run = () => {
+    if (document.visibilityState === 'hidden') return;
     void prewarmInactiveTabs({
       schedule: task => task(),
       loadVaultPage: () => import('../../features/vault/VaultPage'),
@@ -107,7 +117,7 @@ export function prewarmInactiveTabsOnIdle(): void {
   // pertama. Setelah load, permintaan ini hanya memakai sisa bandwidth.
   const scheduleWhenIdle = () => {
     if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(run, { timeout: 3000 });
+      window.requestIdleCallback(run, { timeout: 8000 });
     } else {
       window.setTimeout(run, 1200);
     }
