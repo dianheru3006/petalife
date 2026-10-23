@@ -224,7 +224,7 @@ export const VaultPage: FC<VaultPageProps> = ({
     if (links.length > 0) {
       const randomLink = links[Math.floor(Math.random() * links.length)];
       setRecommendedLink(randomLink);
-      setMochiSpeech('Pilihan Mochi hari ini! 📖✨');
+      setMochiSpeech('Pilihan Mochi hari ini.');
       speechTimeoutRef.current = setTimeout(() => {
         setMochiSpeech(null);
         setRecommendedLink(null);
@@ -232,7 +232,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       }, 5500);
     } else {
       setRecommendedLink(null);
-      setMochiSpeech('Semangat belajarnya! ✨');
+      setMochiSpeech('Semangat belajarnya.');
       speechTimeoutRef.current = setTimeout(() => {
         setMochiSpeech(null);
         setMochiActivity('reading');
