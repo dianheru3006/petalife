@@ -72,6 +72,7 @@ export const MochiPet: FC<MochiPetProps> = ({
   const isSleeping = pet.state === 'sleeping';
   const isHappy = pet.state === 'happy' || currentAction !== 'idle';
   const effectiveGaze: GazeDirection = isSleeping || isFeeding ? 'center' : gaze;
+  const equipped = pet.identity?.cosmetics?.equipped ?? pet.cosmetics?.equipped ?? {};
 
   // Stat-driven contextual states for dynamic baseline expressions
   const isTired = pet.energy <= 40 && !isSleeping;
@@ -436,6 +437,11 @@ export const MochiPet: FC<MochiPetProps> = ({
             </linearGradient>
 
             {/* 3D Paw Gradient */}
+                        <linearGradient id="nightcapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#7161BF" />
+              <stop offset="60%" stopColor="#5844A8" />
+              <stop offset="100%" stopColor="#3E2E80" />
+            </linearGradient>
             <radialGradient id="clayPaw" cx="35%" cy="35%" r="65%">
               <stop offset="0%" stopColor="#FFF0D0" />
               <stop offset="50%" stopColor="#F5BE58" />
@@ -501,6 +507,16 @@ export const MochiPet: FC<MochiPetProps> = ({
             />
           </g>
 
+                    {/* Back Slot Accessory: Explorer Backpack */}
+          {equipped.back === 'explorer_backpack' && (
+            <g id="accessory-explorer-backpack" className="transition-all duration-300">
+              <rect x="25" y="102" width="22" height="34" rx="6" fill="#C26A3E" stroke="#8C441E" strokeWidth="1.5" />
+              <path d="M23 110 Q36 116 49 110 L48 102 Q36 100 24 102 Z" fill="#A5542A" stroke="#8C441E" strokeWidth="1.2" />
+              <rect x="33" y="114" width="6" height="8" rx="1.5" fill="#F59E0B" stroke="#B45309" strokeWidth="0.8" />
+              <rect x="21" y="116" width="6" height="16" rx="2" fill="#A5542A" stroke="#8C441E" strokeWidth="1" />
+            </g>
+          )}
+
           {/* 3. Main Round 3D Dumpling Body */}
           <path
             d={MOCHI_BODY_PATH}
@@ -512,6 +528,48 @@ export const MochiPet: FC<MochiPetProps> = ({
 
           {/* 4. Top-Left Volumetric Gleam / Soft 3D Specular Highlight */}
           <ellipse cx="82" cy="74" rx="38" ry="24" fill="url(#topGleam3D)" transform="rotate(-15 82 74)" />
+
+          {/* Head Slot Accessory: Nightcap (during sleep) or Chef Hat / Sakura Ribbon */}
+          {isSleeping ? (
+            /* Nightcap (Topi Tidur) - overrides head costume during sleep */
+            <g id="accessory-sleep-cap" className="transition-all duration-500">
+              <path
+                d="M80 44 Q104 16 132 32 Q150 48 142 68 Q130 52 118 46 Z"
+                fill="url(#nightcapGrad)"
+                stroke="#3D3270"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              <circle cx="142" cy="70" r="7.5" fill="#FAF7EE" stroke="#DCD6C8" strokeWidth="1" />
+              <path
+                d="M76 45 Q100 37 124 47 Q100 53 76 45 Z"
+                fill="#FAF7EE"
+                stroke="#DCD6C8"
+                strokeWidth="1.2"
+              />
+            </g>
+          ) : equipped.head === 'chef_hat' ? (
+            /* Chef Hat (Topi Koki Mochi) */
+            <g id="accessory-chef-hat" className="transition-all duration-300">
+              <path
+                d="M82 38 C76 24 90 16 97 26 C100 12 116 14 118 26 C124 18 136 24 130 38 Z"
+                fill="#FFFFFF"
+                stroke="#DDD4C5"
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+              />
+              <rect x="84" y="37" width="44" height="8" rx="2.5" fill="#FAF6EE" stroke="#DDD4C5" strokeWidth="1.2" />
+            </g>
+          ) : equipped.head === 'sakura_ribbon' ? (
+            /* Sakura Ribbon (Pita Sakura) */
+            <g id="accessory-sakura-ribbon" className="transition-all duration-300" transform="translate(74, 46)">
+              <path d="M0 0 C-12 -10 -14 6 -2 3 Z" fill="#FB7185" stroke="#E11D48" strokeWidth="1" />
+              <path d="M0 0 C12 -10 14 6 2 3 Z" fill="#F472B6" stroke="#DB2777" strokeWidth="1" />
+              <circle cx="0" cy="1" r="3.5" fill="#FBBF24" stroke="#D97706" strokeWidth="0.8" />
+              <path d="M-2 4 Q-7 14 -10 18" stroke="#FB7185" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+              <path d="M2 4 Q7 14 10 18" stroke="#F472B6" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            </g>
+          ) : null}
 
           {/* 5. 3D Rounded Little Paws (Wave up joyfully during dance / balance during dizzy) */}
           {currentAction !== 'studying' && currentAction !== 'holding-note' && !holdingNote && (

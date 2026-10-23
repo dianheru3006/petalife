@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import type { CosmeticId, CosmeticSlot } from '../../lib/types';
 import {
   MOCHI_BODY_GRADIENT_STOPS,
   MOCHI_BODY_PATH,
@@ -10,6 +11,7 @@ import {
 
 export interface NotesMochiProps {
   isHopping?: boolean;
+  equippedCosmetics?: Partial<Record<CosmeticSlot, CosmeticId>>;
 }
 
 /**
@@ -18,7 +20,7 @@ export interface NotesMochiProps {
  * - Warm Terracotta Coral notebook cover contrasting crisply against the Pastel Sage desk mat.
  * - Pure innocent kawaii chibi expression without harsh eyebrows.
  */
-export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false }) => (
+export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false, equippedCosmetics }) => (
   <svg viewBox="0 0 150 170" aria-hidden="true" className="h-full w-full overflow-visible drop-shadow-[0_8px_14px_rgba(80,50,30,0.22)] select-none">
     <defs>
       {/* The same clay material used by Mochi at Home. */}
@@ -127,6 +129,16 @@ export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false }) => (
         </g>
       </g>
 
+      {/* Equipped Back Accessory in Catatan */}
+      {equippedCosmetics?.back === 'explorer_backpack' && (
+        <g transform={MOCHI_DIORAMA_TRANSFORM}>
+          <rect x="25" y="102" width="22" height="34" rx="6" fill="#C26A3E" stroke="#8C441E" strokeWidth="1.5" />
+          <path d="M23 110 Q36 116 49 110 L48 102 Q36 100 24 102 Z" fill="#A5542A" stroke="#8C441E" strokeWidth="1.2" />
+          <rect x="33" y="114" width="6" height="8" rx="1.5" fill="#F59E0B" stroke="#B45309" strokeWidth="0.8" />
+          <rect x="21" y="116" width="6" height="16" rx="2" fill="#A5542A" stroke="#8C441E" strokeWidth="1" />
+        </g>
+      )}
+
       {/* Home's exact body contour, scaled for this diorama. */}
       <path
         d={MOCHI_BODY_PATH}
@@ -140,6 +152,30 @@ export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false }) => (
       <g clipPath="url(#notesMochiBodyClip)">
         <ellipse cx="61.5" cy="63" rx="28.5" ry="18" transform="rotate(-15 61.5 63)" fill="url(#notesMochiGleam)" />
       </g>
+
+      {/* Equipped Head Accessory in Catatan */}
+      {equippedCosmetics?.head === 'chef_hat' ? (
+        <g transform={MOCHI_DIORAMA_TRANSFORM}>
+          <path
+            d="M82 38 C76 24 90 16 97 26 C100 12 116 14 118 26 C124 18 136 24 130 38 Z"
+            fill="#FFFFFF"
+            stroke="#DDD4C5"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          />
+          <rect x="84" y="37" width="44" height="8" rx="2.5" fill="#FAF6EE" stroke="#DDD4C5" strokeWidth="1.2" />
+        </g>
+      ) : equippedCosmetics?.head === 'sakura_ribbon' ? (
+        <g transform={MOCHI_DIORAMA_TRANSFORM}>
+          <g transform="translate(74, 46)">
+            <path d="M0 0 C-12 -10 -14 6 -2 3 Z" fill="#FB7185" stroke="#E11D48" strokeWidth="1" />
+            <path d="M0 0 C12 -10 14 6 2 3 Z" fill="#F472B6" stroke="#DB2777" strokeWidth="1" />
+            <circle cx="0" cy="1" r="3.5" fill="#FBBF24" stroke="#D97706" strokeWidth="0.8" />
+            <path d="M-2 4 Q-7 14 -10 18" stroke="#FB7185" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M2 4 Q7 14 10 18" stroke="#F472B6" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+          </g>
+        </g>
+      ) : null}
 
       {/* Airbrushed Rosy Cheeks */}
       <ellipse cx="44" cy="92" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />

@@ -9,7 +9,15 @@ export const initialPet: Pet = {
   mood: 85,
   energy: 90,
   state: 'idle',
-  streakDays: 5,
+  streakDays: 0,
+  identity: {
+    adoptedAt: null,
+    trackingStartedAt: 1718000000000,
+    cosmetics: {
+      unlocked: [],
+      equipped: {},
+    },
+  },
 };
 
 export const initialSavedLinks: SavedLink[] = [

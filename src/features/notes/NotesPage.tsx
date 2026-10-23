@@ -1,6 +1,6 @@
 import type { FC, FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import type { Note } from '../../lib/types';
+import type { Note, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { ArrowLeft, Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { NotesMochi } from './NotesMochi';
@@ -15,6 +15,7 @@ export interface NotesPageProps {
   onUpdateNote?: (id: string, updates: Partial<Note>) => Promise<void> | void;
   onDeleteNote: (id: string) => Promise<void> | void;
   isNightMode?: boolean;
+  equippedCosmetics?: Partial<Record<CosmeticSlot, CosmeticId>>;
 }
 
 type NoteColor = NonNullable<Note['color']>;
@@ -39,7 +40,7 @@ const formatDate = (timestamp?: number) => {
 };
 
 export const NotesPage: FC<NotesPageProps> = ({
-  notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false,
+  notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false, equippedCosmetics,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
@@ -366,7 +367,7 @@ export const NotesPage: FC<NotesPageProps> = ({
               aria-label="Ajak Mochi berinteraksi di meja catatan"
               className="absolute bottom-0 left-1/2 h-[72%] w-[38%] max-w-[150px] -translate-x-1/2 cursor-pointer rounded-2xl motion-safe:transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-[#BA5218]"
             >
-              <NotesMochi isHopping={isMochiHopping} />
+              <NotesMochi isHopping={isMochiHopping} equippedCosmetics={equippedCosmetics} />
             </button>
           </section>
 

@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import type { CosmeticId, CosmeticSlot } from '../../lib/types';
 import {
   MOCHI_BODY_GRADIENT_STOPS,
   MOCHI_BODY_PATH,
@@ -14,6 +15,7 @@ export interface LibraryMochiProps {
   activity?: LibraryMochiActivity;
   onMochiClick?: () => void;
   seated?: boolean;
+  equippedCosmetics?: Partial<Record<CosmeticSlot, CosmeticId>>;
 }
 
 /**
@@ -24,7 +26,7 @@ export interface LibraryMochiProps {
  * - 'drowsy': Sleepy eye curves, tiny zZz bubble floating up from long study session.
  * - 'cheering': Joyful sparkling smile, jumping with book recommendations on click.
  */
-export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMochiClick, seated = false }) => {
+export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMochiClick, seated = false, equippedCosmetics }) => {
   return (
     <svg
       aria-hidden="true"
@@ -144,48 +146,41 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
           transform="rotate(-15 61.5 63)"
         />
 
-        {/* 2d. Soft scholar beret, following the curve of Mochi's forehead. */}
-        <g transform="translate(15 8) scale(0.8)">
-          {/* Narrow contact shadow keeps the cap seated on the head. */}
-          <path
-            d="M44 53 Q74 60 106 48 Q84 60 46 57 Z"
-            fill="#6B321D"
-            opacity="0.25"
-          />
-
-          {/* Rounded cloth crown, slightly tilted instead of a flat disk. */}
-          <path
-            d="M43 50
-               C39 45 43 38 51 35
-               C57 33 63 31 67 28
-               C79 23 92 27 100 33
-               C107 38 109 43 105 46
-               C95 50 84 49 73 52
-               C60 55 50 55 43 50 Z"
-            fill="url(#mochiBeretPuff)"
-            stroke="#71351E"
-            strokeWidth="1.1"
-          />
-
-          {/* A fabric fold makes the small crown read as a beret. */}
-          <path
-            d="M55 36 Q73 29 89 32"
-            fill="none"
-            stroke="#E9A07A"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            opacity="0.7"
-          />
-
-          {/* Slim band curves around the forehead rather than overhanging it. */}
-          <path
-            d="M43 50 Q74 56 106 45 L105 50 Q75 62 45 55 Z"
-            fill="url(#mochiBeretBand)"
-            stroke="#682D1B"
-            strokeWidth="1"
-            strokeLinejoin="round"
-          />
-        </g>
+        {/* Head slot accessory: user equipped costume or default scholar beret */}
+        {equippedCosmetics?.head === 'chef_hat' ? (
+          <g transform={MOCHI_DIORAMA_TRANSFORM}>
+            <path
+              d="M82 38 C76 24 90 16 97 26 C100 12 116 14 118 26 C124 18 136 24 130 38 Z"
+              fill="#FFFFFF"
+              stroke="#DDD4C5"
+              strokeWidth="1.4"
+              strokeLinejoin="round"
+            />
+            <rect x="84" y="37" width="44" height="8" rx="2.5" fill="#FAF6EE" stroke="#DDD4C5" strokeWidth="1.2" />
+          </g>
+        ) : equippedCosmetics?.head === 'sakura_ribbon' ? (
+          <g transform={MOCHI_DIORAMA_TRANSFORM}>
+            <g transform="translate(74, 46)">
+              <path d="M0 0 C-12 -10 -14 6 -2 3 Z" fill="#FB7185" stroke="#E11D48" strokeWidth="1" />
+              <path d="M0 0 C12 -10 14 6 2 3 Z" fill="#F472B6" stroke="#DB2777" strokeWidth="1" />
+              <circle cx="0" cy="1" r="3.5" fill="#FBBF24" stroke="#D97706" strokeWidth="0.8" />
+              <path d="M-2 4 Q-7 14 -10 18" stroke="#FB7185" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+              <path d="M2 4 Q7 14 10 18" stroke="#F472B6" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            </g>
+          </g>
+        ) : (
+          <g transform="translate(15 8) scale(0.8)">
+            <path d="M44 53 Q74 60 106 48 Q84 60 46 57 Z" fill="#6B321D" opacity="0.25" />
+            <path
+              d="M43 50 C39 45 43 38 51 35 C57 33 63 31 67 28 C79 23 92 27 100 33 C107 38 109 43 105 46 C95 50 84 49 73 52 C60 55 50 55 43 50 Z"
+              fill="url(#mochiBeretPuff)"
+              stroke="#71351E"
+              strokeWidth="1.1"
+            />
+            <path d="M55 36 Q73 29 89 32" fill="none" stroke="#E9A07A" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+            <path d="M43 50 Q74 56 106 45 L105 50 Q75 62 45 55 Z" fill="url(#mochiBeretBand)" stroke="#682D1B" strokeWidth="1" strokeLinejoin="round" />
+          </g>
+        )}
 
         {/* The seated pose turns Mochi's gaze with the angled chair. */}
         <g transform={seated ? 'translate(6 0)' : undefined}>

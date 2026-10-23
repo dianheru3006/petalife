@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import type { Pet, SavedLink, DailyGoal, NavigationTab } from '../../lib/types';
+import type { Pet, SavedLink, DailyGoal, NavigationTab, CosmeticId, CosmeticSlot, StudyProgress } from '../../lib/types';
 import { PetRoom } from '../../components/pet/PetRoom';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
 import type { FeedResult } from '../pet/engine/petEngine';
@@ -16,6 +16,11 @@ export interface DashboardPageProps {
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;
+  onEquipCosmetic?: (slot: CosmeticSlot, id: CosmeticId) => void;
+  onUnequipCosmetic?: (slot: CosmeticSlot) => void;
+  studyProgress?: StudyProgress;
+  totalReviewsCompleted?: number;
+  totalNotesCreated?: number;
 }
 
 export const DashboardPage: FC<DashboardPageProps> = ({
@@ -28,6 +33,11 @@ export const DashboardPage: FC<DashboardPageProps> = ({
   notesCount,
   isNightMode = false,
   onToggleNightMode,
+  onEquipCosmetic,
+  onUnequipCosmetic,
+  studyProgress,
+  totalReviewsCompleted,
+  totalNotesCreated,
 }) => {
   return (
     <div className="space-y-4 max-w-md mx-auto">
@@ -42,6 +52,11 @@ export const DashboardPage: FC<DashboardPageProps> = ({
         notesCount={notesCount}
         isNightMode={isNightMode}
         onToggleNightMode={onToggleNightMode}
+        onEquipCosmetic={onEquipCosmetic}
+        onUnequipCosmetic={onUnequipCosmetic}
+        studyProgress={studyProgress}
+        totalReviewsCompleted={totalReviewsCompleted}
+        totalNotesCreated={totalNotesCreated}
       />
     </div>
   );

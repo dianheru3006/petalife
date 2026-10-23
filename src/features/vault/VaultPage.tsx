@@ -1,6 +1,6 @@
 import type { CSSProperties, FC } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { SavedLink, LinkStatus } from '../../lib/types';
+import type { SavedLink, LinkStatus, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { detectPlatform, getYouTubeThumbnail, cn } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import {
@@ -73,6 +73,7 @@ export interface VaultPageProps {
   onDeleteLink: (id: string) => void | Promise<void>;
   onUpdateStatus: (id: string, status: LinkStatus) => void;
   isNightMode?: boolean;
+  equippedCosmetics?: Partial<Record<CosmeticSlot, CosmeticId>>;
 }
 
 export const MOCHI_ACTIVITIES: LibraryMochiActivity[] = [
@@ -111,6 +112,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   onDeleteLink,
   onUpdateStatus,
   isNightMode = false,
+  equippedCosmetics,
 }) => {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -931,7 +933,7 @@ export const VaultPage: FC<VaultPageProps> = ({
               className="group absolute bottom-[17%] left-[27%] -translate-x-1/2 h-[55%] min-[380px]:h-[57%] w-[33%] max-w-[125px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BA5218] rounded-2xl active:scale-95 motion-safe:transition-transform"
             >
               <span className="library-mochi-seated block h-full w-full">
-                <LibraryMochi activity={mochiActivity} seated />
+                <LibraryMochi activity={mochiActivity} seated equippedCosmetics={equippedCosmetics} />
               </span>
             </button>
             {/* Repeat only the foreground tabletop to occlude the seated sprite naturally.

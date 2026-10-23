@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus } from './lib/types';
+import type { NavigationTab, Pet, SavedLink, Note, ChatMessage, DailyGoal, LinkStatus, CosmeticSlot, CosmeticId, StudyProgress } from './lib/types';
 import { initialPet, initialSavedLinks, initialNotes, initialChatMessages } from './lib/mockData';
 import { feedPet, awardXp, calculateTimeDecay, togglePetSleep, type FeedResult } from './features/pet/engine/petEngine';
 import { loadStoredPet, saveStoredPet } from './features/pet/engine/petStorage';
 import { getAllLinks, createLink, updateLink, deleteLink } from './lib/db/linksRepository';
 import { getAllNotes, createNote, updateNote, deleteNote } from './lib/db/notesRepository';
+import { recordStudyAction, getStudyProgress, getStudyStats } from './lib/db/studyEventsRepository';
+import { equipCosmetic, unequipCosmetic, syncPetCosmeticUnlocks } from './features/pet/engine/cosmetics';
 import { initializeDatabase } from './lib/db/seed';
 import {
   recordRewardClaim,
@@ -44,6 +46,12 @@ export function App() {
   const [storageError, setStorageError] = useState<string | null>(null);
   const [isNightMode, setIsNightMode] = useState<boolean>(() => Boolean(pet.isSleeping));
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [studyProgress, setStudyProgress] = useState<StudyProgress | undefined>(undefined);
+  const [studyStats, setStudyStats] = useState<{ totalReviews: number; totalNotes: number; allTimeEventsCount: number }>({
+    totalReviews: 0,
+    totalNotes: 0,
+    allTimeEventsCount: 0,
+  });
 
   // PWA Update notification listener (Sol ADR-002)
   useEffect(() => {
@@ -89,11 +97,26 @@ export function App() {
   // Re-check and rollover daily habits when date crosses midnight without manual reload
   const activeDateRef = useRef<string>(getTodayDateString());
   useEffect(() => {
-    const checkMidnightRollover = () => {
+    const checkMidnightRollover = async () => {
       const currentDate = getTodayDateString();
       if (currentDate !== activeDateRef.current) {
         activeDateRef.current = currentDate;
         setDailyGoals(loadStoredDailyGoals());
+      }
+      try {
+        const progress = await getStudyProgress();
+        setStudyProgress(progress);
+        setPet(prev => {
+          const synced = syncPetCosmeticUnlocks(prev, progress);
+          if (synced.streakDays !== progress.currentStreakDays || synced !== prev) {
+            const updated = { ...synced, streakDays: progress.currentStreakDays };
+            saveStoredPet(updated);
+            return updated;
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error('[App] Failed to refresh streak on rollover/focus:', err);
       }
     };
 
@@ -133,13 +156,26 @@ export function App() {
         setIsLoading(true);
         // Idempotent seed if database is empty on first boot
         await initializeDatabase();
-        const [loadedLinks, loadedNotes] = await Promise.all([
+        const [loadedLinks, loadedNotes, progress, stats] = await Promise.all([
           getAllLinks(),
           getAllNotes(),
+          getStudyProgress(),
+          getStudyStats(),
         ]);
         if (isMounted) {
           setSavedLinks(loadedLinks);
           setNotes(loadedNotes);
+          setStudyProgress(progress);
+          setStudyStats(stats);
+          setPet(prev => {
+            const synced = syncPetCosmeticUnlocks(prev, progress);
+            if (synced.streakDays !== progress.currentStreakDays || synced !== prev) {
+              const updated = { ...synced, streakDays: progress.currentStreakDays };
+              saveStoredPet(updated);
+              return updated;
+            }
+            return prev;
+          });
         }
       } catch (err) {
         console.error('[App] Failed to load from IndexedDB:', err);
@@ -374,6 +410,22 @@ export function App() {
 
       // Sol Economy: Reward Mochi with +10 XP when material review is completed (max 2/day)
       if (status === 'completed') {
+        try {
+          const studyRes = await recordStudyAction('review_completed', id);
+          setStudyProgress(studyRes.progress);
+          const updatedStats = await getStudyStats();
+          setStudyStats(updatedStats);
+          persistPetChange(prev => {
+            const withCosmetics = syncPetCosmeticUnlocks(prev, studyRes.progress);
+            return {
+              ...withCosmetics,
+              streakDays: studyRes.progress.currentStreakDays,
+            };
+          });
+        } catch (studyErr) {
+          console.error('[App] Failed to record study action for review:', studyErr);
+        }
+
         const todayKey = getTodayDateString();
         const reviewResult = await claimDailyReviewReward(id, todayKey, 2);
         if (reviewResult.awarded) {
@@ -409,6 +461,24 @@ export function App() {
     // The editor may report success only after the note itself is durable.
     const created = await createNote(newNote);
     setNotes(prev => [created, ...prev]);
+
+    if (created.body && created.body.trim().length > 0) {
+      try {
+        const studyRes = await recordStudyAction('note_created', created.id);
+        setStudyProgress(studyRes.progress);
+        const updatedStats = await getStudyStats();
+        setStudyStats(updatedStats);
+        persistPetChange(prev => {
+          const withCosmetics = syncPetCosmeticUnlocks(prev, studyRes.progress);
+          return {
+            ...withCosmetics,
+            streakDays: studyRes.progress.currentStreakDays,
+          };
+        });
+      } catch (studyErr) {
+        console.error('[App] Failed to record study action for note:', studyErr);
+      }
+    }
 
     try {
       const todayKey = getTodayDateString();
@@ -535,19 +605,35 @@ export function App() {
    */
   const handleDataRestored = async () => {
     try {
-      const [reloadedLinks, reloadedNotes] = await Promise.all([getAllLinks(), getAllNotes()]);
+      const [reloadedLinks, reloadedNotes, reloadedProgress, reloadedStats] = await Promise.all([
+        getAllLinks(),
+        getAllNotes(),
+        getStudyProgress(),
+        getStudyStats(),
+      ]);
       setSavedLinks(reloadedLinks);
       setNotes(reloadedNotes);
+      setStudyProgress(reloadedProgress);
+      setStudyStats(reloadedStats);
 
       const restoredPet = loadStoredPet(initialPet).pet;
-      petRef.current = restoredPet;
-      setPet(restoredPet);
-      setIsNightMode(Boolean(restoredPet.isSleeping));
+      const syncedPet = syncPetCosmeticUnlocks(restoredPet, reloadedProgress);
+      petRef.current = syncedPet;
+      setPet(syncedPet);
+      setIsNightMode(Boolean(syncedPet.isSleeping));
       setStorageError(null);
     } catch (err) {
       console.error('[App] Failed to reload data after restore:', err);
       setStorageError('Data berhasil dipulihkan, tetapi tampilan gagal dimuat ulang. Muat ulang halaman.');
     }
+  };
+
+  const handleEquipCosmetic = (slot: CosmeticSlot, id: CosmeticId) => {
+    persistPetChange(prev => equipCosmetic(prev, slot, id));
+  };
+
+  const handleUnequipCosmetic = (slot: CosmeticSlot) => {
+    persistPetChange(prev => unequipCosmetic(prev, slot));
   };
 
   if (isLoading) {
@@ -613,6 +699,11 @@ export function App() {
             notesCount={notes.length}
             isNightMode={isNightMode}
             onToggleNightMode={handleToggleNightMode}
+            onEquipCosmetic={handleEquipCosmetic}
+            onUnequipCosmetic={handleUnequipCosmetic}
+            studyProgress={studyProgress}
+            totalReviewsCompleted={studyStats.totalReviews}
+            totalNotesCreated={studyStats.totalNotes}
           />
         )}
 
@@ -624,6 +715,7 @@ export function App() {
             onDeleteLink={handleDeleteLink}
             onUpdateStatus={handleUpdateStatus}
             isNightMode={isNightMode}
+            equippedCosmetics={pet.identity?.cosmetics?.equipped}
           />
         )}
 
@@ -634,6 +726,7 @@ export function App() {
             onUpdateNote={handleUpdateNote}
             onDeleteNote={handleDeleteNote}
             isNightMode={isNightMode}
+            equippedCosmetics={pet.identity?.cosmetics?.equipped}
           />
         )}
 

@@ -1,4 +1,4 @@
-import type { LinkStatus, Note, PlatformType, QuizHistoryEntry, RewardLedgerEntry, SavedLink } from '../types';
+import type { LinkStatus, Note, PlatformType, QuizHistoryEntry, RewardLedgerEntry, SavedLink, StudyAction, StudyEvent } from '../types';
 import type { Pet } from '../types';
 import { db, PetalifeDatabase } from './database';
 import { DAILY_GOALS_STORAGE_KEY } from '../../features/dashboard/dailyGoalsStorage';
@@ -40,11 +40,12 @@ export interface PetalifeBackupFile {
   notes: Note[];
   rewardLedger: RewardLedgerEntry[];
   quizHistory: QuizHistoryEntry[];
+  studyEvents: StudyEvent[];
 }
 
 export interface ParsedBackup {
   backup: PetalifeBackupFile;
-  skipped: { links: number; notes: number; rewardLedger: number; quizHistory: number };
+  skipped: { links: number; notes: number; rewardLedger: number; quizHistory: number; studyEvents: number };
 }
 
 export type ParseBackupResult =
@@ -56,6 +57,7 @@ export interface RestoreResult {
   notes: number;
   rewardLedger: number;
   quizHistory: number;
+  studyEvents: number;
   petRestored: boolean;
   skipped: ParsedBackup['skipped'];
 }
@@ -183,6 +185,19 @@ function sanitizeQuizEntry(value: unknown): QuizHistoryEntry | null {
   return { id, questionId, selectedIndex, isCorrect: Boolean(value.isCorrect), answeredAt };
 }
 
+function sanitizeStudyEvent(value: unknown): StudyEvent | null {
+  if (!isRecord(value)) return null;
+  const id = text(value.id, 200);
+  const dayKey = text(value.dayKey, 20);
+  const action = typeof value.action === 'string' && ['review_completed', 'note_created', 'quiz_correct'].includes(value.action)
+    ? (value.action as StudyAction)
+    : null;
+  const entityId = text(value.entityId, 200);
+  const occurredAt = finiteNumber(value.occurredAt);
+  if (!id || !dayKey || !action || !entityId || occurredAt === null) return null;
+  return { id, dayKey, action, entityId, occurredAt };
+}
+
 /** Drops duplicate ids: `bulkAdd` aborts the whole transaction on a duplicate key. */
 function dedupeById<T extends { id: string }>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -241,6 +256,7 @@ export function parseBackupFile(raw: unknown): ParseBackupResult {
   const notes = sanitizeList(payload.notes, sanitizeNote);
   const rewardLedger = sanitizeList(payload.rewardLedger, sanitizeLedgerEntry);
   const quizHistory = sanitizeList(payload.quizHistory, sanitizeQuizEntry);
+  const studyEvents = sanitizeList(payload.studyEvents, sanitizeStudyEvent);
 
   const pet = isValidPet(payload.pet) ? (payload.pet as Pet) : null;
 
@@ -257,12 +273,14 @@ export function parseBackupFile(raw: unknown): ParseBackupResult {
         notes: notes.items,
         rewardLedger: rewardLedger.items,
         quizHistory: quizHistory.items,
+        studyEvents: studyEvents.items,
       },
       skipped: {
         links: links.skipped,
         notes: notes.skipped,
         rewardLedger: rewardLedger.skipped,
         quizHistory: quizHistory.skipped,
+        studyEvents: studyEvents.skipped,
       },
     },
   };
@@ -273,11 +291,12 @@ export async function exportPetalifeBackup(
   database: PetalifeDatabase = db,
   storage: Storage = getStorage(),
 ): Promise<PetalifeBackupFile> {
-  const [links, notes, rewardLedger, quizHistory] = await Promise.all([
+  const [links, notes, rewardLedger, quizHistory, studyEvents] = await Promise.all([
     database.savedLinks.toArray(),
     database.notes.toArray(),
     database.rewardLedger.toArray(),
     database.quizHistory.toArray(),
+    database.studyEvents.toArray(),
   ]);
 
   let pet: Pet | null = null;
@@ -301,6 +320,7 @@ export async function exportPetalifeBackup(
     notes,
     rewardLedger,
     quizHistory,
+    studyEvents,
   };
 }
 
@@ -321,18 +341,20 @@ export async function restorePetalifeBackup(
 
   await database.transaction(
     'rw',
-    [database.savedLinks, database.notes, database.rewardLedger, database.quizHistory],
+    [database.savedLinks, database.notes, database.rewardLedger, database.quizHistory, database.studyEvents],
     async () => {
       await Promise.all([
         database.savedLinks.clear(),
         database.notes.clear(),
         database.rewardLedger.clear(),
         database.quizHistory.clear(),
+        database.studyEvents.clear(),
       ]);
       if (backup.links.length) await database.savedLinks.bulkAdd(backup.links);
       if (backup.notes.length) await database.notes.bulkAdd(backup.notes);
       if (backup.rewardLedger.length) await database.rewardLedger.bulkAdd(backup.rewardLedger);
       if (backup.quizHistory.length) await database.quizHistory.bulkAdd(backup.quizHistory);
+      if (backup.studyEvents && backup.studyEvents.length) await database.studyEvents.bulkAdd(backup.studyEvents);
     },
   );
 
@@ -346,6 +368,7 @@ export async function restorePetalifeBackup(
     notes: backup.notes.length,
     rewardLedger: backup.rewardLedger.length,
     quizHistory: backup.quizHistory.length,
+    studyEvents: backup.studyEvents ? backup.studyEvents.length : 0,
     petRestored,
     skipped,
   };

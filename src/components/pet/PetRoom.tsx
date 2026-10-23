@@ -1,10 +1,13 @@
 import type { FC, FormEvent } from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import type { Pet, NavigationTab, SavedLink } from '../../lib/types';
+import type { Pet, NavigationTab, SavedLink, CosmeticId, CosmeticSlot, StudyProgress } from '../../lib/types';
+import { SolidSproutIcon } from '../common/SolidSproutIcon';
+import { MochiProfileSheet } from './MochiProfileSheet';
+import { COSMETIC_CATALOG } from '../../features/pet/engine/cosmetics';
 import { MochiPet, type MochiAction } from './MochiPet';
 import {
-  Sparkles,
+
   CheckCircle2,
   Moon,
   Sun,
@@ -44,6 +47,11 @@ export interface PetRoomProps {
   notesCount?: number;
   isNightMode?: boolean;
   onToggleNightMode?: () => void;
+  onEquipCosmetic?: (slot: CosmeticSlot, id: CosmeticId) => void;
+  onUnequipCosmetic?: (slot: CosmeticSlot) => void;
+  studyProgress?: StudyProgress;
+  totalReviewsCompleted?: number;
+  totalNotesCreated?: number;
 }
 
 export const PetRoom: FC<PetRoomProps> = ({
@@ -56,6 +64,11 @@ export const PetRoom: FC<PetRoomProps> = ({
   notesCount: _notesCount,
   isNightMode,
   onToggleNightMode,
+  onEquipCosmetic,
+  onUnequipCosmetic,
+  studyProgress,
+  totalReviewsCompleted,
+  totalNotesCreated,
 }) => {
   const isFull = !canFeedPet(pet);
   const isFeeding = pet.state === 'feeding';
@@ -109,6 +122,19 @@ export const PetRoom: FC<PetRoomProps> = ({
     ? { ...pet, state: 'sleeping' }
     : pet;
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLevelPulsing, setIsLevelPulsing] = useState(false);
+  const prevLevelRef = useRef(pet.level);
+
+  useEffect(() => {
+    if (pet.level > prevLevelRef.current) {
+      setIsLevelPulsing(true);
+      const timer = setTimeout(() => setIsLevelPulsing(false), 850);
+      prevLevelRef.current = pet.level;
+      return () => clearTimeout(timer);
+    }
+    prevLevelRef.current = pet.level;
+  }, [pet.level]);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [isFabClosing, setIsFabClosing] = useState(false);
   const fabCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -924,10 +950,10 @@ export const PetRoom: FC<PetRoomProps> = ({
 
   // Life stage name based on level
   const getStageName = (lvl: number) => {
-    if (lvl <= 1) return 'Bayi';
-    if (lvl <= 3) return 'Anak';
-    if (lvl <= 5) return 'Remaja';
-    return 'Dewasa';
+    if (lvl <= 1) return 'Tunas';
+    if (lvl <= 3) return 'Penjelajah';
+    if (lvl <= 5) return 'Perangkai';
+    return 'Cendekia';
   };
 
   return (
@@ -957,7 +983,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             title={`Level ${pet.level} • ${pet.exp} / ${pet.expToNextLevel} XP`}
             aria-label={`Level ${pet.level}, ${pet.exp} dari ${pet.expToNextLevel} XP`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#9E410E]" />
+            <SolidSproutIcon className="w-3.5 h-3.5" isPulsing={isLevelPulsing} />
             <span className="font-extrabold text-[#2E2E3A]">Lv.{pet.level}</span>
             <span className="text-[#9E410E] font-extrabold">· {pet.exp}/{pet.expToNextLevel}</span>
           </button>
@@ -1220,7 +1246,7 @@ export const PetRoom: FC<PetRoomProps> = ({
               label="Energi / Segar"
             />
             <span className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border text-[#3E3E4E] bg-[#EFE9DF] border-[#DCD2C2]">
-              {getStageName(pet.level)}
+              Tahap: {getStageName(pet.level)}
             </span>
           </div>
 
@@ -1228,9 +1254,9 @@ export const PetRoom: FC<PetRoomProps> = ({
           <button
             type="button"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-black text-xs sm:text-sm text-[#2E2E3A] cursor-pointer hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736] transition-colors"
-            onClick={() => handlePetTap()}
-            title="Ketuk untuk berinteraksi dengan Mochi"
-            aria-label={`Status ${pet.name}, ketuk untuk interaksi`}
+            onClick={() => setIsProfileOpen(true)}
+            title={`Lihat Profil & Identitas ${pet.name}`}
+            aria-label={`Lihat Profil & Identitas ${pet.name}`}
           >
             <span>{pet.name}</span>
             <Info className="w-3.5 h-3.5 text-[#4E4E5E]" />
@@ -1388,30 +1414,68 @@ export const PetRoom: FC<PetRoomProps> = ({
             {/* Upcoming Unlockable Costumes */}
             <div className="space-y-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#4E4E5E]">
-                Koleksi Mendatang (Segera Hadir)
+                Koleksi Lemari Kostum
               </h3>
-              <div className="space-y-1.5">
-                <div className="p-2.5 rounded-xl bg-[#FAF0E6]/60 border border-dashed border-[#DCD2C2] flex items-center justify-between text-xs text-[#4A4A5A]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🌸</span>
-                    <span className="font-semibold text-[#2E2E3A]">Pita Sakura</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFE9DF] text-[#3E3E4E]">Buka di Level 5</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#FAF0E6]/60 border border-dashed border-[#DCD2C2] flex items-center justify-between text-xs text-[#4A4A5A]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">👨‍🍳</span>
-                    <span className="font-semibold text-[#2E2E3A]">Topi Koki Mochi</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFE9DF] text-[#3E3E4E]">Buka di Level 10</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-[#FAF0E6]/60 border border-dashed border-[#DCD2C2] flex items-center justify-between text-xs text-[#4A4A5A]">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎒</span>
-                    <span className="font-semibold text-[#2E2E3A]">Ransel Petualang</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#EFE9DF] text-[#3E3E4E]">Streak 7 Hari</span>
-                </div>
+              <div className="space-y-2">
+                {COSMETIC_CATALOG.map((item) => {
+                  const unlockedList = pet.identity?.cosmetics?.unlocked ?? pet.cosmetics?.unlocked ?? [];
+                  const isItemUnlocked = unlockedList.includes(item.id) || item.isUnlocked(pet, studyProgress);
+                  const equippedMap = pet.identity?.cosmetics?.equipped ?? pet.cosmetics?.equipped ?? {};
+                  const isEquipped = equippedMap[item.slot] === item.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        'p-3 rounded-2xl border flex items-center justify-between text-xs transition-all shadow-xs',
+                        isItemUnlocked
+                          ? 'bg-white border-[#EAE3D5]'
+                          : 'bg-[#FAF0E6]/50 border-dashed border-[#DCD2C2] opacity-80'
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-2xl shrink-0">{item.icon}</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-[#2E2E3A]">{item.name}</span>
+                            {isEquipped && (
+                              <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-md bg-[#EAF6EE] text-[#1E6B3B] border border-[#CCEBD6]">
+                                Terpasang
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-[#6B5A4B] truncate">{item.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 ml-2">
+                        {isItemUnlocked ? (
+                          isEquipped ? (
+                            <button
+                              type="button"
+                              onClick={() => onUnequipCosmetic?.(item.slot)}
+                              className="px-2.5 py-1.5 rounded-xl bg-[#F0EAE1] hover:bg-[#E5DDD0] text-[#4A4A5A] font-bold text-xs cursor-pointer transition-colors"
+                            >
+                              Lepas
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onEquipCosmetic?.(item.slot, item.id)}
+                              className="px-2.5 py-1.5 rounded-xl bg-[#D97736] hover:bg-[#C26527] text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95 transition-all"
+                            >
+                              Pasang
+                            </button>
+                          )
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[#EFE9DF] text-[#6C6C7A]">
+                            {item.unlockCondition}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1440,6 +1504,18 @@ export const PetRoom: FC<PetRoomProps> = ({
         link={holdingNoteLink}
         onSaveAndFeed={handleSaveAndFeed}
         petName={pet.name || 'Mochi'}
+      />
+
+      {/* 9. Mochi Profile Sheet (Biodata, Hari Bersama & Second Brain Stats) */}
+      <MochiProfileSheet
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        pet={pet}
+        linksCount={savedLinks.length}
+        notesCount={_notesCount ?? 0}
+        studyProgress={studyProgress}
+        totalReviewsCompleted={totalReviewsCompleted ?? 0}
+        totalNotesCreated={totalNotesCreated ?? 0}
       />
     </div>
   );

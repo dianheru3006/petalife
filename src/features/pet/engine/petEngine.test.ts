@@ -15,6 +15,7 @@ import {
   clearStoredPet,
   getStorage,
   PET_STORAGE_KEY,
+  PET_STORAGE_VERSION,
 } from './petStorage';
 
 const mockPet: Pet = {
@@ -372,7 +373,7 @@ describe('Pet Storage Adapter - localStorage persistence', () => {
     getStorage().setItem(PET_STORAGE_KEY, JSON.stringify(legacyEnvelope));
     const result = loadStoredPet(mockPet, 1776500000000);
 
-    expect(result.pet.version).toBe(2);
+    expect(result.pet.version).toBe(PET_STORAGE_VERSION);
     expect(result.pet.level).toBe(3);
     expect(result.pet.exp).toBe(80);
     expect(result.pet.hunger).toBe(50); // Safe Haven floor

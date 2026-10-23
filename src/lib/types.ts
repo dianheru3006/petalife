@@ -1,5 +1,35 @@
 export type NavigationTab = 'home' | 'vault' | 'notes' | 'assistant' | 'settings';
 
+export type StudyAction = 'review_completed' | 'note_created' | 'quiz_correct';
+
+export interface StudyEvent {
+  id: string;          // Kunci idempoten per aksi dan entitas (misal: "review_completed:link-1")
+  dayKey: string;      // YYYY-MM-DD dari getMonotonicDayKey()
+  action: StudyAction;
+  entityId: string;
+  occurredAt: number;
+}
+
+export interface StudyProgress {
+  currentStreakDays: number;
+  longestStreakDays: number;
+  lastStudyDay: string | null;
+}
+
+export type CosmeticSlot = 'head' | 'face' | 'back';
+export type CosmeticId = 'sakura_ribbon' | 'chef_hat' | 'explorer_backpack';
+
+export interface CosmeticInventory {
+  unlocked: CosmeticId[];
+  equipped: Partial<Record<CosmeticSlot, CosmeticId>>;
+}
+
+export interface PetIdentity {
+  adoptedAt: number | null;       // null jika tanggal asli tidak diketahui
+  trackingStartedAt: number;
+  cosmetics: CosmeticInventory;
+}
+
 export interface Pet {
   name: string;
   level: number;
@@ -20,6 +50,8 @@ export interface Pet {
   };
   lastCareDate?: string; // YYYY-MM-DD
   version?: number;
+  identity?: PetIdentity;
+  cosmetics?: CosmeticInventory;
 }
 
 export type PlatformType = 'youtube' | 'tiktok' | 'instagram' | 'threads' | 'web';

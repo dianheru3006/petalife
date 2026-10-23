@@ -1,8 +1,8 @@
-import type { Pet } from '../../../lib/types';
+import type { Pet, CosmeticId, CosmeticSlot, PetIdentity } from '../../../lib/types';
 import { calculateTimeDecay } from './petEngine';
 
 export const PET_STORAGE_KEY = 'PETALIFE_PET_STATE_V1';
-export const PET_STORAGE_VERSION = 2;
+export const PET_STORAGE_VERSION = 3;
 
 export interface StoredPetEnvelope {
   version: number;
@@ -82,6 +82,24 @@ export function isValidPet(obj: unknown): obj is Pet {
 export function sanitizeLoadedPet(pet: Pet): Pet {
   const stats = (value: number) => (Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0);
   const level = Number.isFinite(pet.level) && pet.level >= 1 ? Math.floor(pet.level) : 1;
+
+  const validCosmetics: CosmeticId[] = ['sakura_ribbon', 'chef_hat', 'explorer_backpack'];
+  const rawUnlocked = Array.isArray(pet.identity?.cosmetics?.unlocked)
+    ? pet.identity!.cosmetics!.unlocked
+    : [];
+  const unlocked = rawUnlocked.filter((id): id is CosmeticId => validCosmetics.includes(id as CosmeticId));
+
+  const rawEquipped = pet.identity?.cosmetics?.equipped ?? {};
+  const equipped: Partial<Record<CosmeticSlot, CosmeticId>> = {};
+  if (rawEquipped.head && validCosmetics.includes(rawEquipped.head)) equipped.head = rawEquipped.head;
+  if (rawEquipped.face && validCosmetics.includes(rawEquipped.face)) equipped.face = rawEquipped.face;
+  if (rawEquipped.back && validCosmetics.includes(rawEquipped.back)) equipped.back = rawEquipped.back;
+
+  const identity: PetIdentity = {
+    adoptedAt: typeof pet.identity?.adoptedAt === 'number' ? pet.identity.adoptedAt : null,
+    trackingStartedAt: typeof pet.identity?.trackingStartedAt === 'number' ? pet.identity.trackingStartedAt : Date.now(),
+    cosmetics: { unlocked, equipped },
+  };
   return {
     ...pet,
     level,
@@ -93,6 +111,8 @@ export function sanitizeLoadedPet(pet: Pet): Pet {
     mood: stats(pet.mood),
     energy: stats(pet.energy),
     streakDays: Number.isFinite(pet.streakDays) && pet.streakDays >= 0 ? Math.floor(pet.streakDays) : 0,
+    identity,
+    cosmetics: identity.cosmetics,
   };
 }
 
@@ -126,11 +146,11 @@ export function loadStoredPet(
     const parsed = JSON.parse(raw) as StoredPetEnvelope;
 
     // Migration: Upgrade legacy v1 envelope to v2 seamlessly without losing level, exp, or streak
-    if (parsed && parsed.version === 1 && isValidPet(parsed.pet)) {
+    if (parsed && (parsed.version === 1 || parsed.version === 2) && isValidPet(parsed.pet)) {
       const migratedPet: Pet = {
         ...sanitizeLoadedPet(parsed.pet),
         hunger: Math.min(100, Math.max(50, parsed.pet.hunger)),
-        energy: Math.min(100, Math.max(85, parsed.pet.energy)),
+        energy: Math.min(100, Math.max(parsed.version === 1 ? 85 : 35, parsed.pet.energy)),
         isSleeping: false,
         sleepSchedule: { startHour: 23, endHour: 7 },
         lastDecayAt: now,

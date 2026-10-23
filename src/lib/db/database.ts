@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { SavedLink, Note, RewardLedgerEntry, QuizHistoryEntry } from '../types';
+import type { SavedLink, Note, RewardLedgerEntry, QuizHistoryEntry, StudyEvent } from '../types';
 
 /**
  * Petalife Central IndexedDB Database
@@ -11,6 +11,9 @@ import type { SavedLink, Note, RewardLedgerEntry, QuizHistoryEntry } from '../ty
  * - rewardLedger: &id (primary key), category, entityId, awardedAt
  * - quizHistory: &id (primary key), questionId, selectedIndex, isCorrect, answeredAt
  *
+ * Schema Version 3 (Streak & Study Event System):
+ * - studyEvents: &id (primary key), dayKey, action, entityId, occurredAt
+ *
  * NOTE: Pet state remains in its tested localStorage adapter to maintain
  * ultra-responsive 60fps UI animations without asynchronous overhead.
  */
@@ -19,6 +22,7 @@ export class PetalifeDatabase extends Dexie {
   notes!: EntityTable<Note, 'id'>;
   rewardLedger!: EntityTable<RewardLedgerEntry, 'id'>;
   quizHistory!: EntityTable<QuizHistoryEntry, 'id'>;
+  studyEvents!: EntityTable<StudyEvent, 'id'>;
 
   constructor(databaseName = 'PetalifeDB') {
     super(databaseName);
@@ -33,6 +37,14 @@ export class PetalifeDatabase extends Dexie {
       notes: '&id, createdAt, updatedAtTimestamp, *tags',
       rewardLedger: '&id, category, entityId, awardedAt',
       quizHistory: '&id, questionId, selectedIndex, isCorrect, answeredAt',
+    });
+
+    this.version(3).stores({
+      savedLinks: '&id, url, platform, status, createdAt, *tags',
+      notes: '&id, createdAt, updatedAtTimestamp, *tags',
+      rewardLedger: '&id, category, entityId, awardedAt',
+      quizHistory: '&id, questionId, selectedIndex, isCorrect, answeredAt',
+      studyEvents: '&id, dayKey, action, entityId, occurredAt',
     });
   }
 }
