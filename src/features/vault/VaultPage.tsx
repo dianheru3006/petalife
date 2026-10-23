@@ -1049,27 +1049,27 @@ export const VaultPage: FC<VaultPageProps> = ({
             ))}
           </div>}
 
-          {/* 5. Summary / Active Filter Indicator & Reset Bar */}
-          <div className="flex items-center justify-between gap-3 px-2 pt-1 text-sm font-bold text-[#665B4E]">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span>Rak materi {filteredLinks.length}</span>
-              {selectedCategory !== 'All' && (
-                <span className="rounded-full bg-[#FFEFE8] border border-[#FED7C5] px-2.5 py-0.5 text-xs text-[#BA5218]">
-                  #{selectedCategory}
-                </span>
-              )}
-              {selectedStatusFilter !== 'all' && (
-                <span className="rounded-full bg-[#EFE9DF] border border-[#D5C6AF] px-2.5 py-0.5 text-xs text-[#4E4E5E]">
-                  {selectedStatusFilter === 'to_review' ? 'Belum dibaca' : selectedStatusFilter === 'in_progress' ? 'Dipelajari' : 'Selesai'}
-                </span>
-              )}
-              {searchQuery.trim() && (
-                <span className="rounded-full bg-white border border-[#EAE3D5] px-2.5 py-0.5 text-xs text-[#7A746B]">
-                  &ldquo;{searchQuery.trim()}&rdquo;
-                </span>
-              )}
-            </div>
-            {hasActiveFilter && (
+          {/* 5. Active Filter Indicator & Reset Bar (Only visible when filter or search is active) */}
+          {hasActiveFilter && (
+            <div className="flex items-center justify-between gap-3 px-2 pt-1 text-xs font-bold text-[#665B4E]">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-[#806C55]">Filter:</span>
+                {selectedCategory !== 'All' && (
+                  <span className="rounded-full bg-[#FFEFE8] border border-[#FED7C5] px-2.5 py-0.5 text-xs text-[#BA5218]">
+                    #{selectedCategory}
+                  </span>
+                )}
+                {selectedStatusFilter !== 'all' && (
+                  <span className="rounded-full bg-[#EFE9DF] border border-[#D5C6AF] px-2.5 py-0.5 text-xs text-[#4E4E5E]">
+                    {selectedStatusFilter === 'to_review' ? 'Belum dibaca' : selectedStatusFilter === 'in_progress' ? 'Dipelajari' : 'Selesai'}
+                  </span>
+                )}
+                {searchQuery.trim() && (
+                  <span className="rounded-full bg-white border border-[#EAE3D5] px-2.5 py-0.5 text-xs text-[#7A746B]">
+                    &ldquo;{searchQuery.trim()}&rdquo;
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={handleResetFilter}
@@ -1077,8 +1077,8 @@ export const VaultPage: FC<VaultPageProps> = ({
               >
                 Reset filter
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* 6. The Bookshelves Grid */}
           {filteredLinks.length ? (

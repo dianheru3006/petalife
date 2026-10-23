@@ -411,25 +411,34 @@ export const NotesPage: FC<NotesPageProps> = ({
             </div>
           )}
 
-          <div className="mb-3 flex items-center justify-between gap-3 px-2 text-sm font-bold text-[#665B4E]">
-            <div className="flex items-center gap-2">
-              <span>Papan catatan {filteredNotes.length}</span>
-              {selectedTag !== 'All' && (
-                <span className="rounded-full bg-[#FFEFE8] border border-[#FED7C5] px-2 py-0.5 text-xs text-[#BA5218]">
-                  #{selectedTag}
-                </span>
-              )}
-            </div>
-            {selectedTag !== 'All' && (
+          {/* Active Filter Indicator & Reset Bar (Only visible when filter or search is active) */}
+          {(selectedTag !== 'All' || query) && (
+            <div className="mb-2.5 flex items-center justify-between gap-3 px-2 text-xs font-bold text-[#665B4E]">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-[#806C55]">Filter:</span>
+                {selectedTag !== 'All' && (
+                  <span className="rounded-full bg-[#FFEFE8] border border-[#FED7C5] px-2.5 py-0.5 text-xs text-[#BA5218]">
+                    #{selectedTag}
+                  </span>
+                )}
+                {query && (
+                  <span className="rounded-full bg-white border border-[#EAE3D5] px-2.5 py-0.5 text-xs text-[#7A746B]">
+                    &ldquo;{query}&rdquo;
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedTag('All')}
-                className="text-xs font-semibold text-[#806C55] hover:text-[#BA5218] underline cursor-pointer"
+                onClick={() => {
+                  setSelectedTag('All');
+                  setSearchQuery('');
+                }}
+                className="text-xs font-semibold text-[#806C55] hover:text-[#BA5218] underline cursor-pointer shrink-0"
               >
                 Reset filter
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           <section aria-label="Papan catatan" className="notes-corkboard relative min-h-[250px] rounded-[32px] border-2 border-[#D5B485] px-4 pb-7 pt-6 shadow-md">
             {filteredNotes.length === 0 ? (
