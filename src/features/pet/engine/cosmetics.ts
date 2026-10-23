@@ -4,7 +4,6 @@ export interface CosmeticItemDef {
   id: CosmeticId;
   name: string;
   slot: CosmeticSlot;
-  icon: string;
   description: string;
   unlockCondition: string;
   isUnlocked: (pet: Pet, progress?: StudyProgress) => boolean;
@@ -15,27 +14,24 @@ export const COSMETIC_CATALOG: readonly CosmeticItemDef[] = [
     id: 'sakura_ribbon',
     name: 'Pita Sakura',
     slot: 'head',
-    icon: '🌸',
-    description: 'Pita sakura manis di pangkal tunas Mochi',
-    unlockCondition: 'Buka di Level 5',
+    description: 'Pita merah muda di sisi tunas.',
+    unlockCondition: 'Level 5',
     isUnlocked: (pet) => pet.level >= 5,
   },
   {
     id: 'chef_hat',
     name: 'Topi Koki Mochi',
     slot: 'head',
-    icon: '👨‍🍳',
-    description: 'Topi koki mungil untuk Mochi sang peramu catatan',
-    unlockCondition: 'Buka di Level 10',
+    description: 'Topi putih untuk sesi memasak.',
+    unlockCondition: 'Level 10',
     isUnlocked: (pet) => pet.level >= 10,
   },
   {
     id: 'explorer_backpack',
     name: 'Ransel Petualang',
     slot: 'back',
-    icon: '🎒',
-    description: 'Ransel penjelajah tangguh untuk membawa intisari pustaka',
-    unlockCondition: 'Streak 7 Hari',
+    description: 'Ransel kecil untuk menjelajah.',
+    unlockCondition: 'Belajar 7 hari',
     isUnlocked: (pet, progress) =>
       (progress?.longestStreakDays ?? 0) >= 7 ||
       (progress?.currentStreakDays ?? 0) >= 7 ||

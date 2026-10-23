@@ -2,7 +2,8 @@ import type { FC } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage, NavigationTab } from '../../lib/types';
 import { Button } from '../../components/ui/Button';
-import { Send, Sparkles, User, ArrowRight } from 'lucide-react';
+import { Send, User, ArrowRight } from 'lucide-react';
+import { SolidSproutIcon } from '../../components/common/SolidSproutIcon';
 import { cn } from '../../lib/utils';
 
 export interface AssistantPageProps {
@@ -24,11 +25,11 @@ export const AssistantPage: FC<AssistantPageProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const suggestedPrompts = [
-    'How is Mochi doing today? 🐾',
-    'Summarize my vault 📚',
-    'What recipes do I have saved? 🍳',
-    'Explain Clean Architecture from my notes 💻',
-    'What should I review next? 📖',
+    'Bagaimana keadaan Mochi?',
+    'Ringkas isi Pustakaku',
+    'Apa resep yang kusimpan?',
+    'Jelaskan catatan Clean Architecture',
+    'Apa yang perlu kutinjau berikutnya?',
   ];
 
   /**
@@ -60,26 +61,26 @@ export const AssistantPage: FC<AssistantPageProps> = ({
   }, [messages.length, isTyping]);
 
   return (
-    <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-185px)] min-h-0">
-      {/* Grounded AI Assistant Badge */}
+    <div className="max-w-md mx-auto flex flex-col h-full min-h-0">
+      {/* A quiet source note, using the same sprout mark as Mochi's profile. */}
       <div
         className={cn(
-          'shrink-0 border px-3.5 py-1.5 rounded-2xl text-[11px] font-semibold flex items-center justify-between mb-3 shadow-2xs transition-colors duration-700',
+          'shrink-0 border px-3.5 py-2.5 rounded-2xl text-[11px] font-medium flex items-center mb-3 transition-colors duration-700',
           isNightMode
-            ? 'bg-[#FAF2E6] border-[#ECC8B2] text-[#6E3C1B]'
-            : 'bg-[#FFF7EE] border-[#FED7C5] text-[#6E3C1B]'
+            ? 'bg-[#F5EDE0] border-[#DFD2BE] text-[#604B3B]'
+            : 'bg-[#F8F2E8] border-[#E8DFCF] text-[#604B3B]'
         )}
       >
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
-          <span><b>Grounded Knowledge Assistant:</b> Responds using your personal Vault, Notes, and Mochi's real status.</span>
+        <span className="flex items-center gap-2">
+          <SolidSproutIcon className="w-4 h-4 shrink-0" />
+          <span>Tanya tentang Pustaka, Catatan, atau keadaan Mochi.</span>
         </span>
       </div>
 
       {/* Messages Thread Container with screen reader announcement area */}
       <div
         ref={threadRef}
-        className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 mb-3 scrollbar-thin"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-4 pr-1 mb-3 scrollbar-none"
         aria-live="polite"
         aria-atomic="false"
         aria-busy={isTyping}
@@ -95,11 +96,11 @@ export const AssistantPage: FC<AssistantPageProps> = ({
               <div
                 className={`w-8 h-8 rounded-2xl flex items-center justify-center text-sm flex-shrink-0 shadow-2xs ${
                   isAssistant
-                    ? 'bg-[#EDE8FA] border border-[#C8BDEB] text-[#483696]'
+                    ? 'bg-[#FFF4DC] border border-[#E8D4AD] text-[#795331]'
                     : 'bg-[#FED7C5] border border-[#F4A261]/30 text-[#7A3613]'
                 }`}
               >
-                {isAssistant ? '🐾' : <User className="w-4 h-4" />}
+                {isAssistant ? <SolidSproutIcon className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
 
               {/* Message Bubble */}
@@ -115,8 +116,8 @@ export const AssistantPage: FC<AssistantPageProps> = ({
                   )}
                 >
                   {isAssistant && (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#483696] uppercase tracking-wider mb-1">
-                      <span>Mochi AI</span>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#77533A] uppercase tracking-wider mb-1">
+                      <span>Mochi</span>
                       <span className="text-[#525266] font-medium">• {msg.timestamp}</span>
                     </div>
                   )}
@@ -127,7 +128,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
                 {msg.suggestedAction && (
                   <button
                     onClick={() => onNavigate(msg.suggestedAction!.targetTab)}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#3B2982] bg-[#EDE8FA] border border-[#C8BDEB] px-3 py-1.5 rounded-full hover:bg-[#DDD4F5] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#79462D] bg-[#F5E9D8] border border-[#E3D1B9] px-3 py-1.5 rounded-full hover:bg-[#EBDCC7] transition-colors cursor-pointer"
                   >
                     <span>{msg.suggestedAction.label}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -144,8 +145,8 @@ export const AssistantPage: FC<AssistantPageProps> = ({
         {/* Typing indicator */}
         {isTyping && (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-2xl bg-[#EDE8FA] border border-[#C8BDEB] flex items-center justify-center text-sm">
-              🐾
+            <div className="w-8 h-8 rounded-2xl bg-[#FFF4DC] border border-[#E8D4AD] flex items-center justify-center text-sm">
+              <SolidSproutIcon className="w-4 h-4" />
             </div>
             <div
               className={cn(
@@ -155,10 +156,10 @@ export const AssistantPage: FC<AssistantPageProps> = ({
                   : 'bg-[#FAF7F2] border-[#ECE6DB] text-[#4A4A5A]'
               )}
             >
-              <span className="animate-bounce text-[#483696]">●</span>
-              <span className="animate-bounce text-[#483696]" style={{ animationDelay: '0.15s' }}>●</span>
-              <span className="animate-bounce text-[#483696]" style={{ animationDelay: '0.3s' }}>●</span>
-              <span className="ml-1 text-[11px] font-medium">Mochi is thinking...</span>
+              <span className="animate-bounce text-[#A7673D]">·</span>
+              <span className="animate-bounce text-[#A7673D]" style={{ animationDelay: '0.15s' }}>·</span>
+              <span className="animate-bounce text-[#A7673D]" style={{ animationDelay: '0.3s' }}>·</span>
+              <span className="ml-1 text-[11px] font-medium">Mochi sedang mencari...</span>
             </div>
           </div>
         )}
@@ -166,7 +167,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
 
       {/* Suggested Quick Prompts */}
       <div className="mb-3">
-        <p className="text-[11px] font-bold text-[#4A4A5A] mb-1.5">Suggested Prompts:</p>
+        <p className="text-[11px] font-bold text-[#5E5045] mb-1.5">Coba tanyakan</p>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {suggestedPrompts.map((prompt, i) => (
             <button
@@ -204,7 +205,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           type="text"
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          placeholder="Ask Mochi to summarize your vault or help you study..."
+          placeholder="Tanya Mochi tentang materi atau catatan..."
           className="flex-1 text-xs sm:text-sm px-3 py-2 bg-transparent text-[#2E2E3A] focus:outline-none focus:ring-2 focus:ring-[#BA5218] focus:ring-offset-1 rounded-xl placeholder-[#5A5A6E] transition-all duration-150"
         />
         <Button
@@ -217,7 +218,7 @@ export const AssistantPage: FC<AssistantPageProps> = ({
           className="rounded-xl px-3.5 py-2 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <Send className="w-4 h-4" />
-          <span className="hidden sm:inline">Send</span>
+          <span className="hidden sm:inline">Kirim</span>
         </Button>
       </form>
     </div>

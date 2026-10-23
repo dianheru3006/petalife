@@ -70,7 +70,6 @@ export const MochiPet: FC<MochiPetProps> = ({
 
   const isFeeding = pet.state === 'feeding';
   const isSleeping = pet.state === 'sleeping';
-  const isHappy = pet.state === 'happy' || currentAction !== 'idle';
   const effectiveGaze: GazeDirection = isSleeping || isFeeding ? 'center' : gaze;
   const equipped = pet.identity?.cosmetics?.equipped ?? pet.cosmetics?.equipped ?? {};
 
@@ -275,78 +274,15 @@ export const MochiPet: FC<MochiPetProps> = ({
         </div>
       )}
 
-      {/* Dynamic Floating Particles based on Action & Fidgets */}
-      {(isFeeding || currentAction !== 'idle' || isHappy || fidget === 'humming' || fidget === 'cute-wink' || holdingNote) && (!isSleeping || currentAction === 'studying' || currentAction === 'thinking' || currentAction === 'dizzy' || currentAction === 'holding-note' || holdingNote) && (
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none">
-          {currentAction === 'holding-note' || holdingNote ? (
-            <>
-              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0s' }}>📄</span>
-              <span className="text-lg anim-float-note drop-shadow-xs" style={{ animationDelay: '0.2s' }}>✨</span>
-              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0.4s' }}>💡</span>
-            </>
-          ) : currentAction === 'dizzy' ? (
-            <>
-              <span className="text-xl animate-spin drop-shadow-xs" style={{ animationDuration: '1.2s' }}>💫</span>
-              <span className="text-lg animate-bounce drop-shadow-xs" style={{ animationDuration: '0.8s' }}>⭐</span>
-              <span className="text-xl animate-spin drop-shadow-xs" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }}>🌀</span>
-            </>
-          ) : fidget === 'humming' && currentAction === 'idle' ? (
-            <>
-              <span className="text-xl anim-float-note text-[#E57399] drop-shadow-xs">♪</span>
-              <span className="text-lg anim-float-note text-[#7161BF] drop-shadow-xs" style={{ animationDelay: '0.2s' }}>♫</span>
-              <span className="text-sm anim-float-note text-[#F4A261] drop-shadow-xs" style={{ animationDelay: '0.4s' }}>✨</span>
-            </>
-          ) : fidget === 'cute-wink' && currentAction === 'idle' ? (
-            <>
-              <span className="text-lg anim-float-heart">✨</span>
-              <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>💖</span>
-            </>
-          ) : currentAction === 'thinking' ? (
-            <>
-              <span className="text-xl anim-float-note">🧠</span>
-              <span className="text-lg anim-float-note" style={{ animationDelay: '0.2s' }}>✨</span>
-              <span className="text-lg anim-float-note" style={{ animationDelay: '0.4s' }}>💡</span>
-            </>
-          ) : currentAction === 'studying' ? (
-            <>
-              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0s' }}>📖</span>
-              <span className="text-lg anim-float-note drop-shadow-xs" style={{ animationDelay: '0.2s' }}>✏️</span>
-              <span className="text-xl anim-float-note drop-shadow-xs" style={{ animationDelay: '0.4s' }}>💡</span>
-              <span className="text-base anim-float-note drop-shadow-xs" style={{ animationDelay: '0.6s' }}>✨</span>
-            </>
-          ) : currentAction === 'dance' ? (
-            <>
-              <span className="text-xl anim-float-note text-[#E57399] drop-shadow-xs">♪</span>
-              <span className="text-lg anim-float-note text-[#7161BF] drop-shadow-xs" style={{ animationDelay: '0.2s' }}>♫</span>
-              <span className="text-xl anim-float-note text-[#F4A261] drop-shadow-xs" style={{ animationDelay: '0.4s' }}>♬</span>
-              <span className="text-base anim-float-note text-[#4EAA77] drop-shadow-xs" style={{ animationDelay: '0.6s' }}>✨</span>
-            </>
-          ) : currentAction === 'spin' ? (
-            <>
-              <span className="text-lg anim-float-heart">⭐</span>
-              <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>🌀</span>
-              <span className="text-lg anim-float-heart" style={{ animationDelay: '0.3s' }}>✨</span>
-            </>
-          ) : currentAction === 'wink' ? (
-            <>
-              <span className="text-lg anim-float-heart">✨</span>
-              <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>💫</span>
-              <span className="text-lg anim-float-heart" style={{ animationDelay: '0.3s' }}>💖</span>
-            </>
-          ) : currentAction === 'wiggle' ? (
-            <>
-              <span className="text-lg anim-float-heart">🌸</span>
-              <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>😆</span>
-              <span className="text-lg anim-float-heart" style={{ animationDelay: '0.3s' }}>✨</span>
-            </>
-          ) : (
-            <>
-              <span className="text-lg anim-float-heart">💖</span>
-              <span className="text-base anim-float-heart" style={{ animationDelay: '0.15s' }}>✨</span>
-              <span className="text-lg anim-float-heart" style={{ animationDelay: '0.3s' }}>🌸</span>
-            </>
-          )}
+      {/* Body animation carries most emotion; only music and affection need a small accent. */}
+      {!isSleeping && (currentAction === 'dance' || (currentAction === 'idle' && fidget === 'humming')) && (
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex gap-3 z-30 pointer-events-none text-[#9B725C]" aria-hidden="true">
+          <span className="text-xl anim-float-note">♪</span>
+          <span className="text-base anim-float-note" style={{ animationDelay: '0.25s' }}>♫</span>
         </div>
+      )}
+      {!isSleeping && (isFeeding || pet.state === 'happy' || currentAction === 'wink' || (currentAction === 'idle' && fidget === 'cute-wink')) && (
+        <span className="absolute -top-6 left-1/2 z-30 pointer-events-none text-lg text-[#D78083] anim-float-heart" aria-hidden="true">♥</span>
       )}
 
       {/* Floating zZz Dream Particles when Sleeping */}
@@ -370,14 +306,12 @@ export const MochiPet: FC<MochiPetProps> = ({
               onPetClick?.('holding-note');
             }
           }}
-          className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap z-40 animate-bounce cursor-pointer group"
+          className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap z-40 cursor-pointer group"
           title="Klik untuk membuka catatan"
           aria-label="Cek Catatan Mochi"
         >
           <div className="bg-[#2E2E3A] hover:bg-[#1E1E28] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 border border-white/20 transition-all group-hover:scale-105 active:scale-95">
-            <span>📄</span>
             <span>Cek Catatan Mochi</span>
-            <span className="text-[#FED7C5] animate-pulse">✨</span>
           </div>
         </button>
       )}
@@ -1108,7 +1042,11 @@ export const MochiPet: FC<MochiPetProps> = ({
 
               {/* Mochi Paw Seal at bottom right */}
               <circle cx="142" cy="144" r="5.5" fill="#FFE5D9" stroke="#F4A261" strokeWidth="0.8" />
-              <text x="142" y="146.5" fontSize="6.5" textAnchor="middle">🐾</text>
+              <ellipse cx="142" cy="146" rx="2.1" ry="1.5" fill="#C87A22" />
+              <circle cx="139.6" cy="143.6" r="0.7" fill="#C87A22" />
+              <circle cx="141.4" cy="142.8" r="0.7" fill="#C87A22" />
+              <circle cx="143.2" cy="142.8" r="0.7" fill="#C87A22" />
+              <circle cx="144.9" cy="143.7" r="0.7" fill="#C87A22" />
 
               {/* Left Paw Gripping Paper Edge */}
               <ellipse cx="44" cy="122" rx="7.5" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
@@ -1116,8 +1054,6 @@ export const MochiPet: FC<MochiPetProps> = ({
               {/* Right Paw Gripping Paper Edge */}
               <ellipse cx="156" cy="122" rx="7.5" ry="6" fill="url(#clayPaw)" stroke="#C87A22" strokeWidth="1.2" />
 
-              {/* Sparkle Glint on Paper */}
-              <text x="148" y="82" fontSize="11" className="animate-pulse">✨</text>
             </g>
           )}
         </svg>

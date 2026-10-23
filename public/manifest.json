@@ -1,7 +1,7 @@
 {
-  "name": "Petalife — Cozy Virtual Pet & Learning Companion",
+  "name": "Petalife — Belajar bersama Mochi",
   "short_name": "Petalife",
-  "description": "A cozy Tamagotchi-inspired virtual pet that helps you capture, review, and retain your learning materials with zero stress.",
+  "description": "Temani Mochi sambil menyimpan materi, meninjau bacaan, dan menulis catatan.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -43,23 +43,23 @@
   ],
   "shortcuts": [
     {
-      "name": "Mochi's Room",
-      "short_name": "Home",
-      "description": "Feed and care for Mochi",
+      "name": "Rumah Mochi",
+      "short_name": "Beranda",
+      "description": "Temani dan rawat Mochi",
       "url": "./#home",
       "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Content Vault",
-      "short_name": "Vault",
-      "description": "Review saved videos and articles",
+      "name": "Pustaka",
+      "short_name": "Pustaka",
+      "description": "Tinjau video dan artikel tersimpan",
       "url": "./#vault",
       "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Personal Notes",
-      "short_name": "Notes",
-      "description": "Jot down takeaways and recipes",
+      "name": "Catatan",
+      "short_name": "Catatan",
+      "description": "Simpan gagasan dan hal penting",
       "url": "./#notes",
       "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
     }

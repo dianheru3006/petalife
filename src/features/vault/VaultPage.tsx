@@ -360,7 +360,7 @@ export const VaultPage: FC<VaultPageProps> = ({
         });
       }
       if (res.qualityStatus === 'grounded') {
-        showToast('🎉 Sintesis 4 lapis berhasil diperbarui dari Brain Gateway!', 3500);
+        showToast('Sintesis 4 lapis berhasil diperbarui dari Brain Gateway.', 3500);
       } else if (res.qualityStatus === 'gateway_error') {
         showError(res.gatewayErrorMessage || 'Koneksi gateway gagal.');
       }

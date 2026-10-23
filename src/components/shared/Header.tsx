@@ -29,11 +29,11 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
   }, []);
 
   const titles: Record<NavigationTab, { title: string; subtitle: string }> = {
-    home: { title: `Halo, ${userName}! ☀️`, subtitle: 'Mochi is energized and waiting for new lessons.' },
-    vault: { title: 'Pustaka 📚', subtitle: 'Materi tersimpan untuk dibaca dan dipelajari.' },
-    notes: { title: 'Personal Notes 📝', subtitle: 'Quick takeaways, reflections, and recipe notes.' },
-    assistant: { title: 'AI Study Assistant ✨', subtitle: 'Recall, summarize, and connect ideas across your materials.' },
-    settings: { title: 'Pengaturan ⚙️', subtitle: 'Hubungkan Mochi dengan Brain Gateway Asisten Heru.' },
+    home: { title: `Halo, ${userName}`, subtitle: 'Belajar bersama Mochi.' },
+    vault: { title: 'Pustaka', subtitle: 'Materi tersimpan untuk dibaca dan dipelajari.' },
+    notes: { title: 'Catatan', subtitle: 'Gagasan dan hal penting yang ingin kamu ingat.' },
+    assistant: { title: 'Asisten Mochi', subtitle: 'Cari dan hubungkan hal yang sudah kamu simpan.' },
+    settings: { title: 'Pengaturan', subtitle: 'Atur pengalaman belajar bersama Mochi.' },
   };
 
   const current = titles[currentTab] || titles.home;
@@ -60,15 +60,14 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
         {/* Offline Badge */}
         {!isOnline && (
           <div className="bg-[#EBF7EE] border border-[#C6EBD0] px-2 sm:px-2.5 py-1 rounded-full flex items-center gap-1 text-[11px] font-bold text-[#1B5E20]">
-            <span>🌿</span>
-            <span className="hidden sm:inline">Offline Mode</span>
+            <span>Offline</span>
           </div>
         )}
 
         {/* Streak Pill */}
         <div className="bg-[#FFEFE8] border border-[#FED7C5] px-2.5 sm:px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold text-[#9E410E]">
-          <span>🔥</span>
-          <span className="hidden sm:inline">{pet.streakDays} Day Streak</span>
+          <span className="hidden sm:inline">Rangkaian belajar:</span>
+          <span className="hidden sm:inline">{pet.streakDays} hari</span>
           <span className="sm:hidden">{pet.streakDays}d</span>
         </div>
 
@@ -81,7 +80,7 @@ export const Header: FC<HeaderProps> = ({ currentTab, pet, isNightMode = false }
               : 'bg-[#FAF7F2] border-[#EAE6DF] hover:bg-[#F7F3E9]'
           )}
         >
-          <div className="w-7 h-7 rounded-full bg-[#DCD6F3] text-[#483696] font-extrabold text-xs flex items-center justify-center">
+          <div className="w-7 h-7 rounded-full bg-[#E7D5BE] text-[#65452F] font-extrabold text-xs flex items-center justify-center">
             {userName.charAt(0).toUpperCase()}
           </div>
           <span className="text-xs font-bold text-[#4A4A5A] hidden sm:inline">{userName}</span>

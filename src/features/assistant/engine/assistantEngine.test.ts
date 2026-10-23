@@ -52,7 +52,7 @@ describe('Assistant Engine (Phase 4)', () => {
 
     expect(res.replyText).toContain('Level 2');
     expect(res.replyText).toContain('80%');
-    expect(res.replyText).toContain('4 consecutive days');
+    expect(res.replyText).toContain('4 hari');
     expect(res.suggestedAction).toBeDefined();
   });
 
@@ -63,8 +63,8 @@ describe('Assistant Engine (Phase 4)', () => {
       pet: mockPet,
     });
 
-    expect(res.replyText).toContain('1 total materials');
-    expect(res.replyText).toContain('**To Review:** 1 items');
+    expect(res.replyText).toContain('1 materi');
+    expect(res.replyText).toContain('Perlu ditinjau: 1');
     expect(res.replyText).toContain('Clean Architecture Fast');
     expect(res.suggestedAction?.targetTab).toBe('vault');
   });
@@ -88,7 +88,7 @@ describe('Assistant Engine (Phase 4)', () => {
       pet: mockPet,
     });
 
-    expect(res.replyText).toContain('Recommended to review next');
+    expect(res.replyText).toContain('Bacaan berikutnya');
     expect(res.replyText).toContain('Clean Architecture Fast');
     expect(res.suggestedAction?.targetTab).toBe('vault');
   });
@@ -100,7 +100,7 @@ describe('Assistant Engine (Phase 4)', () => {
       pet: mockPet,
     });
 
-    expect(res.replyText).toContain('Your Content Vault is currently empty');
+    expect(res.replyText).toContain('Pustakamu masih kosong');
     expect(res.suggestedAction?.targetTab).toBe('vault');
   });
 
@@ -111,7 +111,7 @@ describe('Assistant Engine (Phase 4)', () => {
       pet: mockPet,
     });
 
-    expect(res.replyText).toContain("couldn't find an exact match for");
+    expect(res.replyText).toContain('belum menemukan jawaban');
     expect(res.suggestedAction?.targetTab).toBe('vault');
   });
 
@@ -123,6 +123,13 @@ describe('Assistant Engine (Phase 4)', () => {
     });
     expect(res.replyText).toContain('Level 2');
     expect(res.replyText).toContain('80%');
+  });
+
+  it('recognizes the Indonesian suggestions shown in the assistant UI', () => {
+    const context = { links: mockLinks, notes: mockNotes, pet: mockPet };
+    expect(processAssistantMessage('Ringkas isi Pustakaku', context).replyText).toContain('Ringkasan Pustaka');
+    expect(processAssistantMessage('Apa resep yang kusimpan?', context).replyText).toContain('Dimsum Chili Sauce Recipe');
+    expect(processAssistantMessage('Apa yang perlu kutinjau berikutnya?', context).replyText).toContain('Bacaan berikutnya');
   });
 });
 

@@ -1399,3 +1399,112 @@ html[data-reduce-motion="true"] *::after {
 html {
   scroll-padding-bottom: calc(7.5rem + var(--tg-content-safe-area-inset-bottom, var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))));
 }
+/* The card and backdrop leave together, then React unmounts the dialog. */
+.mochi-profile-backdrop {
+  animation: mochi-profile-backdrop-in 220ms ease-out both;
+}
+
+.mochi-profile-backdrop[data-closing="true"] {
+  animation: mochi-profile-backdrop-out 300ms ease-in both;
+}
+
+.mochi-profile-card {
+  /* Official Pokémon Scarlet & Violet silver-platinum metallic border */
+  background: linear-gradient(135deg, #DCE1E7 0%, #F5F7FA 25%, #C2C9D4 50%, #ECEFF4 75%, #A6B0BE 100%);
+  box-shadow:
+    0 24px 60px -10px rgba(12, 20, 15, 0.7),
+    0 8px 24px -4px rgba(12, 20, 15, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+  transform-origin: center center;
+  animation: mochi-profile-pop 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative;
+}
+
+.mochi-profile-backdrop[data-closing="true"] .mochi-profile-card {
+  animation: mochi-profile-close 280ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* Subtle holographic diagonal sheen across the card surface */
+.mochi-profile-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(255, 245, 200, 0.3) 50%,
+    rgba(255, 255, 255, 0.18) 55%,
+    transparent 65%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+@keyframes mochi-profile-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mochi-profile-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mochi-profile-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.92) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes mochi-profile-close {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95) rotate(1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mochi-profile-backdrop,
+  .mochi-profile-card { animation: none !important; }
+}
+
+html[data-reduce-motion="true"] .mochi-profile-backdrop,
+html[data-reduce-motion="true"] .mochi-profile-card {
+  animation: none !important;
+}
+
+/* 3D Mochi Collectible Card Living Micro-Animation */
+@keyframes mochi-card-breathe {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015, 0.985);
+  }
+}
+
+.mochi-card-character-group {
+  animation: mochi-card-breathe 3.2s ease-in-out infinite;
+  transform-origin: 160px 145px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mochi-card-character-group {
+    animation: none !important;
+  }
+}
+html[data-reduce-motion="true"] .mochi-card-character-group {
+  animation: none !important;
+}

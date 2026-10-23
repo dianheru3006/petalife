@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import type { NavigationTab } from '../../lib/types';
 import { Home, Bookmark, FileText, Bot, Heart } from 'lucide-react';
+import { SolidSproutIcon } from '../../components/common/SolidSproutIcon';
 import { cn } from '../../lib/utils';
 
 export interface SidebarProps {
@@ -24,10 +25,10 @@ export const Sidebar: FC<SidebarProps> = ({
   isNightMode = false,
 }) => {
   const navItems: NavItem[] = [
-    { id: 'home', label: 'Pet Room', icon: <Home className="w-5 h-5" /> },
-    { id: 'vault', label: 'Content Vault', icon: <Bookmark className="w-5 h-5" />, badge: '4' },
-    { id: 'notes', label: 'Notes', icon: <FileText className="w-5 h-5" /> },
-    { id: 'assistant', label: 'AI Assistant', icon: <Bot className="w-5 h-5" /> },
+    { id: 'home', label: 'Beranda', icon: <Home className="w-5 h-5" /> },
+    { id: 'vault', label: 'Pustaka', icon: <Bookmark className="w-5 h-5" /> },
+    { id: 'notes', label: 'Catatan', icon: <FileText className="w-5 h-5" /> },
+    { id: 'assistant', label: 'Asisten', icon: <Bot className="w-5 h-5" /> },
   ];
 
   return (
@@ -42,14 +43,13 @@ export const Sidebar: FC<SidebarProps> = ({
       {/* Brand Header */}
       <div className="flex items-center gap-3 px-2 mb-8">
         <div className="w-10 h-10 rounded-2xl bg-[#FED7C5] border border-[#F4A261]/30 flex items-center justify-center text-xl shadow-xs">
-          🐾
+          <SolidSproutIcon className="w-5 h-5" />
         </div>
         <div>
           <h1 className="font-extrabold text-lg tracking-tight text-[#2E2E3A] flex items-center gap-1.5">
             <span>Petalife</span>
-            <span className="text-[10px] font-bold text-[#D97736] bg-[#FFEFE8] border border-[#FED7C5] px-1.5 py-0.2 rounded-md">MVP</span>
           </h1>
-          <p className="text-xs text-[#828292]">Learn & Grow with Mochi</p>
+          <p className="text-xs text-[#828292]">Belajar bersama Mochi</p>
         </div>
       </div>
 
@@ -109,7 +109,7 @@ export const Sidebar: FC<SidebarProps> = ({
                 : 'bg-white border-[#EAE6DF]'
             )}
           >
-            ✨
+            <SolidSproutIcon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between text-xs">
@@ -118,7 +118,7 @@ export const Sidebar: FC<SidebarProps> = ({
             </div>
             <p className="text-[11px] text-[#828292] truncate flex items-center gap-1 mt-0.5">
               <Heart className="w-3 h-3 text-[#E57399] fill-current" />
-              <span>Happy & Learning</span>
+              <span>Belajar bersamamu</span>
             </p>
           </div>
         </div>

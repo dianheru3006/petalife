@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { Pet, NavigationTab, SavedLink, CosmeticId, CosmeticSlot, StudyProgress } from '../../lib/types';
 import { SolidSproutIcon } from '../common/SolidSproutIcon';
 import { MochiProfileSheet } from './MochiProfileSheet';
+import { AccessoryPreview } from './AccessoryPreview';
 import { COSMETIC_CATALOG } from '../../features/pet/engine/cosmetics';
 import { MochiPet, type MochiAction } from './MochiPet';
 import {
@@ -212,6 +213,9 @@ export const PetRoom: FC<PetRoomProps> = ({
   useEffect(() => {
     if (!isWardrobeOpen) return;
 
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const focusTimer = setTimeout(() => {
       wardrobeCloseBtnRef.current?.focus();
     }, 50);
@@ -250,6 +254,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      document.body.style.overflow = previousBodyOverflow;
       clearTimeout(focusTimer);
       window.removeEventListener('keydown', handleKeyDown);
       requestAnimationFrame(() => {
@@ -353,7 +358,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       setHoldingNoteLink(restoredLink);
       setIsNoteSheetOpen(true);
       forceMochiAction('holding-note');
-      triggerSpeech('Mochi selesai menyusun intisari materi kamu! ✨', 7000);
+      triggerSpeech('Mochi selesai menyusun intisari materi kamu!', 7000);
     }).catch(() => {
       // Background auto-resume error ignored gracefully
     });
@@ -765,9 +770,9 @@ export const PetRoom: FC<PetRoomProps> = ({
             setForcedAction({ id: Date.now(), action: 'holding-note' });
             triggerSpeech('Catatan materi berhasil disimpan! Cek catatan Mochi yuk.', 6000);
             if (isAwarded) {
-              setQuickSuccess(`🎉 Ringkasan berhasil disimpan! (+10 XP)`);
+              setQuickSuccess('Ringkasan berhasil disimpan! (+10 XP)');
             } else {
-              setQuickSuccess(`🎉 Ringkasan berhasil disimpan ke Pustaka!`);
+              setQuickSuccess('Ringkasan berhasil disimpan ke Pustaka!');
             }
             feedTimersRef.current.push(setTimeout(() => setQuickSuccess(null), 3500));
             return;
@@ -922,18 +927,18 @@ export const PetRoom: FC<PetRoomProps> = ({
           id: existingMatch.id,
           updatedAt: Date.now()
         });
-        setQuickSuccess('🎉 Catatan berhasil diperbarui di Pustaka!');
+        setQuickSuccess('Catatan berhasil diperbarui di Pustaka!');
       } else {
         const rewardRes = await onAddLink(updatedLink);
         const isAwarded = rewardRes ? rewardRes.awarded : false;
         if (isAwarded) {
-          setQuickSuccess(`🎉 Berhasil disimpan ke Pustaka! (+${rewardRes?.xpAwarded || 0} XP)`);
+          setQuickSuccess(`Berhasil disimpan ke Pustaka! (+${rewardRes?.xpAwarded || 0} XP)`);
         } else if (rewardRes?.reason === 'storage_error') {
-          setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Penyimpanan reward offline)');
+          setQuickSuccess('Berhasil disimpan ke Pustaka! (Penyimpanan reward offline)');
         } else if (rewardRes?.reason === 'already_claimed') {
-          setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Tautan ini sudah diklaim hari ini)');
+          setQuickSuccess('Berhasil disimpan ke Pustaka! (Tautan ini sudah diklaim hari ini)');
         } else {
-          setQuickSuccess('🎉 Berhasil disimpan ke Pustaka! (Kuota reward harian tercapai)');
+          setQuickSuccess('Berhasil disimpan ke Pustaka! (Kuota reward harian tercapai)');
         }
         handleFeedClick();
       }
@@ -941,7 +946,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       setHoldingNoteLink(null);
       setIsNoteSheetOpen(false);
       setForcedAction({ id: Date.now(), action: 'hop' });
-      triggerSpeech(existingMatch ? 'Catatan Pustaka kamu sudah rapi! ✨' : 'Nyam! Mochi kenyang dan makin pintar belajar!', 4500);
+      triggerSpeech(existingMatch ? 'Catatan Pustaka kamu sudah rapi!' : 'Nyam! Mochi kenyang dan makin pintar belajar!', 4500);
     } catch (err) {
       setQuickError('Gagal menyimpan catatan ke Pustaka. Coba lagi.');
       throw err;
@@ -1334,10 +1339,10 @@ export const PetRoom: FC<PetRoomProps> = ({
         </form>
         {youtubeStage && (
           <div role="status" aria-live="polite" className="mt-2 rounded-xl border border-[#E8DFCF] bg-[#FFF9EF] px-3 py-2 text-xs font-semibold text-[#4A3C31]">
-            {youtubeStage === 'capturing' && '1/4 · Mochi menangkap tautan video 🎬'}
-            {youtubeStage === 'transcribing' && '2/4 · Mochi mencari subtitle video 🎧✍️'}
-            {youtubeStage === 'thinking' && '3/4 · Mochi menyaring gagasan dan model mental 🧠✨'}
-            {youtubeStage === 'ready' && '4/4 · Catatan emas siap dibuka 📄🌟'}
+            {youtubeStage === 'capturing' && '1/4 · Mochi membaca tautan video'}
+            {youtubeStage === 'transcribing' && '2/4 · Mochi mencari subtitle video'}
+            {youtubeStage === 'thinking' && '3/4 · Mochi menyaring gagasan utama'}
+            {youtubeStage === 'ready' && '4/4 · Catatan siap dibuka'}
           </div>
         )}
       </div>
@@ -1348,14 +1353,14 @@ export const PetRoom: FC<PetRoomProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="wardrobe-sheet-title"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-3 sm:p-4 anim-modal-backdrop pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4 anim-modal-backdrop pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsWardrobeOpen(false);
           }}
         >
           <div
             ref={wardrobeModalRef}
-            className="w-full max-w-md bg-[#FAF7F2] rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] p-5 relative space-y-4 anim-modal-sheet"
+            className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto bg-[#FAF7F2] rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.35),0_4px_16px_rgba(0,0,0,0.1)] border border-[#EAE3D5] p-5 relative space-y-4 anim-modal-sheet"
           >
             {/* Top Pull Handle Indicator */}
             <div className="pt-0.5 pb-2 flex justify-center sm:hidden">
@@ -1365,15 +1370,15 @@ export const PetRoom: FC<PetRoomProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-[#EAE3D5]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#FFF0F5] flex items-center justify-center text-[#E57399]">
+                <div className="w-8 h-8 rounded-full bg-[#F5E9D8] flex items-center justify-center text-[#795331]">
                   <Shirt className="w-4 h-4" />
                 </div>
                 <div>
                   <h2 id="wardrobe-sheet-title" className="text-base font-black text-[#2E2E3A]">
-                    Lemari Kostum Mochi 🌸
+                    Lemari Kostum Mochi
                   </h2>
                   <p className="text-xs text-[#4E4E5E]">
-                    Aksesoris Mochi menyesuaikan aktivitas belajarmu
+                    Aksesori yang tumbuh bersama belajarmu
                   </p>
                 </div>
               </div>
@@ -1381,7 +1386,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                 ref={wardrobeCloseBtnRef}
                 type="button"
                 onClick={() => setIsWardrobeOpen(false)}
-                className="w-11 h-11 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#E57399]"
+                className="w-11 h-11 rounded-full bg-[#EFE9DF] hover:bg-[#E5DDD0] text-[#4A4A5A] hover:text-[#2E2E3A] flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#D97736]"
                 aria-label="Tutup lemari kostum"
               >
                 <X className="w-5 h-5" />
@@ -1395,14 +1400,14 @@ export const PetRoom: FC<PetRoomProps> = ({
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-3 rounded-2xl bg-white border border-[#EAE3D5] flex items-center gap-2.5 shadow-xs">
-                  <span className="text-2xl">👓</span>
+                  <AccessoryPreview kind="reading_glasses" />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-[#2E2E3A]">Kacamata Baca</p>
                     <p className="text-[10px] text-[#4E4E5E] leading-tight">Dipakai saat belajar</p>
                   </div>
                 </div>
                 <div className="p-3 rounded-2xl bg-white border border-[#EAE3D5] flex items-center gap-2.5 shadow-xs">
-                  <span className="text-2xl">🌙</span>
+                  <AccessoryPreview kind="sleep_cap" />
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-[#2E2E3A]">Topi Tidur</p>
                     <p className="text-[10px] text-[#4E4E5E] leading-tight">Dipakai saat malam</p>
@@ -1434,7 +1439,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-2xl shrink-0">{item.icon}</span>
+                        <AccessoryPreview kind={item.id} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold text-[#2E2E3A]">{item.name}</span>
@@ -1444,7 +1449,7 @@ export const PetRoom: FC<PetRoomProps> = ({
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-[#6B5A4B] truncate">{item.description}</p>
+                          <p className="text-[10px] text-[#6B5A4B] leading-snug">{item.description}</p>
                         </div>
                       </div>
 

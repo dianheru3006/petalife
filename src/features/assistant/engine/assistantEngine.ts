@@ -33,15 +33,17 @@ export function processAssistantMessage(
     query.includes('pet') ||
     query.includes('status') ||
     query.includes('hungry') ||
-    query.includes('level')
+    query.includes('level') ||
+    query.includes('keadaan mochi') ||
+    query.includes('kabar mochi')
   ) {
-    const hungerStatus = pet.hunger >= 90 ? 'super full and energetic' : pet.hunger < 30 ? 'getting hungry' : 'feeling cozy';
-    const reply = `🐾 **Mochi's Current Status (Level ${pet.level})**:\n\n• **Hunger:** ${pet.hunger}% (${hungerStatus})\n• **Mood:** ${pet.mood}% (Joyful & Cozy)\n• **Energy:** ${pet.energy}%\n• **Growth XP:** ${pet.exp} / ${pet.expToNextLevel} XP\n• **Learning Streak:** ${pet.streakDays} consecutive days! 🔥\n\nKeep reviewing materials in your Vault and writing reflection notes to help Mochi level up!`;
+    const hungerStatus = pet.hunger >= 90 ? 'kenyang' : pet.hunger < 30 ? 'mulai lapar' : 'cukup kenyang';
+    const reply = `Keadaan Mochi · Level ${pet.level}\n\nKenyang: ${pet.hunger}% (${hungerStatus})\nAfeksi: ${pet.mood}%\nEnergi: ${pet.energy}%\nXP: ${pet.exp} / ${pet.expToNextLevel}\nRangkaian belajar: ${pet.streakDays} hari\n\nMeninjau materi dan menulis catatan membantu Mochi bertumbuh.`;
 
     return {
       replyText: reply,
       suggestedAction: {
-        label: pet.hunger < 100 ? 'Feed Mochi on Home' : 'Explore Content Vault',
+        label: pet.hunger < 100 ? 'Kunjungi Mochi' : 'Buka Pustaka',
         targetTab: pet.hunger < 100 ? 'home' : 'vault',
       },
     };
@@ -53,7 +55,9 @@ export function processAssistantMessage(
     query.includes('vault') ||
     query.includes('summarize my vault') ||
     query.includes('summary of vault') ||
-    query.includes('overview')
+    query.includes('overview') ||
+    query.includes('pustaka') ||
+    query.includes('tinjau')
   ) {
     const toReview = links.filter(l => l.status === 'to_review');
     const inProgress = links.filter(l => l.status === 'in_progress');
@@ -61,22 +65,22 @@ export function processAssistantMessage(
 
     if (links.length === 0) {
       return {
-        replyText: "📚 Your Content Vault is currently empty! Paste your favorite YouTube Shorts, TikTok recipes, or tech blogs in the Vault tab to get started.",
-        suggestedAction: { label: 'Go to Content Vault', targetTab: 'vault' },
+        replyText: 'Pustakamu masih kosong. Simpan tautan materi untuk mulai belajar bersama Mochi.',
+        suggestedAction: { label: 'Buka Pustaka', targetTab: 'vault' },
       };
     }
 
-    let reply = `📚 **Your Content Vault Summary** (${links.length} total materials):\n\n• ⏳ **To Review:** ${toReview.length} items\n• 📖 **In Progress:** ${inProgress.length} items\n• ✅ **Mastered:** ${mastered.length} items\n\n`;
+    let reply = `Ringkasan Pustaka · ${links.length} materi\n\nPerlu ditinjau: ${toReview.length}\nSedang dipelajari: ${inProgress.length}\nSelesai: ${mastered.length}\n\n`;
 
     if (toReview.length > 0) {
-      reply += `💡 **Recommended to review next:**\n"${toReview[0].title}" (${toReview[0].domain})`;
+      reply += `Bacaan berikutnya: "${toReview[0].title}" (${toReview[0].domain})`;
     } else {
-      reply += `🎉 Fantastic job! All your saved materials have been reviewed or mastered!`;
+      reply += 'Semua materi tersimpan sudah kamu tinjau.';
     }
 
     return {
       replyText: reply,
-      suggestedAction: { label: 'Open Content Vault', targetTab: 'vault' },
+      suggestedAction: { label: 'Buka Pustaka', targetTab: 'vault' },
     };
   }
 
@@ -96,33 +100,33 @@ export function processAssistantMessage(
   );
 
   if (matchedNotes.length > 0 || matchedLinks.length > 0) {
-    let reply = `🔍 **Found in your Second Brain matching "${userQuery}"**:\n\n`;
+    let reply = `Ditemukan untuk "${userQuery}":\n\n`;
 
     if (matchedNotes.length > 0) {
       const n = matchedNotes[0];
-      reply += `📝 **From Note:** *"${n.title}"*\n${n.body.slice(0, 160)}${n.body.length > 160 ? '...' : ''}\n\n`;
+      reply += `Catatan: "${n.title}"\n${n.body.slice(0, 160)}${n.body.length > 160 ? '...' : ''}\n\n`;
     }
 
     if (matchedLinks.length > 0) {
       const l = matchedLinks[0];
-      reply += `🎬 **From Vault:** *"${l.title}"* (${l.domain})\n${l.notes || l.summary || 'Saved in Vault for review.'}\n`;
+      reply += `Pustaka: "${l.title}" (${l.domain})\n${l.notes || l.summary || 'Tersimpan untuk ditinjau.'}\n`;
     }
 
     return {
       replyText: reply,
       suggestedAction: matchedNotes.length > 0
-        ? { label: 'View in Notes', targetTab: 'notes' }
-        : { label: 'View in Vault', targetTab: 'vault' },
+        ? { label: 'Buka Catatan', targetTab: 'notes' }
+        : { label: 'Buka Pustaka', targetTab: 'vault' },
     };
   }
 
   // 5. Cooking & Recipes keyword fallback
-  if (query.includes('recipe') || query.includes('cook') || query.includes('dimsum')) {
+  if (query.includes('recipe') || query.includes('cook') || query.includes('dimsum') || query.includes('resep') || query.includes('masak')) {
     const cookNotes = notes.filter(n => n.tags.includes('cooking') || n.title.toLowerCase().includes('dimsum'));
     if (cookNotes.length > 0) {
       return {
-        replyText: `🍳 **Here is what you have saved for cooking**:\n\n*"${cookNotes[0].title}"*\n\n${cookNotes[0].body}`,
-        suggestedAction: { label: 'Open Notes', targetTab: 'notes' },
+        replyText: `Resep yang kamu simpan:\n\n"${cookNotes[0].title}"\n\n${cookNotes[0].body}`,
+        suggestedAction: { label: 'Buka Catatan', targetTab: 'notes' },
       };
     }
   }
@@ -132,16 +136,16 @@ export function processAssistantMessage(
     const archNotes = notes.filter(n => n.tags.includes('coding') || n.tags.includes('architecture'));
     if (archNotes.length > 0) {
       return {
-        replyText: `💻 **Clean Architecture Guidelines from your notes**:\n\n*"${archNotes[0].title}"*\n\n${archNotes[0].body}`,
-        suggestedAction: { label: 'Open Notes', targetTab: 'notes' },
+        replyText: `Dari catatanmu:\n\n"${archNotes[0].title}"\n\n${archNotes[0].body}`,
+        suggestedAction: { label: 'Buka Catatan', targetTab: 'notes' },
       };
     }
   }
 
   // 7. General Knowledge / Friendly Companion Fallback
   return {
-    replyText: `✨ **Mochi Assistant**: I looked through your ${links.length} saved links and ${notes.length} notes, but couldn't find an exact match for "${userQuery}".\n\nTry asking me:\n• *"Summarize my vault"*\n• *"How is Mochi doing?"*\n• *"What recipes do I have?"*\n• *"What should I review next?"*`,
-    suggestedAction: { label: 'Explore Content Vault', targetTab: 'vault' },
+    replyText: `Aku sudah memeriksa ${links.length} materi dan ${notes.length} catatan, tetapi belum menemukan jawaban untuk "${userQuery}".\n\nCoba tanyakan keadaan Mochi, minta ringkasan Pustaka, atau tanyakan materi yang perlu ditinjau.`,
+    suggestedAction: { label: 'Buka Pustaka', targetTab: 'vault' },
   };
 }
 

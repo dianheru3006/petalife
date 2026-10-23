@@ -22,19 +22,21 @@ export const AppLayout: FC<AppLayoutProps> = ({
   return (
     <div
       className={cn(
-        'min-h-screen w-full text-[#2E2E3A] transition-colors duration-700 ease-out',
+        currentTab === 'assistant'
+          ? 'h-dvh overflow-hidden w-full text-[#2E2E3A] transition-colors duration-700 ease-out'
+          : 'min-h-screen w-full text-[#2E2E3A] transition-colors duration-700 ease-out',
         isNightMode ? 'bg-[#EBE2D6]' : 'bg-[#FDFBF7]'
       )}
     >
       {/* Mobile-First Mini App Container: Seamless continuous background, thumb-friendly centered layout */}
-      <div className="w-full max-w-md min-h-screen mx-auto flex flex-col relative">
+      <div className={cn('w-full max-w-md mx-auto flex flex-col relative', currentTab === 'assistant' ? 'h-full min-h-0' : 'min-h-screen')}>
         {/* Home, Vault, and Notes carry their own page titles in the same visual rhythm. */}
         {currentTab !== 'home' && currentTab !== 'vault' && currentTab !== 'notes' && (
           <Header currentTab={currentTab} pet={pet} isNightMode={isNightMode} />
         )}
 
         {/* Page Content: Mobile-optimized spacing with generous clearance for BottomNav and Telegram safe area */}
-        <main className="flex-1 p-3.5 sm:p-4 pb-[calc(7.5rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] overflow-x-hidden w-full">
+        <main className={cn('flex-1 min-h-0 p-3.5 sm:p-4 pb-[calc(7.5rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] overflow-x-hidden w-full', currentTab === 'assistant' && 'flex flex-col')}>
           {children}
         </main>
 

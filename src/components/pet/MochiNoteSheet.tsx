@@ -309,7 +309,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {link.qualityStatus === 'grounded' && (
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EAF6EE] text-[#1E6B3B] border border-[#CCEBD6] flex items-center gap-1">
-                      <span>🌱</span> Grounded
+                      Berdasarkan sumber
                     </span>
                   )}
                   {link.provenance === 'video_analysis' && (
@@ -479,7 +479,6 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
               disabled={isSubmitting}
               className="flex-1 bg-[#4A3728] hover:bg-[#38291D] active:scale-98 text-white font-bold py-3.5 px-6 rounded-full flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer text-sm sm:text-base disabled:opacity-50"
             >
-              <span className="text-lg">✨</span>
               <span>
                 {isSubmitting ? 'Menyimpan...' : `Simpan ke Pustaka & Suapi ${petName}`}
               </span>

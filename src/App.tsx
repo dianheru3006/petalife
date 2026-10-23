@@ -20,6 +20,7 @@ import {
 import { queryAssistant } from './features/assistant/engine/assistantEngine';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
+import { SolidSproutIcon } from './components/common/SolidSproutIcon';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 // R2-PERF-01: halaman non-home dimuat lazy agar entry chunk tetap ringan.
 const VaultPage = lazy(() => import('./features/vault/VaultPage').then(m => ({ default: m.VaultPage })));
@@ -589,7 +590,7 @@ export function App() {
       const fallback: ChatMessage = {
         id: `ai-error-${Date.now()}`,
         sender: 'assistant',
-        text: 'Mochi belum bisa menjawab sekarang. Periksa koneksi lalu coba lagi ya. 🌱',
+        text: 'Mochi belum bisa menjawab sekarang. Periksa koneksi lalu coba lagi ya.',
         timestamp: 'Just now',
       };
       setChatMessages(prev => [...prev, fallback]);
@@ -639,11 +640,11 @@ export function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-16 h-16 rounded-full bg-[#FFEFE8] border-2 border-[#FED7C5] flex items-center justify-center text-3xl animate-bounce mb-3 shadow-xs">
-          🌸
+        <div className="w-16 h-16 rounded-full bg-[#FFEFE8] border-2 border-[#FED7C5] flex items-center justify-center mb-3 shadow-xs">
+          <SolidSproutIcon className="w-8 h-8" />
         </div>
-        <h2 className="text-base sm:text-lg font-extrabold text-[#2E2E3A] mb-1">Opening Mochi's Cozy Brain...</h2>
-        <p className="text-xs text-[#8A857A]">Loading your saved materials and reflection notes from IndexedDB</p>
+        <h2 className="text-base sm:text-lg font-extrabold text-[#2E2E3A] mb-1">Menyiapkan ruang belajar Mochi...</h2>
+        <p className="text-xs text-[#8A857A]">Memuat Pustaka dan Catatan yang tersimpan.</p>
       </div>
     );
   }
@@ -671,7 +672,6 @@ export function App() {
       {swRegistration && (
         <div className="bg-[#BA5218] text-white px-4 py-2.5 rounded-2xl mb-3 flex items-center justify-between text-xs font-bold shadow-md animate-fade-in select-none">
           <div className="flex items-center gap-2">
-            <span className="text-base">✨</span>
             <span>Versi baru Petalife tersedia.</span>
           </div>
           <button
@@ -684,7 +684,7 @@ export function App() {
         </div>
       )}
 
-      <div key={currentTab} className={currentTab === 'notes' ? '' : 'anim-page-enter'}>
+      <div key={currentTab} className={currentTab === 'notes' ? '' : currentTab === 'assistant' ? 'flex-1 min-h-0' : 'anim-page-enter'}>
         <Suspense fallback={<div className="p-6 text-center text-sm font-semibold text-[#8C8275] select-none">Memuat…</div>}>
         {currentTab === 'home' && (
           <DashboardPage

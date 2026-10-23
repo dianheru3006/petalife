@@ -382,7 +382,7 @@ export function getPetContextualStatus(pet: Pet): {
   if (display.hunger <= 60) {
     return {
       statusLabel: 'Hungry',
-      speechText: "Perut Mochi mulai keroncongan... boleh minta camilan lezat? 🍙✨",
+      speechText: 'Perut Mochi mulai keroncongan... boleh minta camilan?',
     };
   }
   if (display.energy <= 40) {
@@ -394,13 +394,13 @@ export function getPetContextualStatus(pet: Pet): {
   if (display.hunger >= 80) {
     return {
       statusLabel: 'Full & Cozy',
-      speechText: "Perut Mochi kenyang dan hatiku senang! Siap belajar bareng kamu! ✨",
+      speechText: 'Perut Mochi kenyang dan hatiku senang! Siap belajar bareng kamu!',
     };
   }
   if (display.mood >= 85) {
     return {
       statusLabel: 'Joyful',
-      speechText: "Hari ini seru banget belajar dan bertumbuh bareng kamu! 🌸",
+      speechText: 'Hari ini seru banget belajar dan bertumbuh bareng kamu!',
     };
   }
   return {

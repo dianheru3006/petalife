@@ -153,10 +153,10 @@ export const initialChatMessages: ChatMessage[] = [
   {
     id: 'msg-1',
     sender: 'assistant',
-    text: "✨ Halo! Aku Mochi, asisten belajarmu di Petalife. Aku siap membantumu mencari materi tersimpan di Vault, merangkum catatan, atau latihan kuis bareng Mochi!",
+    text: "Halo! Aku Mochi. Aku bisa membantu mencari materi di Pustaka dan merangkum catatanmu. Mau mulai dari mana?",
     timestamp: '10:00 AM',
     suggestedAction: {
-      label: 'Explore Content Vault',
+      label: 'Buka Pustaka',
       targetTab: 'vault'
     }
   }
