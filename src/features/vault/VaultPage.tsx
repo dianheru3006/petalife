@@ -431,22 +431,35 @@ export const VaultPage: FC<VaultPageProps> = ({
             key={link.id}
             type="button"
             onClick={() => {
+              try {
+                (window as unknown as {
+                  Telegram?: {
+                    WebApp?: {
+                      HapticFeedback?: {
+                        selectionChanged?: () => void;
+                      };
+                    };
+                  };
+                })?.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+              } catch {
+                // Safe fallback outside Telegram
+              }
               setSelectedLinkId(link.id);
               setPlayingVideoId(null);
               setEditingLinkId(null);
               window.scrollTo({ top: 0, behavior: 'instant' });
             }}
             aria-label={`Buka materi: ${link.title}`}
-            className="group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-200 active:scale-[0.98] hover:-translate-y-0.5"
+            className="group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
           >
-            {/* Book Spine & Cover Container */}
-            <div className="relative w-full rounded-2xl overflow-hidden border border-[#CDBB9E] bg-[#E6D4B8] p-1 shadow-[2px_3px_0_#B79368,3px_5px_9px_#66503928]">
+            {/* Book Spine & Cover Container with Realistic Shelf Elevation */}
+            <div className="relative w-full rounded-2xl overflow-hidden border border-[#CDBB9E] bg-[#E6D4B8] p-1 shadow-[2px_3px_0_#B79368,3px_5px_9px_#66503928] group-hover:shadow-[3px_7px_0_#B79368,4px_12px_18px_#66503935] transition-all duration-300">
               <VaultBookArtwork link={link} />
             </div>
 
             {/* Book Title & Platform Subtitle */}
             <span
-              className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#8B451C] transition-colors leading-snug"
+              className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#BA5218] transition-colors leading-snug"
               style={{
                 display: '-webkit-box',
                 WebkitLineClamp: 2,

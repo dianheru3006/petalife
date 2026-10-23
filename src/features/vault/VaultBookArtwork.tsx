@@ -147,7 +147,12 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
         />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {!large && <div className="absolute inset-y-0 left-0 w-2 border-r border-black/10 bg-black/10" aria-hidden="true" />}
+          {!large && (
+            <>
+              <div className="absolute inset-y-0 left-0 w-2.5 border-r border-black/15 bg-black/10 shadow-[inset_-1px_0_2px_rgba(0,0,0,0.1)]" aria-hidden="true" />
+              <div className="absolute inset-y-0 left-2.5 w-px bg-white/20" aria-hidden="true" />
+            </>
+          )}
           <div className="absolute inset-x-3 top-3 h-px bg-white/40" aria-hidden="true" />
           <div
             className={`flex items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${

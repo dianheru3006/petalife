@@ -130,6 +130,19 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
 
   const handleClick = () => {
     if (isFeeding) return;
+    try {
+      (window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            HapticFeedback?: {
+              impactOccurred?: (style: string) => void;
+            };
+          };
+        };
+      })?.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('medium');
+    } catch {
+      // Safe fallback
+    }
     if (isFull) {
       // Cycle to the next snack preview when pet is full
       onCycleNext();
@@ -141,7 +154,7 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
 
   return (
     <div className={`relative flex flex-col items-center select-none ${className}`}>
-      {/* Main Glass / Soap Dream Bubble */}
+      {/* Main Glass / Soap Dream Bubble with 3D Gummy bounce */}
       <button
         type="button"
         className="relative group cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D97736]"
@@ -151,7 +164,7 @@ export const SnackBubble: FC<SnackBubbleProps> = ({
         title={isFull ? `${snack.name} (Perut kenyang • Ketuk untuk ganti makanan)` : `${snack.name} (Ketuk untuk suapi Mochi!)`}
       >
         <div
-          className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 anim-float-bubble shadow-md"
+          className="relative w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-90 active:translate-y-1 anim-float-bubble shadow-md"
           style={{
             background:
               'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.52) 30%, rgba(210,235,255,0.36) 60%, rgba(255,215,245,0.40) 85%, rgba(195,230,255,0.68) 100%)',

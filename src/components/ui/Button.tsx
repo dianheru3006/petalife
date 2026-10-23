@@ -1,4 +1,4 @@
-import type { FC, ButtonHTMLAttributes } from 'react';
+import type { FC, ButtonHTMLAttributes, MouseEvent } from 'react';
 import { cn } from '../../lib/utils';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -12,30 +12,49 @@ export const Button: FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   disabled,
+  onClick,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-2xl transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer';
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    try {
+      (window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            HapticFeedback?: {
+              impactOccurred?: (style: string) => void;
+            };
+          };
+        };
+      })?.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
+    } catch {
+      // Safe fallback outside Telegram environment
+    }
+    onClick?.(e);
+  };
+
+  const baseStyles = 'inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-150 active:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none select-none cursor-pointer';
 
   const variantStyles = {
-    primary: 'bg-[#FED7C5] hover:bg-[#FDC4AC] text-[#7A3613] shadow-sm hover:shadow active:bg-[#FCAE8F]',
-    secondary: 'bg-[#F0EDF9] hover:bg-[#E3DCF5] text-[#55469C] shadow-sm',
-    mint: 'bg-[#D7F0E3] hover:bg-[#C2E8D2] text-[#246A42] shadow-sm',
-    peach: 'bg-[#BA5218] hover:bg-[#A3430F] text-white shadow-md shadow-[#BA5218]/20',
-    outline: 'border border-[#EAE6DF] hover:bg-[#F3EDE2] text-[#4A4A5A] bg-[#FAF7F2]',
-    ghost: 'hover:bg-[#F4EFE6] text-[#4A4A5A]',
+    primary: 'bg-[#FED7C5] hover:bg-[#FDC4AC] text-[#7A3613] border-b-[3px] border-[#E8A588] shadow-xs active:border-b-[1px] active:bg-[#FCAE8F]',
+    secondary: 'bg-[#F0EDF9] hover:bg-[#E3DCF5] text-[#55469C] border-b-[3px] border-[#C8BDEB] shadow-xs active:border-b-[1px]',
+    mint: 'bg-[#D7F0E3] hover:bg-[#C2E8D2] text-[#246A42] border-b-[3px] border-[#A9D7BD] shadow-xs active:border-b-[1px]',
+    peach: 'bg-[#BA5218] hover:bg-[#A3430F] text-white border-b-[3.5px] border-[#8A370A] shadow-sm shadow-[#BA5218]/25 active:border-b-[1px]',
+    outline: 'border border-[#EAE6DF] border-b-[3px] border-b-[#D8D2C5] hover:bg-[#F3EDE2] text-[#4A4A5A] bg-[#FAF7F2] active:border-b-[1px]',
+    ghost: 'hover:bg-[#F4EFE6] text-[#4A4A5A] active:translate-y-0',
   };
 
   const sizeStyles = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2.5 gap-2',
-    lg: 'text-base px-6 py-3.5 gap-2.5 rounded-3xl',
-    icon: 'p-2.5 rounded-xl',
+    sm: 'text-xs px-3 py-1.5 min-h-[36px] gap-1.5',
+    md: 'text-sm px-4 py-2.5 min-h-[44px] gap-2',
+    lg: 'text-base px-6 py-3.5 min-h-[50px] gap-2.5 rounded-3xl',
+    icon: 'p-2.5 min-w-[44px] min-h-[44px] rounded-xl',
   };
 
   return (
     <button
       className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
       disabled={disabled}
+      onClick={handleClick}
       {...props}
     >
       {children}

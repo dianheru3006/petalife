@@ -423,6 +423,20 @@ export const PetRoom: FC<PetRoomProps> = ({
       return;
     }
 
+    try {
+      (window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            HapticFeedback?: {
+              notificationOccurred?: (type: string) => void;
+            };
+          };
+        };
+      })?.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
+    } catch {
+      // Safe fallback outside Telegram
+    }
+
     triggerSpeech(currentSnack.feedSpeech, 4000);
     const xpAwarded = result?.xpAwarded ?? 0;
     setLastFedText(xpAwarded > 0
@@ -992,6 +1006,24 @@ export const PetRoom: FC<PetRoomProps> = ({
           />
         </picture>
 
+        {/* Magical Cozy Midnight Atmosphere: Ambient Warm Lamp Glow & Floating Golden Fireflies */}
+        {activeNight && (
+          <div className="absolute inset-0 pointer-events-none z-15 overflow-hidden transition-opacity duration-1000 ease-out opacity-100" aria-hidden="true">
+            {/* Soft Warm Amber Lamp Glow near the floor lamp */}
+            <div
+              className="absolute top-[20%] right-[8%] w-48 h-48 rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.18)_0%,rgba(245,158,11,0.06)_50%,transparent_75%)] mix-blend-screen filter blur-md pointer-events-none"
+            />
+            {/* Floating Fireflies / Golden Motes */}
+            <div className="absolute inset-0 pointer-events-none">
+              <span className="cozy-firefly firefly-1" />
+              <span className="cozy-firefly firefly-2" />
+              <span className="cozy-firefly firefly-3" />
+              <span className="cozy-firefly firefly-4" />
+              <span className="cozy-firefly firefly-5" />
+            </div>
+          </div>
+        )}
+
         {/* Interactive Dynamic Daytime TV & Night Power-off Screen */}
         <TvScreen
           isNightMode={activeNight}
@@ -1250,7 +1282,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             <button
               type="submit"
               disabled={isSavingLink}
-              className="absolute right-1.5 sm:right-2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#D97736] hover:bg-[#BA5218] text-white shadow-xs cursor-pointer active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]"
+              className="absolute right-1 sm:right-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-[#D97736] hover:bg-[#BA5218] text-white shadow-xs border-b-[2px] border-[#9E410E] cursor-pointer active:translate-y-0.5 active:border-b-0 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]"
               title="Kirim dan simpan ke Pustaka"
               aria-label={isSavingLink ? 'Menyimpan tautan...' : 'Kirim dan simpan tautan ke Pustaka'}
             >
@@ -1264,7 +1296,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             <button
               type="button"
               onClick={handlePasteToInput}
-              className="absolute right-1.5 sm:right-2 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-[#7A6E60] hover:text-[#BA5218] hover:bg-black/5 cursor-pointer active:scale-90 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+              className="absolute right-1 sm:right-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-[#7A6E60] hover:text-[#BA5218] hover:bg-black/5 cursor-pointer active:scale-95 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
               title="Tempel link dari Clipboard"
               aria-label="Tempel tautan dari clipboard"
             >
