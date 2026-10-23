@@ -485,25 +485,67 @@
   transform-origin: center center;
 }
 
-@keyframes mochi-pencil-scribble {
+@keyframes mochi-nod {
   0%, 100% {
-    transform: rotate(0deg) translate(0, 0);
+    transform: rotate(-6deg) translateY(0);
   }
-  25% {
-    transform: rotate(-10deg) translate(-2px, -3px);
+  30% {
+    transform: rotate(-2deg) translateY(-3px);
   }
-  50% {
-    transform: rotate(8deg) translate(2px, 1px);
+  60% {
+    transform: rotate(-9deg) translateY(2px);
   }
-  75% {
-    transform: rotate(-6deg) translate(-1px, -2px);
+  85% {
+    transform: rotate(-5deg) translateY(-1px);
   }
 }
 
-.anim-pencil-scribble {
-  animation: mochi-pencil-scribble 0.28s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: bottom center;
+.anim-mochi-nod {
+  animation: mochi-nod 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-origin: 50% 85%;
+}
+
+@keyframes eureka-sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0px) scale(0.5);
+  }
+  45% {
+    opacity: 0.95;
+    transform: translateY(-8px) scale(1.15);
+  }
+  75% {
+    opacity: 0.8;
+    transform: translateY(-14px) scale(0.9);
+  }
+}
+
+.anim-eureka-sparkle {
+  animation: eureka-sparkle 2.2s ease-in-out infinite;
+}
+
+@keyframes library-active-page-flip {
+  0%, 15% {
+    transform: rotate(0deg) scaleX(1);
+    opacity: 0.95;
+  }
+  45% {
+    transform: rotate(-28deg) scaleX(0.25);
+    opacity: 0.85;
+  }
+  75% {
+    transform: rotate(-65deg) scaleX(0.8);
+    opacity: 0.35;
+  }
+  95%, 100% {
+    transform: rotate(-80deg) scaleX(0.95);
+    opacity: 0;
+  }
+}
+
+.anim-page-flip-curl {
+  animation: library-active-page-flip 2.4s cubic-bezier(0.35, 0, 0.25, 1) infinite;
+  transform-origin: 75px 145px;
 }
 
 @keyframes mochi-glasses-shine {
@@ -1233,7 +1275,9 @@
   .anim-terrarium-shake,
   .anim-natural-blink,
   .anim-sleepy-blink,
-  .anim-pencil-scribble,
+  .anim-mochi-nod,
+  .anim-eureka-sparkle,
+  .anim-page-flip-curl,
   .anim-glasses-shine,
   .anim-float-note,
   .anim-float-heart,

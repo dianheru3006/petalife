@@ -30,6 +30,7 @@ import { VaultBookArtwork } from './VaultBookArtwork';
 import { VaultReadingSections } from './VaultReadingSections';
 import type { LibraryMochiActivity } from './LibraryMochi';
 import { LibraryMochi } from './LibraryMochi';
+import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import libraryBg from '../../assets/library-front-bg.jpg';
 import libraryBgWebp from '../../assets/library-front-bg.webp';
 
@@ -74,29 +75,35 @@ export interface VaultPageProps {
   isNightMode?: boolean;
 }
 
-const MOCHI_ACTIVITIES: LibraryMochiActivity[] = [
+export const MOCHI_ACTIVITIES: LibraryMochiActivity[] = [
   'reading',
-  'scribbling',
+  'page-flip',
   'adjusting-glasses',
-  'cheering',
+  'eureka-nod',
   'drowsy',
+  'cheering',
 ];
 
-const MOCHI_SPEECH_POOLS: Record<LibraryMochiActivity, string[]> = {
+export const MOCHI_SPEECH_POOLS: Record<LibraryMochiActivity, string[]> = {
   reading: [
     'Ssst... lagi asyik membaca intisari materi di rak buku.',
     'Buku adalah jendela dunia... banyak wawasan baru tersimpan di sini.',
     'Mochi senang sekali berada di perpustakaan yang hangat ini.',
   ],
-  scribbling: [
-    'Catat poin pentingnya biar ilmunya nempel di kepala.',
-    'Mochi lagi merangkum gagasan kunci dari materi favoritmu.',
-    'Satu catatan kecil hari ini bisa jadi pemahaman besar besok.',
+  'page-flip': [
+    'Buka halaman berikutnya... makin dibaca makin seru!',
+    'Satu lembar lagi, intisari di bab ini menarik banget.',
+    'Lembaran buku perpustakaan beraroma wangi dan menenangkan.',
   ],
   'adjusting-glasses': [
     'Hmm... kacamata pustakawan Mochi sudah kelihatan pas kan?',
     'Analisis mendalam butuh ketelitian ekstra... sekarang Mochi paham.',
     'Fokus membaca intisari empat lapis biar makin tercerahkan.',
+  ],
+  'eureka-nod': [
+    'Aha! Gagasan di catatan ini brilian banget, Mochi baru sadar!',
+    'Analisis yang tajam! Mochi setuju banget sama poin kunci ini.',
+    'Paham sekarang! Pola pikir ini bisa kita terapkan sehari-hari.',
   ],
   drowsy: [
     'Hoaaam... membaca banyak lembaran bikin kelopak mata Mochi berat.',
@@ -105,7 +112,7 @@ const MOCHI_SPEECH_POOLS: Record<LibraryMochiActivity, string[]> = {
   ],
   cheering: [
     'Semangat belajar! Otak kita makin kaya ilmu baru hari ini.',
-    'Mochi suka banget kalau kita rajin membaca dan menyerap ilmu.',
+    'Mochi suka banget kalau kita rajin membaca dan menyerap ilmu!',
   ],
 };
 
@@ -178,9 +185,10 @@ export const VaultPage: FC<VaultPageProps> = ({
 
     const idleSequence: LibraryMochiActivity[] = [
       'reading',
-      'scribbling',
+      'page-flip',
       'reading',
       'adjusting-glasses',
+      'eureka-nod',
       'reading',
       'drowsy',
     ];
@@ -216,33 +224,34 @@ export const VaultPage: FC<VaultPageProps> = ({
   }, [startIdleTimer]);
 
   const handleMochiTap = () => {
-    // Pure activity transition calculation outside updater (React Strict Mode compliant)
-    const currentIndex = MOCHI_ACTIVITIES.indexOf(mochiActivity);
-    const next = MOCHI_ACTIVITIES[(currentIndex + 1) % MOCHI_ACTIVITIES.length];
-    setMochiActivity(next);
+    // 1. Play Mochi's cute squishy bubble pop sound!
+    proceduralAudio.playAnimaleseChirp('Rekomendasi bacaan Mochi');
+
+    // 2. Animate Mochi to cheering state!
+    setMochiActivity('cheering');
 
     if (speechTimeoutRef.current) {
       clearTimeout(speechTimeoutRef.current);
       speechTimeoutRef.current = null;
     }
 
-    if (next === 'cheering' && links.length > 0) {
+    // 3. Recommend a random book from the shelf
+    if (links.length > 0) {
       const randomLink = links[Math.floor(Math.random() * links.length)];
       setRecommendedLink(randomLink);
-      setMochiSpeech('Yuk baca materi pilihan Mochi ini!');
+      setMochiSpeech(`Rekomendasi bacaan Mochi hari ini: "${randomLink.title}"! Yuk buka dan baca intisarinya! 📖✨`);
       speechTimeoutRef.current = setTimeout(() => {
         setMochiSpeech(null);
         setRecommendedLink(null);
+        setMochiActivity('reading');
       }, 8500);
     } else {
       setRecommendedLink(null);
-      const pool = MOCHI_SPEECH_POOLS[next];
-      const line = pool[Math.floor(Math.random() * pool.length)];
-      setMochiSpeech(line);
-
+      setMochiSpeech('Semangat belajar! Rak buku ini siap diisi materi baru bersama Mochi! ✨');
       speechTimeoutRef.current = setTimeout(() => {
         setMochiSpeech(null);
-      }, 4200);
+        setMochiActivity('reading');
+      }, 4500);
     }
 
     // Reset idle timer so it doesn't immediately overwrite the user's tapped pose
