@@ -1040,15 +1040,6 @@
   will-change: transform, opacity;
 }
 
-@keyframes library-mochi-breathe {
-  0%, 100% {
-    transform: translateY(0px) scale(1, 1);
-  }
-  48% {
-    transform: translateY(-4px) scale(1.025, 0.975);
-  }
-}
-
 @keyframes library-mochi-blink {
   0%, 88%, 94%, 100% {
     transform: scaleY(1);
@@ -1120,8 +1111,9 @@
 }
 
 .library-mochi-breathe,
-.library-mochi-bob {
-  animation: library-mochi-breathe 3.6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+.library-mochi-bob,
+.notes-writer-breathe {
+  animation: mochi-breathe 3.5s ease-in-out infinite;
   transform-origin: bottom center;
 }
 
@@ -1269,11 +1261,6 @@
   background-origin: content-box;
 }
 
-@keyframes notes-writer-breathe {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-
 @keyframes notes-writer-pencil {
   0%, 56%, 86%, 100% { transform: rotate(0deg); }
   12%, 36% { transform: rotate(6deg); }
@@ -1295,18 +1282,43 @@
   65%, 78% { opacity: 0.9; }
 }
 
-.notes-writer-breathe { animation: notes-writer-breathe 4s ease-in-out infinite; }
+@keyframes notes-writer-reading-gaze {
+  0% {
+    transform: translate(-1.8px, 1.8px);
+  }
+  24% {
+    transform: translate(1.8px, 2.2px);
+  }
+  28% {
+    transform: translate(-1.8px, 2.8px);
+  }
+  52% {
+    transform: translate(1.8px, 3.2px);
+  }
+  58%, 76% {
+    transform: translate(0px, 1.2px);
+  }
+  84%, 100% {
+    transform: translate(-1.8px, 1.8px);
+  }
+}
+
 .notes-writer-pencil { animation: notes-writer-pencil 4.5s ease-in-out infinite; }
 .notes-writer-blink { animation: notes-writer-blink 6.4s ease-in-out infinite; }
 .notes-writer-sprout { animation: notes-writer-sprout 4s ease-in-out infinite; }
 .notes-writer-thought { animation: notes-writer-idea 4.5s ease-in-out infinite; }
+.notes-writer-reading-gaze {
+  transform: translate(0px, 2px);
+  animation: notes-writer-reading-gaze 6s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .notes-writer-breathe,
   .notes-writer-pencil,
   .notes-writer-blink,
   .notes-writer-sprout,
-  .notes-writer-thought {
+  .notes-writer-thought,
+  .notes-writer-reading-gaze {
     animation: none !important;
   }
   .notes-writer-thought { opacity: 0; }

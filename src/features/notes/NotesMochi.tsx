@@ -1,4 +1,12 @@
 import type { FC } from 'react';
+import {
+  MOCHI_BODY_GRADIENT_STOPS,
+  MOCHI_BODY_PATH,
+  MOCHI_DIORAMA_TRANSFORM,
+  MOCHI_SPROUT_LEFT_LEAF_PATH,
+  MOCHI_SPROUT_RIGHT_LEAF_PATH,
+  MOCHI_SPROUT_STEM_PATH,
+} from '../../components/pet/mochiDesign';
 
 export interface NotesMochiProps {
   isHopping?: boolean;
@@ -13,31 +21,24 @@ export interface NotesMochiProps {
 export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false }) => (
   <svg viewBox="0 0 150 170" aria-hidden="true" className="h-full w-full overflow-visible drop-shadow-[0_8px_14px_rgba(80,50,30,0.22)] select-none">
     <defs>
-      {/* Mochi's Canonical 3D Dumpling Body */}
-      <radialGradient id="notesMochiBody" cx="35%" cy="28%" r="72%">
-        <stop offset="0%" stopColor="#FFF2D6" />
-        <stop offset="27%" stopColor="#FED788" />
-        <stop offset="67%" stopColor="#F5A834" />
-        <stop offset="100%" stopColor="#C96E14" />
+      {/* The same clay material used by Mochi at Home. */}
+      <radialGradient id="notesMochiBody" cx="36%" cy="30%" r="70%" fx="32%" fy="24%">
+        {MOCHI_BODY_GRADIENT_STOPS.map(({ offset, color }) => (
+          <stop key={offset} offset={offset} stopColor={color} />
+        ))}
       </radialGradient>
 
       {/* Head contour clipPath ensuring specular gleam NEVER bleeds past cranial contour */}
       <clipPath id="notesMochiBodyClip">
-        <path
-          d="M75 42
-             C108 42 126 68 124 104
-             C122 136 102 148 75 148
-             C48 148 28 136 26 104
-             C24 68 42 42 75 42 Z"
-        />
+        <path d={MOCHI_BODY_PATH} transform={MOCHI_DIORAMA_TRANSFORM} />
       </clipPath>
 
       {/* 3D Volumetric Specular Forehead Gleam */}
-      <linearGradient id="notesMochiGleam" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.75" />
-        <stop offset="45%" stopColor="#FFFFFF" stopOpacity="0.25" />
+      <radialGradient id="notesMochiGleam" cx="36%" cy="22%" r="35%">
+        <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
+        <stop offset="60%" stopColor="#FFFFFF" stopOpacity="0.15" />
         <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-      </linearGradient>
+      </radialGradient>
 
       {/* Soft Rosy Airbrushed Blushing Cheeks */}
       <radialGradient id="notesMochiBlush" cx="50%" cy="50%" r="50%">
@@ -118,59 +119,58 @@ export const NotesMochi: FC<NotesMochiProps> = ({ isHopping = false }) => (
     {/* Breathing & Squash-and-Stretch Animation Group */}
     <g className={isHopping ? 'anim-mochi-hop' : 'notes-writer-breathe'}>
       {/* Sprout with 3D gradient leaves */}
-      <g className={isHopping ? 'anim-sprout-joy' : 'notes-writer-sprout'} style={{ transformOrigin: '79px 37px' }}>
-        <path d="M76 46 Q77 29 86 18" fill="none" stroke="url(#notesSprout3D)" strokeWidth="3.2" strokeLinecap="round" />
-        <path d="M86 19 Q75 9 73 21 Q79 27 86 19Z" fill="url(#notesLeafHighlight)" stroke="#2E7D32" strokeWidth="1" />
-        <path d="M86 19 Q98 8 101 19 Q94 26 86 19Z" fill="url(#notesSprout3D)" stroke="#2E7D32" strokeWidth="1" />
+      <g className={isHopping ? 'anim-sprout-joy' : 'notes-writer-sprout'} style={{ transformOrigin: '75px 42px' }}>
+        <g transform={MOCHI_DIORAMA_TRANSFORM}>
+          <path d={MOCHI_SPROUT_STEM_PATH} fill="none" stroke="url(#notesSprout3D)" strokeWidth="4" strokeLinecap="round" />
+          <path d={MOCHI_SPROUT_LEFT_LEAF_PATH} fill="url(#notesLeafHighlight)" stroke="#2E7D32" strokeWidth="1.2" />
+          <path d={MOCHI_SPROUT_RIGHT_LEAF_PATH} fill="url(#notesSprout3D)" stroke="#2E7D32" strokeWidth="1.2" />
+        </g>
       </g>
 
-      {/* Main 3D Dumpling Body */}
+      {/* Home's exact body contour, scaled for this diorama. */}
       <path
-        d="M75 42
-           C108 42 126 68 124 104
-           C122 136 102 148 75 148
-           C48 148 28 136 26 104
-           C24 68 42 42 75 42 Z"
+        d={MOCHI_BODY_PATH}
+        transform={MOCHI_DIORAMA_TRANSFORM}
         fill="url(#notesMochiBody)"
         stroke="#BD721C"
-        strokeWidth="1.6"
+        strokeWidth="1.8"
       />
 
       {/* Volumetric Forehead Gleam (Strictly clipped inside body contour - zero bleed) */}
       <g clipPath="url(#notesMochiBodyClip)">
-        <ellipse cx="62" cy="66" rx="23" ry="14" transform="rotate(-15 62 66)" fill="url(#notesMochiGleam)" />
+        <ellipse cx="61.5" cy="63" rx="28.5" ry="18" transform="rotate(-15 61.5 63)" fill="url(#notesMochiGleam)" />
       </g>
 
       {/* Airbrushed Rosy Cheeks */}
-      <ellipse cx="44" cy="108" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
-      <ellipse cx="106" cy="108" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
+      <ellipse cx="44" cy="92" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
+      <ellipse cx="106" cy="92" rx="10.5" ry="6.5" fill="url(#notesMochiBlush)" />
 
-      {/* Eyes: Joyful squint arcs when hopping, innocent blinking eyes normally */}
+      {/* Eyes: Joyful squint arcs when hopping, focused downward reading gaze normally */}
       {isHopping ? (
         <g stroke="#2C1A14" strokeWidth="3.2" strokeLinecap="round" fill="none">
-          <path d="M51 97 Q57 90 63 97" />
-          <path d="M87 97 Q93 90 99 97" />
+          <path d="M52 86 Q58 79 64 86" />
+          <path d="M86 86 Q92 79 98 86" />
         </g>
       ) : (
-        <>
-          <g className="notes-writer-blink" style={{ transformOrigin: '57px 96px' }}>
-            <ellipse cx="57" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
-            <circle cx="54" cy="92" r="2.8" fill="white" />
-            <circle cx="60" cy="99" r="1.3" fill="white" />
+        <g className="notes-writer-reading-gaze">
+          <g className="notes-writer-blink" style={{ transformOrigin: '58px 85px' }}>
+            <ellipse cx="58" cy="85" rx="6.5" ry="7.2" fill="#2C1A14" />
+            <circle cx="56.2" cy="82.5" r="2.4" fill="white" />
+            <circle cx="60.5" cy="88" r="1.1" fill="white" />
           </g>
-          <g className="notes-writer-blink" style={{ transformOrigin: '93px 96px' }}>
-            <ellipse cx="93" cy="96" rx="7.5" ry="9" fill="#2C1A14" />
-            <circle cx="90" cy="92" r="2.8" fill="white" />
-            <circle cx="96" cy="99" r="1.3" fill="white" />
+          <g className="notes-writer-blink" style={{ transformOrigin: '92px 85px' }}>
+            <ellipse cx="92" cy="85" rx="6.5" ry="7.2" fill="#2C1A14" />
+            <circle cx="90.2" cy="82.5" r="2.4" fill="white" />
+            <circle cx="94.5" cy="88" r="1.1" fill="white" />
           </g>
-        </>
+        </g>
       )}
 
       {/* Sweet Smile Mouth */}
       {isHopping ? (
-        <path d="M70 109 Q75 119 80 109 Z" fill="#FF7575" stroke="#2C1A14" strokeWidth="2" strokeLinejoin="round" />
+        <path d="M70 92 Q75 102 80 92 Z" fill="#FF7575" stroke="#2C1A14" strokeWidth="2" strokeLinejoin="round" />
       ) : (
-        <path d="M70 112 Q75 116 80 112" fill="none" stroke="#2C1A14" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="M70 93 Q75 97 80 93" fill="none" stroke="#2C1A14" strokeWidth="2.2" strokeLinecap="round" />
       )}
 
       {/* Creative Idea Sparkles */}

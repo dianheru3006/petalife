@@ -2,6 +2,13 @@ import type { FC } from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
+import {
+  MOCHI_BODY_GRADIENT_STOPS,
+  MOCHI_BODY_PATH,
+  MOCHI_SPROUT_LEFT_LEAF_PATH,
+  MOCHI_SPROUT_RIGHT_LEAF_PATH,
+  MOCHI_SPROUT_STEM_PATH,
+} from './mochiDesign';
 
 export type MochiAction = 'idle' | 'hop' | 'wiggle' | 'spin' | 'wink' | 'dance' | 'studying' | 'thinking' | 'dizzy' | 'holding-note';
 export type GazeDirection = 'center' | 'left' | 'right';
@@ -392,11 +399,9 @@ export const MochiPet: FC<MochiPetProps> = ({
           <defs>
             {/* 3D Directional Clay Lighting: Top-Left Key Light matching Room sunbeam */}
             <radialGradient id="clayBody3D" cx="36%" cy="30%" r="70%" fx="32%" fy="24%">
-              <stop offset="0%" stopColor="#FFF4DC" />
-              <stop offset="26%" stopColor="#FDE1A3" />
-              <stop offset="62%" stopColor="#F6BF59" />
-              <stop offset="88%" stopColor="#E99F37" />
-              <stop offset="100%" stopColor="#C87A22" />
+              {MOCHI_BODY_GRADIENT_STOPS.map(({ offset, color }) => (
+                <stop key={offset} offset={offset} stopColor={color} />
+              ))}
             </radialGradient>
 
             {/* Specular Forehead Gloss */}
@@ -474,7 +479,7 @@ export const MochiPet: FC<MochiPetProps> = ({
           >
             {/* Sprout Stem */}
             <path
-              d="M100 48 Q99 26 105 18"
+              d={MOCHI_SPROUT_STEM_PATH}
               stroke="url(#sproutGrad3D)"
               strokeWidth="4"
               strokeLinecap="round"
@@ -482,14 +487,14 @@ export const MochiPet: FC<MochiPetProps> = ({
             />
             {/* Left Leaf */}
             <path
-              d="M103 20 C91 14 88 26 101 24 Z"
+              d={MOCHI_SPROUT_LEFT_LEAF_PATH}
               fill="url(#leafHighlight)"
               stroke="#2E7D32"
               strokeWidth="1.2"
             />
             {/* Right Leaf */}
             <path
-              d="M104 19 C116 11 121 22 107 23 Z"
+              d={MOCHI_SPROUT_RIGHT_LEAF_PATH}
               fill="url(#sproutGrad3D)"
               stroke="#2E7D32"
               strokeWidth="1.2"
@@ -498,11 +503,7 @@ export const MochiPet: FC<MochiPetProps> = ({
 
           {/* 3. Main Round 3D Dumpling Body */}
           <path
-            d="M100 46 
-               C144 46 168 82 166 128 
-               C164 165 136 176 100 176 
-               C64 176 36 165 34 128 
-               C32 82 56 46 100 46 Z"
+            d={MOCHI_BODY_PATH}
             fill="url(#clayBody3D)"
             stroke="#BD721C"
             strokeWidth="1.8"

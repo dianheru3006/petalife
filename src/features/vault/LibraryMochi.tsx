@@ -1,4 +1,12 @@
 import type { FC } from 'react';
+import {
+  MOCHI_BODY_GRADIENT_STOPS,
+  MOCHI_BODY_PATH,
+  MOCHI_DIORAMA_TRANSFORM,
+  MOCHI_SPROUT_LEFT_LEAF_PATH,
+  MOCHI_SPROUT_RIGHT_LEAF_PATH,
+  MOCHI_SPROUT_STEM_PATH,
+} from '../../components/pet/mochiDesign';
 
 export type LibraryMochiActivity = 'reading' | 'adjusting-glasses' | 'drowsy' | 'cheering';
 
@@ -25,20 +33,19 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
       className="h-full w-full overflow-visible drop-shadow-[0_8px_14px_rgba(80,50,30,0.22)] select-none"
     >
       <defs>
-        {/* Mochi's Canonical 3D Dumpling Clay Body Gradient */}
-        <radialGradient id="mochiLibrarianBody" cx="35%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="#FFF2D6" />
-          <stop offset="25%" stopColor="#FED788" />
-          <stop offset="65%" stopColor="#F5A834" />
-          <stop offset="100%" stopColor="#C96E14" />
+        {/* The same clay material used by Mochi at Home. */}
+        <radialGradient id="mochiLibrarianBody" cx="36%" cy="30%" r="70%" fx="32%" fy="24%">
+          {MOCHI_BODY_GRADIENT_STOPS.map(({ offset, color }) => (
+            <stop key={offset} offset={offset} stopColor={color} />
+          ))}
         </radialGradient>
 
         {/* Specular Top-Left Volumetric Highlight */}
-        <linearGradient id="mochiLibrarianGleam" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
-          <stop offset="40%" stopColor="#FFFFFF" stopOpacity="0.3" />
+        <radialGradient id="mochiLibrarianGleam" cx="36%" cy="22%" r="35%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
+          <stop offset="60%" stopColor="#FFFFFF" stopOpacity="0.15" />
           <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </linearGradient>
+        </radialGradient>
 
         {/* Rosy Airbrushed Blushing Cheeks */}
         <radialGradient id="mochiLibrarianBlush" cx="50%" cy="50%" r="50%">
@@ -108,57 +115,37 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
         {/* 2a. Sprout Stem & Leaves (Emerges naturally above the beret crown) */}
         <g
           className={activity === 'cheering' ? 'anim-sprout-joy' : 'library-mochi-sprout'}
-          style={{ transformOrigin: '82px 26px' }}
+          style={{ transformOrigin: '75px 42px' }}
         >
-          {/* Sprout Stem */}
-          <path
-            d="M82 26 Q85 15 91 9"
-            stroke="url(#mochiSprout3D)"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            fill="none"
-          />
-          {/* Left Leaf */}
-          <path
-            d="M91 9 C83 4 80 14 90 12 Z"
-            fill="url(#mochiLeafHighlight)"
-            stroke="#2E7D32"
-            strokeWidth="1"
-          />
-          {/* Right Leaf */}
-          <path
-            d="M92 8 C102 3 105 13 93 12 Z"
-            fill="url(#mochiSprout3D)"
-            stroke="#2E7D32"
-            strokeWidth="1"
-          />
+          <g transform={MOCHI_DIORAMA_TRANSFORM}>
+            <path d={MOCHI_SPROUT_STEM_PATH} stroke="url(#mochiSprout3D)" strokeWidth="4" strokeLinecap="round" fill="none" />
+            <path d={MOCHI_SPROUT_LEFT_LEAF_PATH} fill="url(#mochiLeafHighlight)" stroke="#2E7D32" strokeWidth="1.2" />
+            <path d={MOCHI_SPROUT_RIGHT_LEAF_PATH} fill="url(#mochiSprout3D)" stroke="#2E7D32" strokeWidth="1.2" />
+          </g>
         </g>
 
-        {/* 2b. Canonical 3D Dumpling Body Shape (Drawn first so accessories sit on top) */}
+        {/* 2b. Home's exact body contour, scaled for this diorama. */}
         <path
-          d="M75 42
-             C108 42 126 68 124 104
-             C122 136 102 148 75 148
-             C48 148 28 136 26 104
-             C24 68 42 42 75 42 Z"
+          d={MOCHI_BODY_PATH}
+          transform={MOCHI_DIORAMA_TRANSFORM}
           fill="url(#mochiLibrarianBody)"
           stroke="#BD721C"
-          strokeWidth="1.6"
+          strokeWidth="1.8"
           strokeLinejoin="round"
         />
 
         {/* 2c. Volumetric Top-Left Specular Gleam */}
         <ellipse
-          cx="60"
-          cy="66"
-          rx="28"
-          ry="17"
+          cx="61.5"
+          cy="63"
+          rx="28.5"
+          ry="18"
           fill="url(#mochiLibrarianGleam)"
-          transform="rotate(-15 60 66)"
+          transform="rotate(-15 61.5 63)"
         />
 
         {/* 2d. Soft scholar beret, following the curve of Mochi's forehead. */}
-        <g>
+        <g transform="translate(15 8) scale(0.8)">
           {/* Narrow contact shadow keeps the cap seated on the head. */}
           <path
             d="M44 53 Q74 60 106 48 Q84 60 46 57 Z"
@@ -201,41 +188,41 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
         </g>
 
         {/* The seated pose turns Mochi's gaze with the angled chair. */}
-        <g transform={seated ? 'translate(15 0) scale(0.88 1)' : undefined}>
+        <g transform={seated ? 'translate(6 0)' : undefined}>
           {/* 2e. Rosy Blushing Cheeks */}
-          <ellipse cx="44" cy="108" rx="10.5" ry="6.5" fill="url(#mochiLibrarianBlush)" />
-          <ellipse cx="106" cy="108" rx="10.5" ry="6.5" fill="url(#mochiLibrarianBlush)" />
+          <ellipse cx="44" cy="92" rx="10.5" ry="6.5" fill="url(#mochiLibrarianBlush)" />
+          <ellipse cx="106" cy="92" rx="10.5" ry="6.5" fill="url(#mochiLibrarianBlush)" />
 
           {/* 2f. Eyes (Dynamically tailored to Activity) */}
           {activity === 'drowsy' ? (
             /* Sleepy Drowsy Eyes (⌒ ⌒) */
             <g stroke="#2C1A14" strokeWidth="2.8" strokeLinecap="round" fill="none">
-              <path d="M52 95 Q58 101 64 95" />
-              <path d="M86 95 Q92 101 98 95" />
+              <path d="M52 85 Q58 91 64 85" />
+              <path d="M86 85 Q92 91 98 85" />
               {/* Floating zZz text */}
-              <text x="108" y="70" fontSize="13" fill="#8B6D52" fontWeight="bold" className="anim-float-zzz">
+              <text x="108" y="60" fontSize="13" fill="#8B6D52" fontWeight="bold" className="anim-float-zzz">
                 zZz
               </text>
             </g>
           ) : activity === 'cheering' ? (
             /* Happy Joyful Laughing Arcs (^ ^) */
             <g stroke="#2C1A14" strokeWidth="3.2" strokeLinecap="round" fill="none">
-              <path d="M52 96 Q58 89 64 96" />
-              <path d="M86 96 Q92 89 98 96" />
+              <path d="M52 86 Q58 79 64 86" />
+              <path d="M86 86 Q92 79 98 86" />
             </g>
           ) : (
             /* Default Expressive Reading Eyes - Unified deep chocolate #2C1A14 with Natural Blink */
             <g className="library-mochi-gaze">
-              <g className="library-mochi-blink" style={{ transformOrigin: '58px 94px' }}>
-                <ellipse cx="58" cy="94" rx="7" ry="8.8" fill="#2C1A14" />
-                <circle cx="55.8" cy="90.5" r="2.8" fill="#FFFFFF" />
-                <circle cx="60.5" cy="97" r="1.3" fill="#FFFFFF" />
+              <g className="library-mochi-blink" style={{ transformOrigin: '58px 84px' }}>
+                <ellipse cx="58" cy="84" rx="6.5" ry="7.5" fill="#2C1A14" />
+                <circle cx="55.8" cy="80.5" r="2.6" fill="#FFFFFF" />
+                <circle cx="60.5" cy="87" r="1.2" fill="#FFFFFF" />
               </g>
 
-              <g className="library-mochi-blink" style={{ transformOrigin: '92px 94px' }}>
-                <ellipse cx="92" cy="94" rx="7" ry="8.8" fill="#2C1A14" />
-                <circle cx="89.8" cy="90.5" r="2.8" fill="#FFFFFF" />
-                <circle cx="94.5" cy="97" r="1.3" fill="#FFFFFF" />
+              <g className="library-mochi-blink" style={{ transformOrigin: '92px 84px' }}>
+                <ellipse cx="92" cy="84" rx="6.5" ry="7.5" fill="#2C1A14" />
+                <circle cx="89.8" cy="80.5" r="2.6" fill="#FFFFFF" />
+                <circle cx="94.5" cy="87" r="1.2" fill="#FFFFFF" />
               </g>
             </g>
           )}
@@ -243,40 +230,40 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
           {/* 2g. Golden Wire Reading Glasses (Clear optical glass - zero pupil discoloration) */}
           <g>
             {/* Left Lens Clear Glass & Frame */}
-            <circle cx="58" cy="94" r="13" fill="none" />
-            <circle cx="58" cy="94" r="13" fill="none" stroke="#6C4E31" strokeWidth="2.2" />
-            <circle cx="58" cy="94" r="13" fill="none" stroke="#D97736" strokeWidth="1" opacity="0.6" />
+            <circle cx="58" cy="84" r="11.5" fill="none" />
+            <circle cx="58" cy="84" r="11.5" fill="none" stroke="#6C4E31" strokeWidth="2.2" />
+            <circle cx="58" cy="84" r="11.5" fill="none" stroke="#D97736" strokeWidth="1" opacity="0.6" />
 
             {/* Right Lens Clear Glass & Frame */}
-            <circle cx="92" cy="94" r="13" fill="none" />
-            <circle cx="92" cy="94" r="13" fill="none" stroke="#6C4E31" strokeWidth="2.2" />
-            <circle cx="92" cy="94" r="13" fill="none" stroke="#D97736" strokeWidth="1" opacity="0.6" />
+            <circle cx="92" cy="84" r="11.5" fill="none" />
+            <circle cx="92" cy="84" r="11.5" fill="none" stroke="#6C4E31" strokeWidth="2.2" />
+            <circle cx="92" cy="84" r="11.5" fill="none" stroke="#D97736" strokeWidth="1" opacity="0.6" />
 
             {/* Nose Bridge */}
-            <path d="M71 92 Q75 88 79 92" fill="none" stroke="#6C4E31" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M69.5 82 Q75 78 80.5 82" fill="none" stroke="#6C4E31" strokeWidth="2.2" strokeLinecap="round" />
 
             {/* Side Temples */}
-            <path d="M45 94 L35 91" stroke="#6C4E31" strokeWidth="2" strokeLinecap="round" fill="none" />
-            <path d="M105 94 L115 91" stroke="#6C4E31" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M46.5 84 L36.5 81" stroke="#6C4E31" strokeWidth="2" strokeLinecap="round" fill="none" />
+            <path d="M103.5 84 L113.5 81" stroke="#6C4E31" strokeWidth="2" strokeLinecap="round" fill="none" />
 
             {/* Specular Diagonal Lens Glint Sweep */}
             <g className={activity === 'adjusting-glasses' ? 'animate-pulse' : 'library-mochi-glasses-shine'}>
-              <line x1="53" y1="88" x2="61" y2="100" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
-              <line x1="87" y1="88" x2="95" y2="100" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
+              <line x1="53" y1="78" x2="61" y2="90" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
+              <line x1="87" y1="78" x2="95" y2="90" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" opacity="0.9" />
             </g>
           </g>
 
           {/* 2h. Sweet Smile Mouth */}
           {activity === 'cheering' ? (
             /* Cheering Open Smile */
-            <path d="M70 108 Q75 118 80 108 Z" fill="#FF7575" stroke="#2C1A14" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M70 92 Q75 102 80 92 Z" fill="#FF7575" stroke="#2C1A14" strokeWidth="2" strokeLinejoin="round" />
           ) : activity === 'drowsy' ? (
             /* Yawning Drowsy Mouth */
-            <ellipse cx="75" cy="112" rx="3.5" ry="4.5" fill="#FF7575" stroke="#2C1A14" strokeWidth="1.8" />
+            <ellipse cx="75" cy="96" rx="3.5" ry="4.5" fill="#FF7575" stroke="#2C1A14" strokeWidth="1.8" />
           ) : (
             /* Cheerful Focused Curve Smile */
             <path
-              d="M70 109 Q75 114 80 109"
+              d="M70 93 Q75 98 80 93"
               stroke="#2C1A14"
               strokeWidth="2.2"
               strokeLinecap="round"
@@ -289,13 +276,13 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
         {/* Bow tie beneath the turned face */}
         <path
           d={seated
-            ? 'M81 119 L73 115.5 L73 123 L81 120.5 L89 123 L89 115.5 Z'
-            : 'M75 116 L65 112 L65 122 L75 118 L85 122 L85 112 Z'}
+            ? 'M81 107 L73 103.5 L73 111 L81 108.5 L89 111 L89 103.5 Z'
+            : 'M75 104 L65 100 L65 110 L75 106 L85 110 L85 100 Z'}
           fill="#9E3516"
           stroke="#6E1D06"
           strokeWidth={seated ? 1 : 1.2}
         />
-        <circle cx={seated ? 81 : 75} cy={seated ? 119 : 117} r={seated ? 2.5 : 3} fill="#F2C36B" stroke="#B88A2E" strokeWidth="1" />
+        <circle cx={seated ? 81 : 75} cy={seated ? 107 : 105} r={seated ? 2.5 : 3} fill="#F2C36B" stroke="#B88A2E" strokeWidth="1" />
 
         <g transform={seated ? 'translate(10 0) scale(0.9 1)' : undefined}>
           {/* 2j. Open Hardcover Leather Book */}
@@ -375,14 +362,14 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
           {activity === 'adjusting-glasses' ? (
             /* Paw Raised to Glasses Rim */
             <ellipse
-              cx="104"
-              cy="104"
+              cx="108"
+              cy="95"
               rx="6.5"
               ry="6"
               fill="url(#mochiLibrarianBody)"
               stroke="#C87A22"
               strokeWidth="1.2"
-              transform="rotate(18 104 104)"
+              transform="rotate(18 108 95)"
             />
           ) : (
             /* Right Paw resting gently on book edge */
