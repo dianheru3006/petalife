@@ -56,18 +56,35 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
   // Pre-check permission and warm stream on mount; release microphone hardware on unmount
   useEffect(() => {
     let isMounted = true;
-    checkMicrophonePermission().then(status => {
-      if (!isMounted) return;
-      if (status === 'granted') {
-        requestMicrophonePermission().then(() => {
-          if (isMounted) setStage('idle');
-        }).catch(() => {
-          if (isMounted) setStage('permission_prompt');
-        });
-      } else {
-        setStage('permission_prompt');
+    const previouslyGranted = (() => {
+      try {
+        return sessionStorage.getItem('petalife_mic_granted') === '1' ||
+               localStorage.getItem('petalife_mic_granted') === '1';
+      } catch {
+        return false;
       }
-    });
+    })();
+
+    if (previouslyGranted) {
+      requestMicrophonePermission().then(() => {
+        if (isMounted) setStage('idle');
+      }).catch(() => {
+        if (isMounted) setStage('permission_prompt');
+      });
+    } else {
+      checkMicrophonePermission().then(status => {
+        if (!isMounted) return;
+        if (status === 'granted') {
+          requestMicrophonePermission().then(() => {
+            if (isMounted) setStage('idle');
+          }).catch(() => {
+            if (isMounted) setStage('permission_prompt');
+          });
+        } else {
+          setStage('permission_prompt');
+        }
+      });
+    }
 
     return () => {
       isMounted = false;
@@ -89,6 +106,10 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     setError(null);
     try {
       await requestMicrophonePermission();
+      try {
+        sessionStorage.setItem('petalife_mic_granted', '1');
+        localStorage.setItem('petalife_mic_granted', '1');
+      } catch {}
       setStage('idle');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Izin mikrofon belum diberikan. Silakan izinkan di browser/Telegram Anda.');
