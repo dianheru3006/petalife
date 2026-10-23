@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, Square, X } from 'lucide-react';
+import { Mic, X } from 'lucide-react';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import {
   parkMicrophoneSession,
@@ -151,11 +151,12 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
               aria-label={stage === 'recording' ? 'Ketuk untuk menyelesaikan rekaman' : 'Ketuk untuk mulai merekam'}
               disabled={stage === 'requesting' || stage === 'processing'}
               onClick={() => { if (stage === 'recording') void finish(); else if (stage === 'idle') begin(); }}
-              className={`relative flex h-24 w-24 items-center justify-center rounded-full text-white shadow-[0_10px_24px_#4A342D38] transition-transform focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BA5218] ${stage === 'recording' ? 'scale-110 bg-[#BA5218]' : 'bg-[#5D4633]'} disabled:opacity-50`}
-            >{stage === 'recording' ? <Square className="h-8 w-8" fill="currentColor" /> : <Mic className="h-9 w-9" />}</button>
+              className={`relative flex h-24 w-24 items-center justify-center rounded-full text-white shadow-[0_10px_24px_#4A342D38] transition-transform focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BA5218] ${stage === 'recording' ? 'scale-110 bg-[#BA5218] ring-4 ring-[#EDC7AF] ring-offset-4 ring-offset-[#FFFCF7]' : 'bg-[#5D4633]'} disabled:opacity-50`}
+            >{stage === 'recording' ? <span className="voice-journal-wave" aria-hidden="true"><span /><span /><span /><span /><span /></span> : <Mic className="h-9 w-9" />}</button>
             <p role="status" aria-live="polite" className="min-h-6 text-center text-sm font-bold text-[#493D32]">
               {stage === 'recording' ? 'Merekam… ketuk untuk selesai' : stage === 'processing' ? 'Mochi sedang merapikan cerita…' : stage === 'requesting' ? 'Menunggu izin mikrofon…' : 'Ketuk untuk mulai merekam'}
             </p>
+            <p className="text-center text-xs text-[#806C55]">Maksimal 1 menit per rekaman</p>
           </div>
 
         {error && <p role="alert" className="mt-4 rounded-xl bg-[#FFF0E8] p-3 text-sm text-[#873E1F]">{error}</p>}

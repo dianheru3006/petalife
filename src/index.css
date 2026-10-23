@@ -1249,6 +1249,34 @@
 }
 
 /* Notes share the warm paper and wood language of Home and Pustaka. */
+.voice-journal-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 36px;
+}
+
+.voice-journal-wave span {
+  width: 4px;
+  height: 24px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center;
+  animation: voice-journal-breathe 950ms ease-in-out infinite alternate;
+}
+
+.voice-journal-wave span:nth-child(1) { height: 13px; animation-delay: -600ms; }
+.voice-journal-wave span:nth-child(2) { height: 26px; animation-delay: -280ms; }
+.voice-journal-wave span:nth-child(3) { height: 34px; animation-delay: -750ms; }
+.voice-journal-wave span:nth-child(4) { height: 21px; animation-delay: -120ms; }
+.voice-journal-wave span:nth-child(5) { height: 15px; animation-delay: -480ms; }
+
+@keyframes voice-journal-breathe {
+  from { transform: scaleY(0.55); }
+  to { transform: scaleY(1); }
+}
+
 .notes-corkboard {
   background-color: #e8d3ad;
   background-image: radial-gradient(#c7aa7f 1.5px, transparent 1.5px), linear-gradient(135deg, #f0dfbd, #ddc398);
