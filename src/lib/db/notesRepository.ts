@@ -36,6 +36,9 @@ export interface CreateNoteInput {
   body: string;
   tags?: string[];
   color?: Note['color'];
+  noteType?: Note['noteType'];
+  mood?: Note['mood'];
+  mochiSpokenReply?: string;
   updatedAt?: string;
   createdAt?: number;
   updatedAtTimestamp?: number;
@@ -59,6 +62,9 @@ export async function createNote(input: CreateNoteInput, database: PetalifeDatab
     body,
     tags: input.tags && input.tags.length > 0 ? input.tags : ['general'],
     color: input.color || 'cream',
+    noteType: input.noteType,
+    mood: input.mood,
+    mochiSpokenReply: input.mochiSpokenReply,
     updatedAt: input.updatedAt || 'Just now',
     createdAt: input.createdAt || now,
     updatedAtTimestamp: input.updatedAtTimestamp || now,

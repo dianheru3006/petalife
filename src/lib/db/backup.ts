@@ -149,6 +149,9 @@ function sanitizeNote(value: unknown): Note | null {
   const color = typeof value.color === 'string' && ['cream', 'peach', 'lavender', 'mint', 'pink'].includes(value.color)
     ? (value.color as Note['color'])
     : undefined;
+  const noteType = value.noteType === 'journal' ? 'journal' : value.noteType === 'note' ? 'note' : undefined;
+  const mood = typeof value.mood === 'string' && ['neutral', 'happy', 'calm', 'tired', 'sad', 'anxious', 'frustrated'].includes(value.mood)
+    ? (value.mood as Note['mood']) : undefined;
 
   return {
     id,
@@ -159,6 +162,9 @@ function sanitizeNote(value: unknown): Note | null {
     createdAt,
     updatedAtTimestamp: finiteNumber(value.updatedAtTimestamp) ?? createdAt,
     color,
+    noteType,
+    mood,
+    mochiSpokenReply: text(value.mochiSpokenReply, 280) ?? undefined,
   };
 }
 

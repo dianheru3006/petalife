@@ -147,6 +147,23 @@ describe('Petalife backup format (P0: Settings had no export/restore)', () => {
   });
 
   describe('export → restore round trip', () => {
+    it('preserves optional voice journal metadata while old notes remain valid', async () => {
+      const journal: Note = {
+        ...note('voice-1'), noteType: 'journal', mood: 'tired', mochiSpokenReply: 'Aku mendengarkanmu.',
+      };
+      await testDb.notes.add(journal);
+      await testDb.notes.add(note('legacy-1'));
+      const backup = await exportPetalifeBackup(testDb, storage as unknown as Storage);
+      const restored = new PetalifeDatabase(`TestJournalRestore-${Date.now()}-${Math.random()}`);
+      await restored.open();
+      try {
+        await restorePetalifeBackup(backup, restored, storage as unknown as Storage);
+        expect(await restored.notes.get('voice-1')).toMatchObject({ noteType: 'journal', mood: 'tired', mochiSpokenReply: 'Aku mendengarkanmu.' });
+        expect(await restored.notes.get('legacy-1')).toMatchObject({ id: 'legacy-1', body: 'Isi catatan' });
+      } finally {
+        await restored.delete();
+      }
+    });
     it('exports every table plus the pet snapshot', async () => {
       await testDb.savedLinks.add(link('l1'));
       await testDb.notes.add(note('n1'));

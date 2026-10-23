@@ -1,13 +1,16 @@
 import type { FC, FormEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { Note, CosmeticId, CosmeticSlot } from '../../lib/types';
-import { ArrowLeft, Check, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, Mic, Pencil, Plus, Search, Trash2, Volume2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { NotesMochi } from './NotesMochi';
 import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
+import { speakMochiReply, type VoiceJournalDraft } from '../../lib/services/voiceJournalService';
 import notesStudyBg from '../../assets/notes-study-bg.webp';
+
+const VoiceJournalSheet = lazy(() => import('./VoiceJournalSheet').then(module => ({ default: module.VoiceJournalSheet })));
 
 export interface NotesPageProps {
   notes: Note[];
@@ -46,11 +49,16 @@ export const NotesPage: FC<NotesPageProps> = ({
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isVoiceJournalOpen, setIsVoiceJournalOpen] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [titleInput, setTitleInput] = useState('');
   const [bodyInput, setBodyInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [colorInput, setColorInput] = useState<NoteColor>('cream');
+  const [noteTypeInput, setNoteTypeInput] = useState<Note['noteType']>();
+  const [moodInput, setMoodInput] = useState<Note['mood']>();
+  const [replyInput, setReplyInput] = useState('');
+  const [transcriptInput, setTranscriptInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -161,6 +169,26 @@ export const NotesPage: FC<NotesPageProps> = ({
     setBodyInput(note?.body ?? '');
     setTagsInput((note?.tags ?? []).filter(tag => tag !== 'general').join(', '));
     setColorInput(note?.color ?? 'cream');
+    setNoteTypeInput(note?.noteType);
+    setMoodInput(note?.mood);
+    setReplyInput(note?.mochiSpokenReply ?? '');
+    setTranscriptInput('');
+    setError(null);
+    setIsEditorOpen(true);
+  };
+
+  const openJournalDraft = (draft: VoiceJournalDraft) => {
+    setIsVoiceJournalOpen(false);
+    triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setEditingNoteId(null);
+    setTitleInput(draft.title);
+    setBodyInput(draft.body);
+    setTagsInput('jurnal');
+    setColorInput('cream');
+    setNoteTypeInput('journal');
+    setMoodInput(draft.mood);
+    setReplyInput(draft.reply);
+    setTranscriptInput(draft.transcript);
     setError(null);
     setIsEditorOpen(true);
   };
@@ -181,6 +209,7 @@ export const NotesPage: FC<NotesPageProps> = ({
         if (!onUpdateNote) throw new Error('Penyuntingan catatan belum tersedia.');
         await onUpdateNote(editingNoteId, {
           title: title || 'Catatan tanpa judul', body, tags: tags.length ? tags : ['general'], color: colorInput,
+          noteType: noteTypeInput, mood: moodInput, mochiSpokenReply: replyInput || undefined,
         });
         setNotice('Perubahan catatan tersimpan.');
       } else {
@@ -194,6 +223,9 @@ export const NotesPage: FC<NotesPageProps> = ({
           createdAt: now,
           updatedAtTimestamp: now,
           color: colorInput,
+          noteType: noteTypeInput,
+          mood: moodInput,
+          mochiSpokenReply: replyInput || undefined,
         });
         setNotice('Catatan tersimpan.');
       }
@@ -284,10 +316,17 @@ export const NotesPage: FC<NotesPageProps> = ({
 
           <article className="notes-lined-paper min-h-[50vh] rounded-[28px] border border-[#E8DCCB] bg-[#FFFCF7] p-6 shadow-[0_10px_30px_#6C503017] sm:p-7">
             <div className="mb-5 border-b border-[#E8DCCB] pb-4">
-              <p className="mb-2 text-xs font-semibold text-[#806C55]">Catatan pribadi</p>
+              <p className="mb-2 text-xs font-semibold text-[#806C55]">{selectedNote.noteType === 'journal' ? 'Jurnal pribadi' : 'Catatan pribadi'}</p>
               <h1 className="font-display text-2xl font-extrabold leading-snug text-[#332D2A]">{selectedNote.title}</h1>
             </div>
             <div className="whitespace-pre-wrap break-words text-[15px] leading-8 text-[#403A35]">{selectedNote.body || 'Belum ada isi catatan.'}</div>
+            {selectedNote.noteType === 'journal' && selectedNote.mochiSpokenReply && (
+              <div className="mt-7 rounded-2xl border border-[#E8DCCB] bg-[#FFF5EB] p-4">
+                <p className="text-xs font-bold text-[#806C55]">Mochi mendengarkan</p>
+                <p className="mt-2 text-sm leading-6 text-[#403A35]">{selectedNote.mochiSpokenReply}</p>
+                <button type="button" onClick={() => { if (!speakMochiReply(selectedNote.mochiSpokenReply || '')) setNotice('Suara belum tersedia di perangkat ini. Balasan Mochi tetap bisa dibaca.'); }} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-[#DDCDBB] bg-white px-4 text-sm font-bold text-[#5D4633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"><Volume2 className="h-4 w-4" /> Dengarkan</button>
+              </div>
+            )}
             {(selectedNote.tags ?? []).some(tag => tag !== 'general') && (
               <div className="mt-8 flex flex-wrap gap-2 border-t border-[#E8DCCB] pt-4">
                 {(selectedNote.tags ?? []).filter(tag => tag !== 'general').map(tag => {
@@ -499,13 +538,16 @@ export const NotesPage: FC<NotesPageProps> = ({
               </div>
             )}
           </section>
-          <div className="flex justify-end pt-4">
+          <div className="flex flex-wrap justify-end gap-2 pt-4">
+            <button type="button" onClick={() => setIsVoiceJournalOpen(true)} className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[#CDBBA7] bg-[#FFFCF7] px-5 text-sm font-bold text-[#5D4633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"><Mic className="h-5 w-5" /> Jurnal suara</button>
             <button type="button" onClick={() => openEditor()} className="inline-flex min-h-12 items-center gap-2.5 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white shadow-[0_8px_20px_#4A342D38] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
               <Plus className="h-5 w-5" /> Catatan baru
             </button>
           </div>
         </>
       )}
+
+      {isVoiceJournalOpen && <Suspense fallback={null}><VoiceJournalSheet onClose={() => setIsVoiceJournalOpen(false)} onDraft={openJournalDraft} /></Suspense>}
 
       {isEditorOpen && (
         <div
@@ -524,17 +566,20 @@ export const NotesPage: FC<NotesPageProps> = ({
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-[#806C55]">Papan catatan Mochi</p>
-                <h2 id="note-editor-title" className="font-display text-xl font-extrabold text-[#332D2A]">{editingNoteId ? 'Edit catatan' : 'Catatan baru'}</h2>
+                <h2 id="note-editor-title" className="font-display text-xl font-extrabold text-[#332D2A]">{editingNoteId ? 'Edit catatan' : noteTypeInput === 'journal' ? 'Tinjau jurnal suara' : 'Catatan baru'}</h2>
               </div>
               <button type="button" aria-label="Tutup editor" disabled={isSaving} onClick={() => setIsEditorOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#E8DCCB] bg-white text-[#493D32] focus-visible:outline-2 focus-visible:outline-[#BA5218]"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={event => void handleSave(event)} className="space-y-4">
+              {noteTypeInput === 'journal' && <p className="rounded-xl bg-[#F4ECDD] p-3 text-sm leading-6 text-[#5A5149]">Periksa dan ubah draf ini sebelum disimpan. Ceritamu tetap milikmu.</p>}
               <label className="block text-sm font-bold text-[#493D32]">Judul
                 <input ref={titleRef} value={titleInput} onChange={event => setTitleInput(event.target.value)} maxLength={140} placeholder="Ide yang ingin kamu ingat" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-medium text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
               </label>
               <label className="block text-sm font-bold text-[#493D32]">Isi catatan
                 <textarea value={bodyInput} onChange={event => setBodyInput(event.target.value)} rows={7} onFocus={event => { const field = event.currentTarget; setTimeout(() => field.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250); }} placeholder="Tulis pelajaran, ide, atau refleksi di sini..." className="mt-1.5 w-full resize-y rounded-xl border border-[#DDCDBB] bg-white p-4 text-sm font-normal leading-relaxed text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />
               </label>
+              {noteTypeInput === 'journal' && transcriptInput && <details className="rounded-xl border border-[#E8DCCB] bg-white p-3 text-sm text-[#5A5149]"><summary className="cursor-pointer font-bold">Lihat transkrip asli</summary><p className="mt-2 whitespace-pre-wrap break-words leading-6">{transcriptInput}</p></details>}
+              {noteTypeInput === 'journal' && replyInput && <div className="rounded-xl border border-[#E8DCCB] bg-[#FFF5EB] p-3 text-sm"><p className="font-bold text-[#5D4633]">Balasan Mochi</p><p className="mt-1 leading-6 text-[#403A35]">{replyInput}</p><button type="button" onClick={() => { if (!speakMochiReply(replyInput)) setError('Suara belum tersedia di perangkat ini. Balasan Mochi tetap bisa dibaca.'); }} className="mt-2 inline-flex min-h-11 items-center gap-2 font-bold text-[#5D4633]"><Volume2 className="h-4 w-4" /> Dengarkan</button></div>}
               <div>
                 <label className="block text-sm font-bold text-[#493D32]">Tag <span className="font-normal text-[#766A5F]">(opsional, pisahkan dengan koma)</span>
                   <input value={tagsInput} onChange={event => setTagsInput(event.target.value)} placeholder="belajar, ide, refleksi" className="mt-1.5 h-12 w-full rounded-xl border border-[#DDCDBB] bg-white px-4 text-sm font-normal text-[#302D2B] outline-none focus-visible:ring-2 focus-visible:ring-[#BA5218]" />

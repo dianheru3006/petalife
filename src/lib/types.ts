@@ -127,6 +127,8 @@ export interface QuizQuestion {
   xpReward: number;
 }
 
+export type JournalMood = 'neutral' | 'happy' | 'calm' | 'tired' | 'sad' | 'anxious' | 'frustrated';
+
 export interface Note {
   id: string;
   title: string;
@@ -136,6 +138,9 @@ export interface Note {
   createdAt: number;
   updatedAtTimestamp: number;
   color?: 'cream' | 'peach' | 'lavender' | 'mint' | 'pink';
+  noteType?: 'note' | 'journal';
+  mood?: JournalMood;
+  mochiSpokenReply?: string;
 }
 
 export interface ChatMessage {
