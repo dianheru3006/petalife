@@ -573,16 +573,9 @@ export const NotesPage: FC<NotesPageProps> = ({
                 )}
               </div>
             ) : (
-              <>
-                {!isFilterActive && (
-                  <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-wide text-[#8A7455]">
-                    Papan Minggu Ini · {boardNotes.length} kartu
-                  </p>
-                )}
-                <div className="grid grid-cols-2 items-start gap-3.5">
-                  {boardNotes.map((note, index) => renderNoteCard(note, index))}
-                </div>
-              </>
+              <div className="grid grid-cols-2 items-start gap-3.5">
+                {boardNotes.map((note, index) => renderNoteCard(note, index))}
+              </div>
             )}
           </section>
 
