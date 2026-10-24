@@ -243,16 +243,19 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
           </span>
         </div>
 
-        {/* ── Interior: alas kertas bergaris, rongga laci terasa dari bayangan atas ── */}
+        {/* ── Interior: alas kain tenung — khas laci penyimpanan, bukan kertas
+             bergaris (itu identitas Laci Catatan). Kartu indeks menonjol
+             di atas anyaman halus dua arah. ── */}
         <div
           id="vault-drawer-body"
           hidden={!isOpen}
           className={cn(
             'space-y-2.5 px-4 pb-6 pt-5',
-            isNightMode ? 'bg-[#FAF3E6]' : 'bg-[#FFFDF7]'
+            isNightMode ? 'bg-[#E2D3B6]' : 'bg-[#EBDFC6]'
           )}
           style={{
-            backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 23px, ${isNightMode ? '#EFE4D0' : '#F1E8D8'} 24px)`,
+            backgroundImage:
+              'repeating-linear-gradient(0deg, rgba(140,110,70,0.055) 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, rgba(140,110,70,0.055) 0 1px, transparent 1px 4px)',
             boxShadow: 'inset 0 10px 16px -12px #5E46242E',
           }}
         >
