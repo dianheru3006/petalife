@@ -240,20 +240,34 @@ export function App() {
     });
   }, [currentTab, isLoading, notesLoaded, ensureNotesLoaded]);
 
-  // Sol Perf V3 Audit Fix: Preload notes only after window.load, when visible, and notesCount > 0.
-  // Cancels schedule cleanly on unmount or when visibility is hidden.
+  // Sol Perf V3 Audit-2 Fix:
+  // 1. Plafond 150 catatan: koleksi > 150 dibiarkan on-demand saat tab Catatan dibuka,
+  //    mencegah beban memori berlebih pada koleksi besar.
+  // 2. Window.load & visibilitychange: menunggu browser santai dan menjadwalkan ulang saat tab kembali terlihat.
   useEffect(() => {
     if (isLoading || notesLoaded) return;
     if (notesCount === 0) {
       setNotesLoaded(true);
       return;
     }
+    if (notesCount > 150) {
+      return;
+    }
 
     let cancelled = false;
-    let idleId: number | ReturnType<typeof setTimeout>;
+    let idleId: number | ReturnType<typeof setTimeout> | undefined;
 
     const schedule = () => {
+      if (cancelled || notesLoaded) return;
       if (document.visibilityState === 'hidden') return;
+
+      if (idleId) {
+        if (typeof window !== 'undefined' && 'cancelIdleCallback' in window && typeof idleId === 'number') {
+          (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+        } else {
+          clearTimeout(idleId as ReturnType<typeof setTimeout>);
+        }
+      }
 
       if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
         idleId = (window as unknown as {
@@ -272,15 +286,30 @@ export function App() {
       }
     };
 
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        schedule();
+      }
+    };
+
     if (typeof document === 'undefined' || document.readyState === 'complete') {
       schedule();
     } else {
       window.addEventListener('load', schedule, { once: true });
     }
 
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibilityChange);
+    }
+
     return () => {
       cancelled = true;
-      window.removeEventListener('load', schedule);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('load', schedule);
+      }
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      }
       if (typeof window !== 'undefined' && 'cancelIdleCallback' in window && typeof idleId === 'number') {
         (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
       } else if (idleId) {

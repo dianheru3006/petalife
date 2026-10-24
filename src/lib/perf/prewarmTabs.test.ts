@@ -21,10 +21,12 @@ describe('shouldPrewarmChunks and shouldPrefetchImages', () => {
     expect(shouldPrewarmChunks({ effectiveType: '4g' })).toBe(true);
     expect(shouldPrewarmChunks({})).toBe(true);
 
-    expect(shouldPrefetchImages({ effectiveType: '2g' })).toBe(false);
-    expect(shouldPrefetchImages({ effectiveType: '3G' })).toBe(false);
-    expect(shouldPrefetchImages({ effectiveType: '4g' })).toBe(true);
-    expect(shouldPrefetchImages({})).toBe(true);
+    expect(shouldPrefetchImages({ effectiveType: '2g', deviceMemory: 8 })).toBe(false);
+    expect(shouldPrefetchImages({ effectiveType: '3G', deviceMemory: 8 })).toBe(false);
+    expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 8 })).toBe(true);
+    // Sol Guard: Conservative image prefetch when deviceMemory is undefined
+    expect(shouldPrefetchImages({})).toBe(false);
+    expect(shouldPrefetchImages({ effectiveType: '4g' })).toBe(false);
   });
 
   it('Sol Guard: allows chunks on 4 GB target device but guards image prefetch for > 4 GB', () => {
@@ -37,6 +39,8 @@ describe('shouldPrewarmChunks and shouldPrefetchImages', () => {
     expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 2 })).toBe(false);
     expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 4 })).toBe(false);
     expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 8 })).toBe(true);
+    // Conservative fallback: undefined deviceMemory disables image prefetch
+    expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: undefined })).toBe(false);
 
     // Backward compatibility: shouldPrewarm mirrors shouldPrewarmChunks
     expect(shouldPrewarm({ effectiveType: '4g', deviceMemory: 4 })).toBe(true);

@@ -37,12 +37,14 @@ export function shouldPrewarmChunks(network: PrewarmNetworkInfo = {}): boolean {
 }
 
 /**
- * Prefetch gambar diorama (148 KB total) tetap di-guard untuk RAM > 4 GB saja,
- * agar tidak menumpuk decoded bitmap di WebView perangkat klien (mis. smartphone 4 GB).
+ * Prefetch gambar diorama (148 KB total) bersifat konservatif:
+ * HANYA aktif jika memori terbukti > 4 GB. Jika `deviceMemory` tidak tersedia
+ * (undefined, mis. Safari atau WebView tanpa Device Memory API), jangan spekulatif
+ * mengunduh gambar agar perangkat 4 GB tanpa API tetap terlindungi.
  */
 export function shouldPrefetchImages(network: PrewarmNetworkInfo = {}): boolean {
   if (network.saveData) return false;
-  if (network.deviceMemory !== undefined && network.deviceMemory <= 4) return false;
+  if (network.deviceMemory === undefined || network.deviceMemory <= 4) return false;
   const effectiveType = (network.effectiveType || '').toLowerCase();
   return !SLOW_EFFECTIVE_TYPES.has(effectiveType);
 }
