@@ -16,6 +16,18 @@ export const BOARD_WINDOW_DAYS = 7;
 export const MAX_BOARD_NOTES = 14;
 /** Papan mulai "merayu merapikan" saat menyentuh ambang ini (microcopy Mochi). */
 export const BOARD_NEAR_FULL_THRESHOLD = 12;
+/** Rak harta: maksimal catatan yang boleh disematkan permanen di papan. */
+export const MAX_PINNED_NOTES = 5;
+/** Arsip kecil dibuka otomatis pada minggu terbaru; di atas ini semua terlipat. */
+export const DRAWER_AUTO_EXPAND_MAX = 24;
+
+export function canPinNotes(notes: Note[]): boolean {
+  return notes.filter(note => note.pinned === true).length < MAX_PINNED_NOTES;
+}
+
+export function shouldAutoExpandNewestGroup(totalCount: number): boolean {
+  return totalCount > 0 && totalCount <= DRAWER_AUTO_EXPAND_MAX;
+}
 
 export interface DrawerWeekGroup {
   /** Timestamp Senin 00:00 lokal milik minggu grup ini. */

@@ -4,7 +4,10 @@ import {
   splitWorkspace,
   getWeekStart,
   formatWeekLabel,
+  canPinNotes,
+  shouldAutoExpandNewestGroup,
   MAX_BOARD_NOTES,
+  MAX_PINNED_NOTES,
   BOARD_NEAR_FULL_THRESHOLD,
 } from './notesWorkspace';
 
@@ -102,5 +105,21 @@ describe('notesWorkspace — Meja Kerja Bermusim (Tahap 1)', () => {
     expect(formatWeekLabel(senin)).toContain('19');
     expect(formatWeekLabel(senin)).toContain('25');
     expect(formatWeekLabel(senin)).toContain('Okt');
+  });
+
+  it('canPinNotes: rak harta maksimal 5 sematan, dihitung dari pinned saja', () => {
+    const fivePinned = Array.from({ length: 5 }, (_, i) => makeNote(`p${i}`, 30, true));
+    const fresh = makeNote('baru', 1);
+    expect(MAX_PINNED_NOTES).toBe(5);
+    expect(canPinNotes([...fivePinned, fresh])).toBe(false); // penuh
+    expect(canPinNotes([fivePinned[0], fresh])).toBe(true); // masih ada tempat
+    expect(canPinNotes([fresh])).toBe(true); // kosong
+  });
+
+  it('shouldAutoExpandNewestGroup: arsip kecil auto-buka, besar terlipat semua', () => {
+    expect(shouldAutoExpandNewestGroup(0)).toBe(false);
+    expect(shouldAutoExpandNewestGroup(1)).toBe(true);
+    expect(shouldAutoExpandNewestGroup(24)).toBe(true);
+    expect(shouldAutoExpandNewestGroup(25)).toBe(false);
   });
 });

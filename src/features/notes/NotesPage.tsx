@@ -1,11 +1,11 @@
 import type { FC, FormEvent } from 'react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { Note, CosmeticId, CosmeticSlot } from '../../lib/types';
-import { ArrowLeft, Check, Mic, Pencil, Plus, Search, Trash2, Volume2, X } from 'lucide-react';
+import { ArrowLeft, Check, Mic, Pencil, Pin, PinOff, Plus, Search, Trash2, Volume2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { NotesMochi } from './NotesMochi';
 import { DeskDrawer } from './DeskDrawer';
-import { splitWorkspace } from './notesWorkspace';
+import { canPinNotes, splitWorkspace } from './notesWorkspace';
 import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
@@ -75,6 +75,7 @@ export const NotesPage: FC<NotesPageProps> = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pinMessage, setPinMessage] = useState<string | null>(null);
   const [mochiGreetingIndex, setMochiGreetingIndex] = useState(0);
   const [isMochiHopping, setIsMochiHopping] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -320,6 +321,29 @@ export const NotesPage: FC<NotesPageProps> = ({
     return () => clearTimeout(timer);
   }, [notice]);
 
+  useEffect(() => {
+    if (!pinMessage) return;
+    const timer = setTimeout(() => setPinMessage(null), 4500);
+    return () => clearTimeout(timer);
+  }, [pinMessage]);
+
+  // Harta Tersemat: maks 5, tidak pernah jatuh ke laci walau sudah tua.
+  const handleTogglePin = async () => {
+    if (!selectedNote || !onUpdateNote) return;
+    if (!selectedNote.pinned && !canPinNotes(notes)) {
+      setPinMessage('Rak harta sudah penuh — maksimal 5 catatan disematkan. Lepas salah satu dulu ya. 🍡');
+      return;
+    }
+    try {
+      await onUpdateNote(selectedNote.id, { pinned: !selectedNote.pinned });
+      setPinMessage(selectedNote.pinned
+        ? 'Sematan dilepas — catatan ini kembali mengikuti alur mingguan.'
+        : 'Harta disematkan — catatan ini akan tetap di papan berapa pun tuanya. 📌');
+    } catch {
+      setPinMessage('Perubahan sematan belum tersimpan. Coba lagi.');
+    }
+  };
+
   // Kartu sticky-note dipakai bersama oleh Papan Minggu Ini, hasil pencarian,
   // dan Laci Meja — satu markup, satu tempat perawatan. `note-card-cv`
   // (content-visibility) membuat WebView melewati layout/paint kartu yang
@@ -421,10 +445,22 @@ export const NotesPage: FC<NotesPageProps> = ({
                 <Pencil className="h-4 w-4" /> Edit catatan
               </button>
             )}
+            {onUpdateNote && (
+              <button
+                type="button"
+                onClick={() => void handleTogglePin()}
+                aria-pressed={Boolean(selectedNote.pinned)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#DDCDBB] bg-[#FFFBF2] px-5 text-sm font-semibold text-[#5D4633] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+              >
+                {selectedNote.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                {selectedNote.pinned ? 'Lepas sematan' : 'Sematkan di papan'}
+              </button>
+            )}
             <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#E5C9BC] bg-[#FFF7F3] px-5 text-sm font-semibold text-[#923C23] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
               <Trash2 className="h-4 w-4" /> Hapus
             </button>
           </div>
+          {pinMessage && <p role="status" className="px-1 text-sm leading-6 text-[#8A6B45]">{pinMessage}</p>}
 
           {confirmDelete && (
             <div className="rounded-2xl border border-[#E5C9BC] bg-[#FFF7F3] p-4" role="alertdialog" aria-label="Konfirmasi hapus catatan">

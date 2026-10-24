@@ -4,6 +4,10 @@ import type { Note } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { DrawerWeekGroup } from './notesWorkspace';
+import { shouldAutoExpandNewestGroup } from './notesWorkspace';
+
+/** Kartu ter-hidrasi maksimal per minggu yang dibuka; sisanya lewat tombol. */
+const EXPANDED_GROUP_LIMIT = 24;
 
 export interface DeskDrawerProps {
   groups: DrawerWeekGroup[];
@@ -52,6 +56,25 @@ function PeekStack({ isNightMode }: { isNightMode: boolean }) {
   );
 }
 
+/** Ikon baris minggu: tumpukan kertas tampak samping — tebalnya bicara. */
+function WeekStackGlyph({ isNightMode }: { isNightMode: boolean }) {
+  const layers = ['#F4C6A9', '#D9D0E8', '#C8DFC9'];
+  return (
+    <span
+      aria-hidden="true"
+      className={cn('relative block h-8 w-11 shrink-0', isNightMode && 'opacity-80')}
+    >
+      {layers.map((bg, i) => (
+        <span
+          key={bg}
+          className="absolute block h-6 w-9 rounded-[3px] border border-[#00000012] shadow-[0_1px_2px_#5E46241A]"
+          style={{ backgroundColor: bg, bottom: i * 3, left: i * 1.5, zIndex: 3 - i }}
+        />
+      ))}
+    </span>
+  );
+}
+
 /**
  * Laci Meja (Lapis 2) — "Laci Berlapis Kertas".
  *
@@ -70,10 +93,25 @@ function PeekStack({ isNightMode }: { isNightMode: boolean }) {
 export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, renderNoteCard }: DeskDrawerProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartRef = useRef<number | null>(null);
+  // Akordeon minggu: satu minggu terbuka pada satu waktu; minggu lain otomatis
+  // terlipat sehingga DOM laci tetap ramping walau arsip menumpuk bertahun.
+  const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
+  const [expandedShowAll, setExpandedShowAll] = useState(false);
+  const autoExpandTriedRef = useRef(false);
 
   const toggleDrawer = (next: boolean) => {
     if (next !== isOpen) drawerHaptic();
+    // Arsip kecil dibuka ramah: minggu terbaru terbuka sendiri saat pertama kali.
+    if (next && !autoExpandTriedRef.current) {
+      autoExpandTriedRef.current = true;
+      if (shouldAutoExpandNewestGroup(totalCount)) setExpandedWeek(groups[0]?.weekStart ?? null);
+    }
     onOpenChange(next);
+  };
+
+  const onWeekTap = (weekStart: number) => {
+    setExpandedShowAll(false);
+    setExpandedWeek(prev => (prev === weekStart ? null : weekStart));
   };
 
   const onHandlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -173,7 +211,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
           id="desk-drawer-body"
           hidden={!isOpen}
           className={cn(
-            'space-y-6 px-4 pb-6 pt-5',
+            'space-y-2.5 px-4 pb-6 pt-5',
             isNightMode ? 'bg-[#FAF3E6]' : 'bg-[#FFFDF7]'
           )}
           style={{
@@ -184,31 +222,65 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
           <p className="text-center text-[11px] italic leading-5 text-[#A08B6E]">
             Catatan lama tidur tenang di sini — Mochi menjaganya. 🍡
           </p>
-          {groups.map(group => (
-            <div key={group.weekStart} role="list" aria-label={group.label}>
-              {/* Pemisah minggu: stiker tag kecil miring di atas garis halus. */}
-              <div className="mb-3 flex items-center gap-2.5">
-                <span
+          {groups.map(group => {
+            const isExpanded = expandedWeek === group.weekStart;
+            const visibleNotes = isExpanded
+              ? (expandedShowAll ? group.notes : group.notes.slice(0, EXPANDED_GROUP_LIMIT))
+              : [];
+            const hiddenCount = isExpanded && !expandedShowAll
+              ? group.notes.length - visibleNotes.length
+              : 0;
+            return (
+              <div key={group.weekStart}>
+                <button
+                  type="button"
+                  onClick={() => onWeekTap(group.weekStart)}
+                  aria-expanded={isExpanded}
+                  aria-controls={`drawer-week-${group.weekStart}`}
                   className={cn(
-                    '-rotate-2 rounded-[6px] border px-2.5 py-1 text-[11px] font-extrabold shadow-[0_2px_5px_#66472617]',
-                    isNightMode
-                      ? 'border-[#E3D2B4] bg-[#FFF4DE] text-[#7A6041]'
-                      : 'border-[#EADFC6] bg-[#FFF7E6] text-[#8A6B45]'
+                    'flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+                    isExpanded
+                      ? 'border-[#E3D2B4] bg-[#FFF9EC] shadow-[0_3px_10px_#66472614]'
+                      : 'border-transparent hover:bg-[#00000006]'
                   )}
                 >
-                  {group.label} · {group.notes.length}
-                </span>
-                <span aria-hidden="true" className={cn('h-px flex-1', isNightMode ? 'bg-[#E3D5BC]' : 'bg-[#EDE3CE]')} />
-              </div>
-              <div className="grid grid-cols-2 items-start gap-3">
-                {group.notes.map((note, index) => (
-                  <div key={note.id} role="listitem">
-                    {renderNoteCard(note, index)}
+                  <WeekStackGlyph isNightMode={isNightMode} />
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+                      {group.label}
+                    </span>
+                    <span className="block text-[11px] font-semibold text-[#9A8266]">
+                      {group.notes.length} catatan
+                    </span>
+                  </span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn('h-4 w-4 shrink-0 text-[#9A8266] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                  />
+                </button>
+                {isExpanded && (
+                  <div id={`drawer-week-${group.weekStart}`} className="mt-3">
+                    <div className="grid grid-cols-2 items-start gap-3">
+                      {visibleNotes.map((note, index) => (
+                        <div key={note.id} role="listitem">
+                          {renderNoteCard(note, index)}
+                        </div>
+                      ))}
+                    </div>
+                    {hiddenCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedShowAll(true)}
+                        className="mt-3 min-h-11 w-full rounded-full border border-[#E3D2B4] bg-[#FFF9EC] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                      >
+                        Tampilkan {hiddenCount} catatan lagi minggu ini
+                      </button>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
