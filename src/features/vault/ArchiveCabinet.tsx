@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { VaultMonthGroup } from './vaultWorkspace';
 import { shouldAutoExpandNewestMonth } from './vaultWorkspace';
+import { getPlatformTheme } from './VaultBookArtwork';
 
 export interface ArchiveCabinetProps {
   groups: VaultMonthGroup[];
@@ -81,42 +82,46 @@ const indexDate = (timestamp: number) => {
 };
 
 /**
- * Kartu indeks — satu kartu per materi: kertas krem bergaris, garis merah bata
- * klasik di bawah kepala kartu, entri tanggal · domain · judul. Tanpa gambar
- * sampul — jauh lebih ringan dari kartu buku untuk arsip berbulan-tahun.
+ * Baris buku rebah — satu materi = satu buku tergeletak di atas kain laci:
+ * punggung buku berwarna kain platform (dengan alur punggung) di kiri,
+ * label judul + meta di sisiannya. Nol garis kertas — bukan catatan.
  */
-function IndexCard({ link, isNightMode, onOpen }: {
+function BookRow({ link, isNightMode, onOpen }: {
   link: SavedLink;
   isNightMode: boolean;
   onOpen: (link: SavedLink) => void;
 }) {
+  const theme = getPlatformTheme(link.platform);
   return (
     <button
       type="button"
       onClick={() => onOpen(link)}
       aria-label={`Buka materi: ${link.title}`}
       className={cn(
-        'block w-full cursor-pointer rounded-[10px] border px-3.5 pb-3 pt-2.5 text-left shadow-[0_2px_6px_#66472614] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-        isNightMode ? 'border-[#E2D3B4] bg-[#FBF4E4]' : 'border-[#E7DCC2] bg-[#FFFDF4]'
+        'flex w-full cursor-pointer items-stretch gap-0 overflow-hidden rounded-[12px] border text-left shadow-[0_2px_6px_#66472614] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+        isNightMode ? 'border-[#E2D3B4] bg-[#FBF4E4]' : 'border-[#E7DCC2] bg-[#FFFDF6]'
       )}
-      style={{
-        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 19px, ${isNightMode ? '#F0E6D0' : '#F2EAD8'} 19px 20px)`,
-      }}
     >
-      <span className="flex items-baseline justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[#9A8158]">
-        <span className="shrink-0">{indexDate(link.createdAt)}</span>
-        <span className="max-w-[60%] truncate lowercase">{link.domain}</span>
-      </span>
-      {/* Garis merah bata khas kartu indeks perpustakaan klasik. */}
-      <span aria-hidden="true" className="my-1.5 block h-[2px] rounded-full bg-[#D98E6A]/60" />
+      {/* Punggung buku: kain platform + dua alur khas punggung jilid. */}
       <span
-        className={cn(
-          'block text-[13px] font-extrabold leading-snug',
-          isNightMode ? 'text-[#463524]' : 'text-[#4A3423]'
-        )}
-        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        aria-hidden="true"
+        className="relative flex w-[34px] shrink-0 items-center justify-center"
+        style={{ backgroundColor: theme.cloth }}
       >
-        {link.title}
+        <span className="absolute inset-x-2 top-2 h-px rounded bg-white/35" />
+        <span className="absolute inset-x-2 bottom-2 h-px rounded bg-white/35" />
+        <span className="absolute inset-y-0 right-0 w-px bg-black/20" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2.5">
+        <span
+          className={cn('text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#463524]' : 'text-[#4A3423]')}
+          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        >
+          {link.title}
+        </span>
+        <span className="truncate text-[10px] font-bold uppercase tracking-[0.08em] text-[#9A8158]">
+          {indexDate(link.createdAt)} · {link.domain}
+        </span>
       </span>
     </button>
   );
@@ -124,10 +129,11 @@ function IndexCard({ link, isNightMode, onOpen }: {
 
 /**
  * Laci Materi (Lapis 2 Pustaka) — kembar interaksi dari Laci Catatan:
- * tertutup rapat dengan kartu mengintip, dibuka via tap ATAU tarikan vertikal
- * pada baris atas, haptic Telegram, interior pelapis kertas bergaris dengan
- * bayangan inset. Isinya katalog: baris bulan ber-akordeon, masing-masing
- * membuka kartu indeks materinya. Satu bulan terbuka pada satu waktu.
+ * tertutup rapat dengan buku mengintip, dibuka via tap ATAU tarikan vertikal
+ * pada baris atas, haptic Telegram, interior alas kain tenung dengan bayangan
+ * inset. Isinya baris bulan ber-akordeon; tiap bulan membuka barisan buku
+ * rebah (punggung kain platform + label judul) di atas kain. Satu bulan
+ * terbuka pada satu waktu.
  */
 export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
   const [dragOffset, setDragOffset] = useState(0);
@@ -300,10 +306,10 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                 </button>
                 {isExpanded && (
                   <div id={`vault-month-${group.key}`} className="mt-3">
-                    <div role="list" aria-label={`Kartu ${group.label}`} className="space-y-2.5">
+                    <div role="list" aria-label={`Buku ${group.label}`} className="space-y-2.5">
                       {visibleLinks.map(link => (
                         <div key={link.id} role="listitem">
-                          <IndexCard link={link} isNightMode={isNightMode} onOpen={onOpenLink} />
+                          <BookRow link={link} isNightMode={isNightMode} onOpen={onOpenLink} />
                         </div>
                       ))}
                     </div>
@@ -313,7 +319,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                         onClick={() => setExpandedShowAll(true)}
                         className="mt-3 min-h-11 w-full rounded-full border border-[#E3D2B4] bg-[#FFF9EC] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
                       >
-                        Tampilkan {hiddenCount} kartu lagi bulan ini
+                        Tampilkan {hiddenCount} buku lagi bulan ini
                       </button>
                     )}
                   </div>
