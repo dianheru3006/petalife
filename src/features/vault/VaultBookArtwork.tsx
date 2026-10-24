@@ -46,31 +46,34 @@ export interface PlatformTheme {
 
 export const PLATFORM_THEMES: Record<PlatformType, PlatformTheme> = {
   youtube: {
-    cloth: '#CE7154',   // Terracotta jenuh (model referensi A)
+    cloth: '#D4785C',   // Terracotta (spesifikasi referensi)
     ink: '#7E2E1D',
-    paper: '#FFF3EE',
+    paper: '#F5F1E8',
   },
   instagram: {
-    cloth: '#CE89A6',   // Berry-rose jenuh
+    cloth: '#C87C9B',   // Berry-rose jenuh
     ink: '#7E2745',
-    paper: '#FCF0F5',
+    paper: '#F5F1E8',
   },
   threads: {
-    cloth: '#525A66',   // Slate karbon
-    ink: '#23272E',
-    paper: '#F3F4F6',
+    cloth: '#343A44',   // Slate karbon
+    ink: '#1B1D21',
+    paper: '#F5F1E8',
   },
   tiktok: {
-    cloth: '#3F4857',   // Navy grafit (model referensi A)
-    ink: '#1E232B',
-    paper: '#F3F4F6',
+    cloth: '#2B2E33',   // Charcoal (spesifikasi referensi)
+    ink: '#16181C',
+    paper: '#F5F1E8',
   },
   web: {
-    cloth: '#7590B2',   // Denim jenuh
+    cloth: '#7C97B8',   // Denim jenuh
     ink: '#24405E',
-    paper: '#F0F4F9',
+    paper: '#F5F1E8',
   },
 };
+
+/** Sampul gelap memakai garis bingkai lebih TERANG (emboss); terang lebih GELAP. */
+const DARK_COVER_PLATFORMS: ReadonlySet<PlatformType> = new Set(['threads', 'tiktok']);
 
 export const DEFAULT_LINK_THUMBNAILS: Record<string, string> = {
   'link-1': 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80',
@@ -174,46 +177,62 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
     );
   }
 
-  // ── Sampul rak: hardcover 3D (model referensi A) ──
+  // ── Sampul rak: hardcover 3D — spesifikasi persis referensi pemilik produk.
+  // Proporsi ~1:1,05; sudut asimetris (kiri membulat mengikuti punggung);
+  // halaman hanya di tepi BAWAH; satu garis bingkai tone-on-tone; pita tan
+  // berlekuk V menjuntai dari tepi atas kanan; segel kertas 38% lebar. ──
+  const frameLine = DARK_COVER_PLATFORMS.has(link.platform) ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.30)';
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl aspect-[4/5]"
+      className="relative w-full overflow-hidden rounded-[8px_12px_4px_8px] aspect-[20/21] shadow-[5px_8px_16px_rgba(80,60,30,0.25)]"
       style={{ backgroundColor: theme.cloth }}
     >
-      {/* Serat kertas matte halus. */}
+      {/* Serat kertas matte (noise ~5%). */}
       <span
         aria-hidden="true"
         className="absolute inset-0"
-        style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px)' }}
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 4px)',
+        }}
       />
-      {/* Punggung kiri: lebih gelap dengan dua pasang pita jilid. */}
-      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[14%] border-r border-black/15 bg-black/15">
-        <span className="absolute inset-x-[18%] top-[16%] h-px bg-white/25" />
-        <span className="absolute inset-x-[18%] top-[23%] h-px bg-white/20" />
-        <span className="absolute inset-x-[18%] bottom-[23%] h-px bg-white/20" />
-        <span className="absolute inset-x-[18%] bottom-[16%] h-px bg-white/25" />
+      {/* Punggung kiri ~9%: lebih gelap, alur cahaya + bidang timbul di tepi. */}
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[9%] bg-black/10">
+        <span className="absolute inset-y-[3%] left-0 w-[3px] bg-white/15" />
+        <span className="absolute inset-y-[3%] left-[38%] w-px bg-white/25" />
+        <span className="absolute inset-y-[3%] left-[55%] w-px bg-black/20" />
       </span>
-      {/* Blok halaman krem: tepi bawah dan kanan. */}
-      <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[5px] border-t border-black/10 bg-[#F2E9D8]" />
-      <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[5px] border-l border-black/10 bg-[#F2E9D8]" />
-      {/* Bingkai emas ganda khas jilid hardcover. */}
-      <span aria-hidden="true" className="absolute bottom-[8px] right-[8px] left-[calc(14%+8px)] top-[8px] rounded-[3px] border border-[#D9A66C]/80" />
-      <span aria-hidden="true" className="absolute bottom-[11px] right-[11px] left-[calc(14%+11px)] top-[11px] rounded-[2px] border border-[#D9A66C]/50" />
-      {/* Pita pembatas tan di sudut kanan atas, ekor berlekuk V. */}
+      {/* Garis bingkai tunggal tone-on-tone, inset, sudut membulat. */}
       <span
         aria-hidden="true"
-        className="absolute right-[12%] top-0 h-[26%] w-[11%] origin-top rotate-[7deg] shadow-[1px_2px_3px_rgba(0,0,0,0.18)]"
-        style={{ backgroundColor: '#C9A876', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}
+        className="absolute bottom-[9px] right-[9px] left-[calc(9%+9px)] top-[9px] rounded-[6px] border"
+        style={{ borderColor: frameLine }}
       />
-      {/* Segel logo platform di tengah. */}
+      {/* Pita pembatas tan: ~72% dari kiri, ekor berlekuk V. */}
       <span
-        className="absolute left-1/2 top-1/2 flex h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.10)]"
+        aria-hidden="true"
+        className="absolute right-[24%] top-0 h-[22%] w-[7%] shadow-[1px_2px_3px_rgba(0,0,0,0.18)]"
+        style={{ backgroundColor: '#D9C48F', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)' }}
+      />
+      {/* Segel logo platform: lingkaran kertas 38% lebar sampul. */}
+      <span
+        className="absolute left-1/2 top-1/2 flex aspect-square w-[38%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.12)]"
         style={{ backgroundColor: theme.paper, color: theme.ink }}
         aria-label={`Platform ${link.platform}`}
         role="img"
       >
         <BrandIcon className="h-[46%] w-[46%]" />
       </span>
+      {/* Blok halaman krem: HANYA tepi bawah, penuh sampai di bawah punggung,
+          dengan garis vertikal ketebalan halaman. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-[10px] border-t border-black/10"
+        style={{
+          backgroundColor: '#EFE3C8',
+          backgroundImage: 'repeating-linear-gradient(90deg, rgba(120,95,55,0.14) 0 1px, transparent 1px 4px)',
+        }}
+      />
     </div>
   );
 };

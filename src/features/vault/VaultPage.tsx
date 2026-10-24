@@ -447,10 +447,8 @@ export const VaultPage: FC<VaultPageProps> = ({
       aria-label={`Buka materi: ${link.title}`}
       className="book-card-cv group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
     >
-      {/* Book Spine & Cover Container with Realistic Shelf Elevation */}
-      <div className="relative w-full rounded-2xl overflow-hidden border border-[#CDBB9E] bg-[#E6D4B8] p-1 shadow-[2px_3px_0_#B79368,3px_5px_9px_#66503928] group-hover:shadow-[3px_7px_0_#B79368,4px_12px_18px_#66503935] transition-all duration-300">
-        <VaultBookArtwork link={link} />
-      </div>
+      {/* Sampul hardcover berdiri langsung di rak — tanpa slipcase (spesifikasi referensi). */}
+      <VaultBookArtwork link={link} />
 
       {/* Book Title & Platform Subtitle */}
       <span
