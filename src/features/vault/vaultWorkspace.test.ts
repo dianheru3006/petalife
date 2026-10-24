@@ -2,9 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { SavedLink } from '../../lib/types';
 import {
   splitVaultWorkspace,
-  shouldAutoExpandNewestMonth,
   MAX_MAIN_SHELF_LINKS,
-  ARCHIVE_AUTO_EXPAND_MAX,
 } from './vaultWorkspace';
 
 const NOW = new Date('2026-10-21T12:00:00').getTime(); // Rabu
@@ -65,11 +63,5 @@ describe('vaultWorkspace — Rak Terbaru + Lemari Arsip (Tahap 4)', () => {
     const result = splitVaultWorkspace([makeLink('tahun-lalu', 380)], NOW);
     expect(result.monthGroups).toHaveLength(1);
     expect(result.monthGroups[0].label).toMatch(/2025$|Sep 2025|Okt 2025/);
-  });
-
-  it('shouldAutoExpandNewestMonth: arsip kecil auto-buka bulan terbaru', () => {
-    expect(shouldAutoExpandNewestMonth(0)).toBe(false);
-    expect(shouldAutoExpandNewestMonth(ARCHIVE_AUTO_EXPAND_MAX)).toBe(true);
-    expect(shouldAutoExpandNewestMonth(ARCHIVE_AUTO_EXPAND_MAX + 1)).toBe(false);
   });
 });

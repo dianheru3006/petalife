@@ -18,8 +18,6 @@ export { monthKeyOf };
 
 export const VAULT_WINDOW_DAYS = 7;
 export const MAX_MAIN_SHELF_LINKS = 10;
-/** Arsip kecil: bulan terbaru terbuka sendiri; di atas ini semua terlipat. */
-export const ARCHIVE_AUTO_EXPAND_MAX = 12;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -68,8 +66,4 @@ export function splitVaultWorkspace(
 
   const monthGroups = [...byMonth.values()].sort((a, b) => b.monthStart - a.monthStart);
   return { mainShelfLinks, monthGroups, archiveCount: archiveLinks.length };
-}
-
-export function shouldAutoExpandNewestMonth(totalCount: number): boolean {
-  return totalCount > 0 && totalCount <= ARCHIVE_AUTO_EXPAND_MAX;
 }

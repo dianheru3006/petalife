@@ -4,7 +4,6 @@ import type { SavedLink } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { VaultMonthGroup } from './vaultWorkspace';
-import { shouldAutoExpandNewestMonth } from './vaultWorkspace';
 
 export interface ArchiveCabinetProps {
   groups: VaultMonthGroup[];
@@ -133,15 +132,10 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
   const dragStartRef = useRef<number | null>(null);
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [expandedShowAll, setExpandedShowAll] = useState(false);
-  const autoExpandTriedRef = useRef(false);
 
+  // Laci selalu terbuka dengan semua bulan terlipat — pilihan ada pada pengguna.
   const toggleDrawer = (next: boolean) => {
     if (next !== isOpen) drawerHaptic();
-    // Arsip kecil dibuka ramah: bulan terbaru terbuka sendiri saat pertama kali.
-    if (next && !autoExpandTriedRef.current) {
-      autoExpandTriedRef.current = true;
-      if (shouldAutoExpandNewestMonth(totalCount)) setExpandedMonth(groups[0]?.monthStart ?? null);
-    }
     onOpenChange(next);
   };
 
