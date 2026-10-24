@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import type { SavedLink, PlatformType } from '../../lib/types';
 import { getYouTubeThumbnail } from '../../lib/utils';
 import { getBrainGatewayUrl } from '../../lib/services/brainGatewaySettings';
+import leatherGrain from '../../assets/leather-grain.webp';
 
 // Official Authentic Brand SVG Icons
 const YouTubeBrandIcon: FC<{ className?: string }> = ({ className = 'w-6 h-6' }) => (
@@ -173,13 +174,13 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
   // Sampul rak memakai satu bentuk buku yang konsisten untuk semua platform.
   return (
     <div
-      className="relative w-full aspect-[7/8] select-none overflow-hidden rounded-[8px_9px_8px_8px] shadow-[2px_5px_9px_rgba(49,34,25,0.24)]"
+      className="relative w-full aspect-[7/8] select-none overflow-hidden rounded-[8px_9px_9px_9px] shadow-[2px_4px_8px_rgba(49,34,25,0.19)]"
       style={{ backgroundColor: '#B9A180' }}
     >
       {/* 1. Kertas Buku (Page Block) — Mengintip di sisi KANAN */}
       <span
         aria-hidden="true"
-        className="absolute top-[3px] bottom-[5px] right-[1px] w-[5px] rounded-r-[3px] border-l border-black/15 pointer-events-none"
+        className="absolute top-[2%] bottom-[4%] right-[1px] w-[3%] rounded-r-[6px] border-l border-black/15 pointer-events-none"
         style={{
           background: 'linear-gradient(90deg, #D6C4A4 0%, #FFF7E6 50%, #DFCBA9 100%)',
           boxShadow: 'inset 1px 0 2px rgba(0,0,0,0.18)',
@@ -189,20 +190,20 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
       {/* 2. Kertas Buku (Page Block) — Mengintip di sisi BAWAH */}
       <span
         aria-hidden="true"
-        className="absolute bottom-[1px] left-[8px] right-[3px] h-[5px] rounded-b-[3px] border-t border-black/15 pointer-events-none"
+        className="absolute bottom-[1px] left-[5%] right-[2%] h-[6%] rounded-b-[10px] border-t border-black/15 pointer-events-none"
         style={{
-          background: 'linear-gradient(180deg, #FFF7E6 0%, #D7C3A2 100%)',
-          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.18)',
+          background: 'linear-gradient(180deg, #FFF8E8 0%, #E8D5B4 45%, #C6AA82 100%)',
+          boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.8), inset 0 -1px 0 rgba(112,82,48,0.3)',
         }}
       />
 
       {/* 3. Badan Sampul Depan (Hardcover Board) — Terpasang di atas blok kertas */}
       <div
-        className="absolute top-0 left-0 right-[5px] bottom-[5px] overflow-hidden rounded-[8px_4px_3px_8px]"
+        className="absolute top-0 left-0 right-[3%] bottom-[5%] overflow-hidden rounded-[8px_4px_7px_8px]"
         style={{
           backgroundColor: theme.cloth,
-          backgroundImage: 'linear-gradient(110deg, rgba(255,255,255,0.12), transparent 38%, rgba(0,0,0,0.11))',
-          boxShadow: '1px 2px 3px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.35), inset -1px -1px 2px rgba(0,0,0,0.26)',
+          backgroundImage: 'linear-gradient(110deg, rgba(255,255,255,0.05), transparent 38%, rgba(0,0,0,0.07))',
+          boxShadow: '1px 2px 3px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.14), inset -1px -1px 2px rgba(0,0,0,0.2)',
         }}
       >
         {/* Punggung membulat. Rusuk SVG mengikuti perspektif sampul. */}
@@ -215,15 +216,22 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
           }}
         >
           <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 18 192" preserveAspectRatio="none" focusable="false">
-            <path d="M0 49 C6 46 12 44 18 43 M0 166 C6 163 12 161 18 160" fill="none" stroke="rgba(22,19,17,0.58)" strokeWidth="2.5" />
+            <path d="M0 23 C6 19 12 17 18 16" fill="none" stroke={isDark ? '#A98E6B' : '#E3AA90'} strokeWidth="1.2" />
+            <path d="M0 46 C6 42 12 40 18 39 M0 51 C6 47 12 45 18 44 M0 164 C6 161 12 159 18 158 M0 170 C6 167 12 165 18 164" fill="none" stroke="rgba(22,19,17,0.45)" strokeWidth="2" />
             <path
-              d="M0 45 C6 42 12 40 18 39 M0 162 C6 159 12 157 18 156"
+              d="M0 43 C6 39 12 37 18 36 M0 48 C6 44 12 42 18 41 M0 161 C6 158 12 156 18 155 M0 167 C6 164 12 162 18 161"
               fill="none"
-              stroke={isDark ? '#D5B47D' : '#E8AE93'}
-              strokeWidth="2"
+              stroke={isDark ? '#C9AA76' : '#DE9F85'}
+              strokeWidth="1.7"
             />
           </svg>
         </span>
+
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{ backgroundImage: `url(${leatherGrain})`, backgroundSize: '96px 96px', mixBlendMode: 'soft-light', opacity: 0.45 }}
+        />
 
         {/* Alur Engsel / Hinge Gutter (garis parit vertikal pemisah punggung & sampul) */}
         <span
@@ -239,10 +247,11 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
           aria-hidden="true"
           className="absolute top-[7px] bottom-[12px] left-[calc(11%+8px)] right-[8px] rounded-[3px] border pointer-events-none"
           style={{
-            borderColor: isDark ? 'rgba(255,255,255,0.19)' : 'rgba(255,237,215,0.38)',
-            boxShadow: isDark
-              ? '0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)'
-              : '0 1px 0 rgba(91,47,33,0.3), inset 0 1px 0 rgba(255,255,255,0.12)',
+            borderTopColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(255,237,215,0.3)',
+            borderBottomColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,237,215,0.27)',
+            borderLeftColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,237,215,0.1)',
+            borderRightColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,237,215,0.1)',
+            boxShadow: '0 1px 0 rgba(0,0,0,0.18)',
           }}
         />
 
