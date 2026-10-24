@@ -6,6 +6,9 @@ import {
   formatWeekLabel,
   canPinNotes,
   shouldAutoExpandNewestGroup,
+  groupDrawerMonths,
+  monthKeyOf,
+  monthLabelOf,
   MAX_BOARD_NOTES,
   MAX_PINNED_NOTES,
   BOARD_NEAR_FULL_THRESHOLD,
@@ -121,5 +124,33 @@ describe('notesWorkspace — Meja Kerja Bermusim (Tahap 1)', () => {
     expect(shouldAutoExpandNewestGroup(1)).toBe(true);
     expect(shouldAutoExpandNewestGroup(24)).toBe(true);
     expect(shouldAutoExpandNewestGroup(25)).toBe(false);
+  });
+
+  it('groupDrawerMonths: grup minggu jadi ember bulanan menurun dengan target lompatan', () => {
+    // Terhadap NOW = Rabu 21 Okt 2026: umur 10 hari -> minggu Okt,
+    // umur 40 hari -> minggu Sep, umur 75 hari -> minggu Agu.
+    const result = splitWorkspace(
+      [makeNote('a', 10), makeNote('b', 12), makeNote('c', 40), makeNote('d', 75), makeNote('e', 77)],
+      NOW
+    );
+    const months = groupDrawerMonths(result.drawerGroups, NOW);
+
+    expect(months.map(m => m.key)).toEqual(['2026-10', '2026-09', '2026-08']);
+    expect(months[0].count).toBe(2); // Okt: a + b
+    expect(months[0].newestWeekStart).toBeGreaterThan(months[1].newestWeekStart);
+    // Target lompatan Okt = minggu TERBARU bulan itu (milik 'a', umur 10 hari).
+    const weekOfA = getWeekStart(NOW - 10 * DAY);
+    expect(months[0].newestWeekStart).toBe(weekOfA);
+    // Label tahun berjalan tanpa angka tahun; total terjaga.
+    expect(months[0].label).toBe('Okt');
+    const totalNotes = months.reduce((sum, m) => sum + m.count, 0);
+    expect(totalNotes).toBe(result.drawerCount);
+  });
+
+  it('monthKeyOf & monthLabelOf: penanda musim lintas tahun', () => {
+    expect(monthKeyOf(new Date('2026-10-12').getTime())).toBe('2026-10');
+    expect(monthLabelOf(new Date('2026-10-12').getTime(), NOW)).toBe('Okt');
+    // Tahun berbeda menyebut tahunnya — pita tak boleh membingungkan Okt 2025 vs 2026.
+    expect(monthLabelOf(new Date('2025-10-12').getTime(), NOW)).toBe('Okt 2025');
   });
 });

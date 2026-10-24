@@ -1,13 +1,21 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import type { Note } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
-import type { DrawerWeekGroup } from './notesWorkspace';
-import { shouldAutoExpandNewestGroup } from './notesWorkspace';
+import type { DrawerWeekGroup, MonthBucket } from './notesWorkspace';
+import { groupDrawerMonths, monthKeyOf, shouldAutoExpandNewestGroup } from './notesWorkspace';
 
 /** Kartu ter-hidrasi maksimal per minggu yang dibuka; sisanya lewat tombol. */
 const EXPANDED_GROUP_LIMIT = 24;
+
+/** Palet pita washi — lembut, tembus pandang, bergantian supaya terasa ditempel tangan. */
+const WASHI_TAPES = [
+  { bg: 'rgba(244, 198, 169, 0.5)', edge: '#E8B493' },
+  { bg: 'rgba(217, 208, 232, 0.5)', edge: '#C4B3DD' },
+  { bg: 'rgba(200, 223, 201, 0.5)', edge: '#A9CDA9' },
+  { bg: 'rgba(243, 210, 216, 0.5)', edge: '#E2AFB9' },
+];
 
 export interface DeskDrawerProps {
   groups: DrawerWeekGroup[];
@@ -98,6 +106,11 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [expandedShowAll, setExpandedShowAll] = useState(false);
   const autoExpandTriedRef = useRef(false);
+  const weekRowRefs = useRef(new Map<number, HTMLDivElement>());
+
+  // Pita Washi Waktu: indeks bulanan; hanya tampil bila arsip melintasi bulan.
+  const months = useMemo(() => groupDrawerMonths(groups), [groups]);
+  const activeMonthKey = expandedWeek !== null ? monthKeyOf(expandedWeek) : null;
 
   const toggleDrawer = (next: boolean) => {
     if (next !== isOpen) drawerHaptic();
@@ -112,6 +125,15 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
   const onWeekTap = (weekStart: number) => {
     setExpandedShowAll(false);
     setExpandedWeek(prev => (prev === weekStart ? null : weekStart));
+  };
+
+  const jumpToMonth = (bucket: MonthBucket) => {
+    drawerHaptic();
+    setExpandedShowAll(false);
+    setExpandedWeek(bucket.newestWeekStart);
+    requestAnimationFrame(() => {
+      weekRowRefs.current.get(bucket.newestWeekStart)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const onHandlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -219,6 +241,42 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
             boxShadow: 'inset 0 10px 16px -12px #5E46242E',
           }}
         >
+          {months.length > 1 && (
+            <div
+              className="mb-3 flex gap-2.5 overflow-x-auto px-1 pb-3 pt-1 scrollbar-none"
+              role="tablist"
+              aria-label="Lompat ke bulan arsip"
+            >
+              {months.map((bucket, i) => {
+                const tape = WASHI_TAPES[i % WASHI_TAPES.length];
+                const isActive = activeMonthKey === bucket.key;
+                return (
+                  <button
+                    key={bucket.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={`Lompat ke ${bucket.label} (${bucket.count} catatan)`}
+                    onClick={() => jumpToMonth(bucket)}
+                    style={{
+                      transform: `rotate(${i % 2 === 0 ? -1.6 : 1.2}deg)`,
+                      backgroundColor: tape.bg,
+                      borderColor: isActive ? tape.edge : 'transparent',
+                      // Serat pita washi: garis halus 45° di atas warna dasar.
+                      backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 4px, transparent 4px 9px)',
+                    }}
+                    className={cn(
+                      'min-h-10 shrink-0 cursor-pointer rounded-[5px] border px-3.5 py-1.5 text-[11px] font-extrabold text-[#6B5B49] shadow-[0_2px_5px_#66472614] motion-safe:transition-transform active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+                      isActive && 'shadow-[0_3px_10px_#66472626]'
+                    )}
+                  >
+                    {bucket.label}
+                    <span className="ml-1.5 font-bold opacity-75">{bucket.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <p className="text-center text-[11px] italic leading-5 text-[#A08B6E]">
             Catatan lama tidur tenang di sini — Mochi menjaganya. 🍡
           </p>
@@ -231,7 +289,13 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
               ? group.notes.length - visibleNotes.length
               : 0;
             return (
-              <div key={group.weekStart}>
+              <div
+                key={group.weekStart}
+                ref={node => {
+                  if (node) weekRowRefs.current.set(group.weekStart, node);
+                  else weekRowRefs.current.delete(group.weekStart);
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => onWeekTap(group.weekStart)}

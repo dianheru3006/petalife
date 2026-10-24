@@ -118,3 +118,54 @@ export function splitWorkspace(
     isBoardNearFull: boardNotes.length >= BOARD_NEAR_FULL_THRESHOLD,
   };
 }
+
+// ── Pita Washi Waktu: indeks bulanan arsip untuk lompatan satu ketukan ──
+
+export function monthKeyOf(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** 'Okt' untuk tahun berjalan; 'Sep 2025' bila beda tahun — penanda musim. */
+export function monthLabelOf(timestamp: number, now = Date.now()): string {
+  const date = new Date(timestamp);
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+  return new Intl.DateTimeFormat('id-ID', {
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(date);
+}
+
+export interface MonthBucket {
+  /** 'YYYY-MM' — kunci kecocokan chip pita dengan minggu terbuka. */
+  key: string;
+  /** Label singkat, mis. 'Okt' atau 'Sep 2025'. */
+  label: string;
+  /** Total catatan dalam bulan itu. */
+  count: number;
+  /** Minggu TERBARU bulan itu — target lompatan pita. */
+  newestWeekStart: number;
+}
+
+/**
+ * Menggabungkan grup minggu (sudah urut menurun) menjadi ember bulanan.
+ * Urutan hasil tetap menurun karena iterasi mengikuti urutan grup.
+ */
+export function groupDrawerMonths(groups: DrawerWeekGroup[], now = Date.now()): MonthBucket[] {
+  const byKey = new Map<string, MonthBucket>();
+  for (const group of groups) {
+    const key = monthKeyOf(group.weekStart);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, {
+        key,
+        label: monthLabelOf(group.weekStart, now),
+        count: group.notes.length,
+        newestWeekStart: group.weekStart,
+      });
+    } else {
+      existing.count += group.notes.length;
+    }
+  }
+  return [...byKey.values()];
+}
