@@ -265,7 +265,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
             boxShadow: 'inset 0 10px 16px -12px #5E46242E',
           }}
         >
-          <p className="text-center text-[11px] italic leading-5 text-[#A08B6E]">
+          <p className="text-center text-[11px] font-semibold italic leading-5 text-[#6B5433]">
             Materi lama tidur tenang di sini — Mochi merawat raknya. 🍵
           </p>
           {groups.map(group => {
