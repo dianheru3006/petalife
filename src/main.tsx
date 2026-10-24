@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from './app/ErrorBoundary'
 import { registerServiceWorker } from './registerServiceWorker'
 import { prewarmInactiveTabsOnIdle } from './lib/perf/prewarmTabs'
 import { initReducedMotion } from './lib/preferences/appPreferences'
@@ -12,7 +13,9 @@ initReducedMotion()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
 
