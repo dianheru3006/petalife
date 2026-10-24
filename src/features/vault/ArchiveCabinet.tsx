@@ -183,11 +183,11 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
     <section aria-label="Laci arsip materi bulan-bulan lalu" className="relative mt-3">
       <div
         className={cn(
-          'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
+          'overflow-hidden rounded-[24px] border-2 transition-all duration-300 ease-out',
           isNightMode
-            ? 'border-[#CBC3B0] bg-[#E3DDD0] shadow-[0_4px_14px_#4A463A14]'
-            : 'border-[#DFDBCC] bg-[#F4F2EC] shadow-[0_6px_18px_#4A463A12]',
-          isOpen && 'shadow-[0_14px_34px_#4A463A1C]'
+            ? 'border-[#C8B98F] bg-[#E2D7BD] shadow-[0_6px_18px_#4A463A18]'
+            : 'border-[#D3C6A4] bg-[#EDE3CC] shadow-[0_8px_20px_#4A463A16]',
+          isOpen && 'shadow-[0_14px_34px_#4A463A22]'
         )}
       >
         {/* ── Baris atas: tombol buka/tutup + kartu mengintip ── */}
