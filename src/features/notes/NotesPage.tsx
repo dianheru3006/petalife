@@ -632,7 +632,7 @@ export const NotesPage: FC<NotesPageProps> = ({
             />
           )}
           <div className="flex flex-wrap justify-end gap-2 pt-4">
-            <button type="button" onClick={() => setIsVoiceJournalOpen(true)} className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[#CDBBA7] bg-[#FFFCF7] px-5 text-sm font-bold text-[#5D4633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"><Mic className="h-5 w-5" /> Jurnal suara</button>
+            <button type="button" onClick={() => setIsVoiceJournalOpen(true)} className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[#E5C3A8] bg-[#F7E3D3] px-5 text-sm font-bold text-[#8A4A22] shadow-[0_3px_10px_#66472614] hover:bg-[#F2D9C4] active:scale-[0.98] motion-safe:transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"><Mic className="h-5 w-5" /> Jurnal suara</button>
             <button type="button" onClick={() => openEditor()} className="inline-flex min-h-12 items-center gap-2.5 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white shadow-[0_8px_20px_#4A342D38] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
               <Plus className="h-5 w-5" /> Catatan baru
             </button>
