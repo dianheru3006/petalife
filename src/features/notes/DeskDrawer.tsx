@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import type { ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 import type { Note } from '../../lib/types';
 import { cn } from '../../lib/utils';
-import { Archive, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import type { DrawerWeekGroup } from './notesWorkspace';
 
 export interface DeskDrawerProps {
@@ -28,10 +28,43 @@ function drawerHaptic() {
   }
 }
 
+/** Tepi kertas yang mengintip dari laci tertutup — afforded tanpa kata. */
+function PeekStack({ isNightMode }: { isNightMode: boolean }) {
+  const sheets = [
+    { rotate: '-7deg', translate: '2px', bg: isNightMode ? '#E8D9C4' : '#F4C6A9', z: 1 },
+    { rotate: '3deg', translate: '5px', bg: isNightMode ? '#E3D5E0' : '#D9D0E8', z: 2 },
+    { rotate: '-2deg', translate: '8px', bg: isNightMode ? '#DDE7D6' : '#C8DFC9', z: 3 },
+  ];
+  return (
+    <span aria-hidden="true" className="pointer-events-none absolute right-4 top-2.5 block h-9 w-14">
+      {sheets.map(sheet => (
+        <span
+          key={sheet.z}
+          className="absolute bottom-0 right-0 block h-8 w-12 rounded-[3px] border border-[#00000014] shadow-[0_2px_4px_#5E46241F]"
+          style={{
+            transform: `rotate(${sheet.rotate}) translateY(${sheet.translate})`,
+            backgroundColor: sheet.bg,
+            zIndex: sheet.z,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 /**
- * Laci Meja (Lapis 2) — kompartemen kayu taktil di bawah papan gabus.
- * Dibuka via tap pada pegangan ATAU tarikan halus vertikal pada pegangan
- * (bukan seluruh board), supaya tidak bentrok dengan gesture WebView Telegram.
+ * Laci Meja (Lapis 2) — "Laci Berlapis Kertas".
+ *
+ * Prinsip desain:
+ * 1. MenyusuR, bukan berteriak: bingkai linen krem senada papan, tanpa blok
+ *    cokelat jenuh. Perabot arsip harus tenang agar isi papan yang menonjol.
+ * 2. Material jujur: interior dilapisi kertas bergaris halus (seperti alas
+ *    laci sungguhan) — sticky note memang hidup di atas kertas, bukan serat kayu.
+ * 3. Afordansi tanpa label: tumpukan kertas pastel mengintip di tepi atas
+ *    saat tertutup; pengertinya "ada isi" lebih cepat dari kata mana pun.
+ *
+ * Interaksi: tap pada baris atas ATAU tarikan vertikal pelan di baris atas
+ * (bukan seluruh isi), supaya tidak bentrok dengan gesture WebView Telegram.
  * Konten hanya di-render saat terbuka: DOM papan tetap ramping.
  */
 export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, renderNoteCard }: DeskDrawerProps) {
@@ -51,7 +84,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
   const onHandlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragStartRef.current === null) return;
     const delta = event.clientY - dragStartRef.current;
-    // Pratinjau tarikan dibatasi agar terasa seperti kayu, bukan karet.
+    // Pratinjau tarikan dibatasi agar terasa seperti laci berkayu, bukan karet.
     setDragOffset(Math.max(-12, Math.min(24, delta)));
   };
 
@@ -67,78 +100,116 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
   if (totalCount === 0 && groups.length === 0) {
     return (
       <p className="px-2 pb-2 pt-3 text-center text-xs leading-5 text-[#8A7C6D]">
-        Laci masih kosong — semua catatanmu masih hangat di papan. 🧺
+        Belum ada catatan lama — semuanya masih hangat di papan. 🧺
       </p>
     );
   }
 
   return (
-    <section
-      aria-label="Laci arsip catatan minggu-minggu lalu"
-      className={cn(
-        'relative mt-3 overflow-hidden rounded-[26px] border-2 transition-all duration-300 ease-out',
-        isNightMode ? 'border-[#B39B77] bg-[#8A7458]' : 'border-[#A98D63] bg-[#B49A6F]',
-        isOpen ? 'shadow-[0_14px_36px_#503A1F2E]' : 'shadow-sm'
-      )}
-    >
-      {/* Pegangan laci: target sentuh lega (≥56px), tap ATAU tarik vertikal. */}
+    <section aria-label="Laci arsip catatan minggu-minggu lalu" className="relative mt-3">
       <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={isOpen}
-        aria-controls="desk-drawer-body"
-        aria-label={isOpen ? 'Tutup laci catatan lama' : `Buka laci catatan lama (${totalCount} catatan)`}
-        onClick={() => toggleDrawer(!isOpen)}
-        onKeyDown={event => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            toggleDrawer(!isOpen);
-          }
-        }}
-        onPointerDown={onHandlePointerDown}
-        onPointerMove={onHandlePointerMove}
-        onPointerUp={onHandlePointerUp}
-        onPointerCancel={() => { dragStartRef.current = null; setDragOffset(0); }}
-        style={{ transform: `translateY(${dragOffset}px)`, touchAction: 'none' }}
-        className="flex min-h-[56px] w-full cursor-pointer select-none items-center justify-between gap-3 border-b-2 border-[#8A6F4B]/60 px-5 py-3 focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#FFF3E2] active:scale-[0.99] motion-safe:transition-transform"
+        className={cn(
+          'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
+          isNightMode
+            ? 'border-[#C9B59C] bg-[#E2D4BC] shadow-[0_4px_14px_#503A1F14]'
+            : 'border-[#D9C9AC] bg-[#F0E7D4] shadow-[0_6px_18px_#66472612]',
+          isOpen && 'shadow-[0_14px_34px_#503A1F1F]'
+        )}
       >
-        <span className="flex items-center gap-2.5 text-sm font-extrabold text-[#FFF8EC]">
-          <Archive className="h-4 w-4" aria-hidden="true" />
-          Laci Catatan
-          <span className="rounded-full bg-[#FFF3E2]/90 px-2 py-0.5 text-[11px] font-bold text-[#6B4E2E]">
-            {totalCount} terdahulu
+        {/* ── Baris atas: tombol buka/tutup + tumpukan kertas mengintip ── */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          aria-controls="desk-drawer-body"
+          aria-label={isOpen ? 'Tutup laci catatan lama' : `Buka laci catatan lama (${totalCount} catatan)`}
+          onClick={() => toggleDrawer(!isOpen)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              toggleDrawer(!isOpen);
+            }
+          }}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={() => { dragStartRef.current = null; setDragOffset(0); }}
+          style={{ transform: `translateY(${dragOffset}px)`, touchAction: 'none' }}
+          className={cn(
+            'relative flex min-h-[64px] w-full cursor-pointer select-none items-center justify-between gap-3 px-5 py-3.5',
+            'focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#BA5218] active:scale-[0.995] motion-safe:transition-transform',
+            !isOpen && 'border-b border-[#0000000f]'
+          )}
+        >
+          {!isOpen && <PeekStack isNightMode={isNightMode} />}
+          <span className="min-w-0">
+            <span className={cn('block text-[10px] font-bold uppercase tracking-[0.14em]', isNightMode ? 'text-[#8A7455]' : 'text-[#9A8266]')}>
+              Arsip
+            </span>
+            <span className={cn('block font-display text-[16px] font-extrabold leading-tight', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+              Catatan Terdahulu
+            </span>
           </span>
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className={cn('h-5 w-5 text-[#FFF8EC] motion-safe:transition-transform duration-300', isOpen && 'rotate-180')}
-        />
-      </div>
+          <span className="flex shrink-0 items-center gap-2.5">
+            <span className="flex h-9 min-w-9 items-center justify-center rounded-full border border-[#E3D2B4] bg-[#FFF9EC] px-2 text-xs font-extrabold text-[#7A6041] shadow-[0_2px_5px_#6647261A]">
+              {totalCount}
+            </span>
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full border',
+                isNightMode ? 'border-[#B39B77] bg-[#D9C6A5] text-[#4A3B2C]' : 'border-[#CBB488] bg-[#E4D3B2] text-[#6B5533]'
+              )}
+            >
+              <ChevronDown
+                aria-hidden="true"
+                className={cn('h-5 w-5 motion-safe:transition-transform duration-300', isOpen && 'rotate-180')}
+              />
+            </span>
+          </span>
+        </div>
 
-      <div
-        id="desk-drawer-body"
-        hidden={!isOpen}
-        className="space-y-5 px-4 pb-6 pt-4"
-        style={{ backgroundImage: 'repeating-linear-gradient(135deg, #C9B48B 0 6px, #C2AB80 6px 12px)' }}
-      >
-        <p className="rounded-xl bg-[#FFFDF7]/85 px-3.5 py-2.5 text-xs leading-5 text-[#6B5B49]">
-          Catatan lama tersimpan tenang di sini. Kapan pun kamu butuh kenangan ini, Mochi jagakan. 🍡
-        </p>
-        {groups.map(group => (
-          <div key={group.weekStart}>
-            <p className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-[#FFF8EC]/95">
-              <span aria-hidden="true" className="inline-block h-1.5 w-6 rounded-full bg-[#FFF3E2]/80" />
-              {group.label} · {group.notes.length} catatan
-            </p>
-            <div className="grid grid-cols-2 items-start gap-3">
-              {group.notes.map((note, index) => (
-                <div key={note.id} role="listitem">
-                  {renderNoteCard(note, index)}
-                </div>
-              ))}
+        {/* ── Interior: alas kertas bergaris, rongga laci terasa dari bayangan atas ── */}
+        <div
+          id="desk-drawer-body"
+          hidden={!isOpen}
+          className={cn(
+            'space-y-6 px-4 pb-6 pt-5',
+            isNightMode ? 'bg-[#FAF3E6]' : 'bg-[#FFFDF7]'
+          )}
+          style={{
+            backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 23px, ${isNightMode ? '#EFE4D0' : '#F1E8D8'} 24px)`,
+            boxShadow: 'inset 0 10px 16px -12px #5E46242E',
+          }}
+        >
+          <p className="text-center text-[11px] italic leading-5 text-[#A08B6E]">
+            Catatan lama tidur tenang di sini — Mochi menjaganya. 🍡
+          </p>
+          {groups.map(group => (
+            <div key={group.weekStart} role="list" aria-label={group.label}>
+              {/* Pemisah minggu: stiker tag kecil miring di atas garis halus. */}
+              <div className="mb-3 flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    '-rotate-2 rounded-[6px] border px-2.5 py-1 text-[11px] font-extrabold shadow-[0_2px_5px_#66472617]',
+                    isNightMode
+                      ? 'border-[#E3D2B4] bg-[#FFF4DE] text-[#7A6041]'
+                      : 'border-[#EADFC6] bg-[#FFF7E6] text-[#8A6B45]'
+                  )}
+                >
+                  {group.label} · {group.notes.length}
+                </span>
+                <span aria-hidden="true" className={cn('h-px flex-1', isNightMode ? 'bg-[#E3D5BC]' : 'bg-[#EDE3CE]')} />
+              </div>
+              <div className="grid grid-cols-2 items-start gap-3">
+                {group.notes.map((note, index) => (
+                  <div key={note.id} role="listitem">
+                    {renderNoteCard(note, index)}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
