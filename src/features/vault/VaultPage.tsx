@@ -450,7 +450,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       {/* Sampul hardcover berdiri langsung di rak — tanpa slipcase (spesifikasi referensi). */}
       <VaultBookArtwork link={link} />
 
-      {/* Book Title & Platform Subtitle */}
+      {/* Book Title */}
       <span
         className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#BA5218] transition-colors leading-snug"
         style={{
@@ -461,9 +461,6 @@ export const VaultPage: FC<VaultPageProps> = ({
         }}
       >
         {link.title}
-      </span>
-      <span className="mt-0.5 max-w-full truncate text-[10px] font-medium text-[#73685E]">
-        {link.domain}
       </span>
     </button>
   );
