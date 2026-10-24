@@ -49,12 +49,12 @@ export interface PlatformTheme {
 
 export const PLATFORM_THEMES: Record<PlatformType, PlatformTheme> = {
   youtube: {
-    cloth: '#B85C43',   // Warm Terracotta / Saddle Brown Leather (persis referensi)
+    cloth: '#C77C63',   // Kulit terracotta lembut
     ink: '#E62117',
     paper: '#FAF9F5',
   },
   tiktok: {
-    cloth: '#2B3239',   // Deep Charcoal Slate / Matte Navy Leather (persis referensi)
+    cloth: '#3B3D43',   // Kulit arang netral
     ink: '#000000',
     paper: '#FAF9F5',
   },
@@ -170,23 +170,16 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
     );
   }
 
-  // ── Sampul rak: 3D Hardcover Book (Persis Referensi Pengguna) ──
-  // - Proporsi buku potret ~4:5
-  // - Kertas buku (page block) terlihat jelas mengintip di sisi KANAN dan BAWAH
-  // - Punggung buku melengkung silinder di sisi kiri dengan alur engsel (hinge gutter)
-  // - Rusuk timbul horizontal pada punggung (debossed leather untuk terracotta, gold foil untuk charcoal)
-  // - Garis bingkai debossed melengkung di sekeliling sampul
-  // - Pita pembatas emas (golden tan ribbon) menjuntai di sudut kanan atas dengan ujung V
-  // - Segel bundar porselen putih bersih di tengah dengan logo platform autentik
+  // Sampul rak memakai satu bentuk buku yang konsisten untuk semua platform.
   return (
     <div
-      className="relative w-full aspect-[4/5] select-none rounded-[6px_10px_6px_6px] shadow-[3px_6px_14px_rgba(40,25,10,0.26)] overflow-hidden"
-      style={{ backgroundColor: theme.cloth }}
+      className="relative w-full aspect-[7/8] select-none overflow-hidden rounded-[8px_9px_8px_8px] shadow-[2px_5px_9px_rgba(49,34,25,0.24)]"
+      style={{ backgroundColor: '#B9A180' }}
     >
       {/* 1. Kertas Buku (Page Block) — Mengintip di sisi KANAN */}
       <span
         aria-hidden="true"
-        className="absolute top-[4px] bottom-[5px] right-[1px] w-[6px] rounded-r-[2px] border-l border-black/15 pointer-events-none"
+        className="absolute top-[3px] bottom-[5px] right-[1px] w-[5px] rounded-r-[3px] border-l border-black/15 pointer-events-none"
         style={{
           backgroundColor: '#F3EAD3',
           backgroundImage: 'repeating-linear-gradient(180deg, rgba(140,110,70,0.16) 0 1px, transparent 1px 3px)',
@@ -197,7 +190,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
       {/* 2. Kertas Buku (Page Block) — Mengintip di sisi BAWAH */}
       <span
         aria-hidden="true"
-        className="absolute bottom-[1px] left-[10px] right-[3px] h-[6px] rounded-b-[2px] border-t border-black/15 pointer-events-none"
+        className="absolute bottom-[1px] left-[8px] right-[3px] h-[5px] rounded-b-[3px] border-t border-black/15 pointer-events-none"
         style={{
           backgroundColor: '#EFE3C8',
           backgroundImage: 'repeating-linear-gradient(90deg, rgba(140,110,70,0.16) 0 1px, transparent 1px 3px)',
@@ -207,41 +200,42 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
 
       {/* 3. Badan Sampul Depan (Hardcover Board) — Terpasang di atas blok kertas */}
       <div
-        className="absolute top-0 left-0 right-[5px] bottom-[5px] rounded-[6px_3px_2px_6px] overflow-hidden"
+        className="absolute top-0 left-0 right-[5px] bottom-[5px] overflow-hidden rounded-[8px_4px_3px_8px]"
         style={{
           backgroundColor: theme.cloth,
-          boxShadow: '1px 2px 4px rgba(0,0,0,0.22), inset 0 1px 1px rgba(255,255,255,0.25), inset -1px -1px 2px rgba(0,0,0,0.3)',
+          backgroundImage: 'linear-gradient(110deg, rgba(255,255,255,0.12), transparent 38%, rgba(0,0,0,0.11))',
+          boxShadow: '1px 2px 3px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.35), inset -1px -1px 2px rgba(0,0,0,0.26)',
         }}
       >
         {/* Serat tekstur kulit halus */}
         <span
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none opacity-40 mix-blend-overlay"
+          className="absolute inset-0 pointer-events-none opacity-35 mix-blend-overlay"
           style={{
             backgroundImage:
-              'radial-gradient(rgba(255,255,255,0.18) 1px, transparent 1px), radial-gradient(rgba(0,0,0,0.15) 1px, transparent 1px)',
-            backgroundSize: '4px 4px',
-            backgroundPosition: '0 0, 2px 2px',
+              'radial-gradient(rgba(255,255,255,0.22) 0.5px, transparent 0.7px), radial-gradient(rgba(0,0,0,0.19) 0.5px, transparent 0.7px)',
+            backgroundSize: '3px 3px',
+            backgroundPosition: '0 0, 1.5px 1.5px',
           }}
         />
 
-        {/* Punggung Buku Silinder (~14% lebar di sisi kiri) */}
+        {/* Punggung buku membulat, dengan alur engsel dan rusuk kecil. */}
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-0 w-[14%] pointer-events-none"
+          className="absolute inset-y-0 left-0 w-[11%] pointer-events-none"
           style={{
             background:
-              'linear-gradient(90deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.35) 85%, rgba(0,0,0,0.55) 100%)',
+              'linear-gradient(90deg, rgba(0,0,0,0.24), rgba(255,255,255,0.13) 34%, rgba(0,0,0,0.11) 70%, rgba(0,0,0,0.4))',
           }}
         >
           {/* Rusuk Timbul Atas (Raised Bands) */}
-          <span className="absolute top-[14%] inset-x-0 h-[8px] flex flex-col justify-between px-0.5">
+          <span className="absolute top-[16%] inset-x-0 h-[6px] flex flex-col justify-between px-0.5">
             <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-black/35 shadow-[0_1px_0_rgba(255,255,255,0.2)]'}`} />
             <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-white/25 shadow-[0_-1px_0_rgba(0,0,0,0.2)]'}`} />
           </span>
 
           {/* Rusuk Timbul Bawah (Raised Bands) */}
-          <span className="absolute bottom-[16%] inset-x-0 h-[8px] flex flex-col justify-between px-0.5">
+          <span className="absolute bottom-[18%] inset-x-0 h-[6px] flex flex-col justify-between px-0.5">
             <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-black/35 shadow-[0_1px_0_rgba(255,255,255,0.2)]'}`} />
             <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-white/25 shadow-[0_-1px_0_rgba(0,0,0,0.2)]'}`} />
           </span>
@@ -250,7 +244,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
         {/* Alur Engsel / Hinge Gutter (garis parit vertikal pemisah punggung & sampul) */}
         <span
           aria-hidden="true"
-          className="absolute inset-y-0 left-[14%] w-[2px] bg-black/45 pointer-events-none"
+          className="absolute inset-y-0 left-[11%] w-px bg-black/40 pointer-events-none"
           style={{
             boxShadow: '1px 0 1px rgba(255,255,255,0.25)',
           }}
@@ -259,31 +253,31 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
         {/* Garis Bingkai Debossed (Embossed Inner Frame) */}
         <span
           aria-hidden="true"
-          className="absolute top-[8px] bottom-[8px] left-[calc(14%+7px)] right-[7px] rounded-[4px] border pointer-events-none"
+          className="absolute top-[7px] bottom-[12px] left-[calc(11%+8px)] right-[8px] rounded-[3px] border pointer-events-none"
           style={{
-            borderColor: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)',
+            borderColor: isDark ? 'rgba(255,255,255,0.19)' : 'rgba(255,237,215,0.38)',
             boxShadow: isDark
-              ? '0 1px 0 rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
-              : '0 1px 0 rgba(255,255,255,0.22), inset 0 1px 0 rgba(0,0,0,0.15)',
+              ? '0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)'
+              : '0 1px 0 rgba(91,47,33,0.3), inset 0 1px 0 rgba(255,255,255,0.12)',
           }}
         />
 
         {/* Pita Pembatas Emas / Tan (Golden Ribbon Bookmark) di Kanan Atas */}
         <span
           aria-hidden="true"
-          className="absolute top-0 right-[12%] w-[13%] h-[24%] pointer-events-none z-10"
+          className="absolute top-0 right-[10%] z-10 h-[13%] w-[10%] pointer-events-none"
           style={{
-            background: 'linear-gradient(90deg, #CBA469 0%, #E9CF97 45%, #D4AF74 85%, #B78F52 100%)',
-            clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 74%, 0 100%)',
+            background: 'linear-gradient(90deg, #B99263 0%, #E5CA9E 45%, #D0AA75 100%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 77%, 0 100%)',
             filter: 'drop-shadow(-1px 2px 2px rgba(0,0,0,0.3))',
           }}
         />
 
         {/* Segel Bundar Porselen Putih Bersih di Tengah */}
         <span
-          className="absolute top-1/2 left-[calc(50%+4px)] -translate-x-1/2 -translate-y-1/2 flex aspect-square w-[44%] items-center justify-center rounded-full bg-[#FAF9F5] border border-black/5"
+          className="absolute top-[47%] left-[calc(50%+3px)] flex aspect-square w-[35%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-black/5 bg-[#FAF9F5]"
           style={{
-            boxShadow: '0 3px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.12), inset 0 1px 1px rgba(255,255,255,0.9)',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.18), inset 0 1px 1px rgba(255,255,255,0.9)',
           }}
           aria-label={`Platform ${link.platform}`}
           role="img"
