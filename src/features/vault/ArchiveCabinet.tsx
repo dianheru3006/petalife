@@ -285,9 +285,8 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                   aria-controls={`vault-month-${group.key}`}
                   className={cn(
                     'flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-                    isExpanded
-                      ? 'border-[#E3D2B4] bg-[#FFF9EC] shadow-[0_3px_10px_#66472614]'
-                      : 'border-transparent hover:bg-[#00000006]'
+                    isNightMode ? 'border-[#D9C096] bg-[#FBF4E4]' : 'border-[#E3D2B4] bg-[#FFF9EC]',
+                    isExpanded && 'shadow-[0_3px_10px_#66472614]'
                   )}
                 >
                   <BookStackGlyph />
