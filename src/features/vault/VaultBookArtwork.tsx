@@ -108,41 +108,13 @@ export function getPlatformTheme(platform: PlatformType): PlatformTheme {
   return PLATFORM_THEMES[platform] || PLATFORM_THEMES.web;
 }
 
-// ── Redesign sampul rak: identitas per-BUKU, bukan per-platform ──
-// Palet perpustakaan hangat (kain berpigmen lembut + tinta gelap senada).
-interface BookPalette { cloth: string; spine: string; ink: string }
-const BOOK_PALETTE: BookPalette[] = [
-  { cloth: '#C96F4A', spine: '#A85436', ink: '#3E2417' }, // terakota
-  { cloth: '#7E9B6E', spine: '#637F55', ink: '#26331E' }, // sage
-  { cloth: '#D9A44A', spine: '#B3832F', ink: '#3D2E10' }, // mustard
-  { cloth: '#7D94B8', spine: '#5F769A', ink: '#1F2C40' }, // biru redup
-  { cloth: '#A87DAB', spine: '#8A618D', ink: '#33203A' }, // plum
-  { cloth: '#B77B62', spine: '#945D46', ink: '#341F16' }, // tanah liat
-  { cloth: '#8FA37A', spine: '#6F8460', ink: '#26301C' }, // zaitun
-  { cloth: '#C98B95', spine: '#A66773', ink: '#3A2026' }, // rose redup
-];
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
-/** Warna sampul stabil per buku (domain+judul) — rak vari namun tetap serasi. */
-function getBookPalette(link: SavedLink): BookPalette {
-  return BOOK_PALETTE[hashString(`${link.domain}|${link.title}`) % BOOK_PALETTE.length];
-}
-
 export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ link, large = false }) => {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const imageUrl = getLinkThumbnailUrl(link);
   // In Reading View (large = true), display the authentic thumbnail from the referenced link
-  // On Bookshelf (large = false), present the typographic cloth cover with book anatomy
+  // On Bookshelf (large = false), present the cohesive cozy pastel book cover with brand seal
   const showImage = Boolean(large && imageUrl && failedUrl !== imageUrl);
   const theme = getPlatformTheme(link.platform);
-  const book = getBookPalette(link);
 
   // Platform-specific official brand icon
   const BrandIcon = link.platform === 'youtube'
@@ -157,100 +129,53 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
 
   const isVideo = link.platform === 'youtube' || link.platform === 'tiktok';
 
-  if (large) {
-    return (
-      <div
-        className="relative w-full overflow-hidden rounded-[20px] aspect-video"
-        style={{ backgroundColor: showImage ? theme.cloth : book.cloth }}
-      >
-        {showImage ? (
-          <img
-            src={imageUrl!}
-            alt={`Pratinjau ${link.title}`}
-            width={640}
-            height={360}
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
-            onError={() => setFailedUrl(imageUrl!)}
-          />
-        ) : (
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center"
-            style={{ color: book.ink }}
-          >
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] opacity-70">{link.domain}</span>
-            <div
-              className="mt-3 flex h-20 w-20 items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
-              style={{ backgroundColor: theme.paper, color: theme.ink }}
-            >
-              <BrandIcon className="h-9 w-9" />
-            </div>
-            <span className="mt-3 max-w-[80%] truncate text-xs font-bold opacity-80">{link.title}</span>
-          </div>
-        )}
-
-        {/* Large central play overlay only in Reading View video thumbnail */}
-        {showImage && isVideo && (
-          <span
-            className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-white/95 text-[#7B4827] shadow-md"
-            aria-hidden="true"
-          >
-            <Play className="h-6 w-6 translate-x-0.5 fill-current" />
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  // ── Sampul rak: buku kain dengan anatomi nyata ──
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl aspect-[3/4]"
-      style={{ backgroundColor: book.cloth, color: book.ink }}
+      className={`relative w-full overflow-hidden ${large ? 'aspect-video rounded-[20px]' : 'aspect-[3/4] rounded-xl'}`}
+      style={{ backgroundColor: theme.cloth }}
     >
-      {/* Blok halaman krem di kanan — pembacaan "buku" yang instan. */}
-      <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[7px] border-l border-black/15 bg-[#F5EBD3]" />
-      <span aria-hidden="true" className="absolute inset-y-1.5 right-[7px] w-px bg-black/10" />
+      {showImage ? (
+        <img
+          src={imageUrl!}
+          alt={`Pratinjau ${link.title}`}
+          width={large ? 640 : 240}
+          height={large ? 360 : 320}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setFailedUrl(imageUrl!)}
+        />
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {!large && (
+            <>
+              <div className="absolute inset-y-0 left-0 w-2.5 border-r border-black/15 bg-black/10 shadow-[inset_-1px_0_2px_rgba(0,0,0,0.1)]" aria-hidden="true" />
+              <div className="absolute inset-y-0 left-2.5 w-px bg-white/20" aria-hidden="true" />
+            </>
+          )}
+          <div className="absolute inset-x-3 top-3 h-px bg-white/40" aria-hidden="true" />
+          <div
+            className={`flex items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${
+              large ? 'h-20 w-20' : 'h-12 w-12'
+            }`}
+            style={{ backgroundColor: theme.paper, color: theme.ink }}
+          >
+            <BrandIcon className={large ? 'h-9 w-9' : 'h-6 w-6'} />
+          </div>
+          {large && <span className="mt-3 max-w-[80%] truncate text-xs font-bold text-white drop-shadow-xs">{link.domain}</span>}
+          <div className="absolute inset-x-3 bottom-3 h-px bg-white/40" aria-hidden="true" />
+        </div>
+      )}
 
-      {/* Punggung buku di kiri: lebih gelap dengan alur highlight. */}
-      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[10px]" style={{ backgroundColor: book.spine }} />
-      <span aria-hidden="true" className="absolute inset-y-0 left-[10px] w-px bg-white/25" />
-
-      {/* Bidang sampul: domain kecil → garis ornamen → judul → segel platform. */}
-      <div
-        className="absolute inset-y-0 left-[11px] right-[7px] flex flex-col px-2 py-2.5"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 3px)',
-        }}
-      >
-        <span className="truncate text-[7.5px] font-bold uppercase tracking-[0.14em] opacity-75">
-          {link.domain}
-        </span>
-        <span aria-hidden="true" className="mt-1 h-px w-6 bg-current opacity-45" />
+      {/* Large central play overlay only in Reading View video thumbnail */}
+      {large && isVideo && (
         <span
-          className="mt-1.5 font-display text-[10px] font-extrabold leading-[1.18]"
-          style={{ display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-white/95 text-[#7B4827] shadow-md"
+          aria-hidden="true"
         >
-          {link.title}
+          <Play className="h-6 w-6 translate-x-0.5 fill-current" />
         </span>
-        <span
-          className="mt-auto flex h-[22px] w-[22px] items-center justify-center rounded-full border border-white/70 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
-          style={{ backgroundColor: theme.paper, color: theme.ink }}
-          aria-label={`Platform ${link.platform}`}
-          role="img"
-        >
-          <BrandIcon className="h-3 w-3" />
-        </span>
-      </div>
-
-      {/* Sheen miring halus — cahaya jendela perpustakaan. */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.16), transparent 46%)' }}
-      />
+      )}
     </div>
   );
 };
