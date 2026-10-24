@@ -6,17 +6,6 @@ import { ChevronDown } from 'lucide-react';
 import type { DrawerWeekGroup, MonthBucket } from './notesWorkspace';
 import { groupDrawerMonths, monthKeyOf, shouldAutoExpandNewestGroup } from './notesWorkspace';
 
-/** Kartu ter-hidrasi maksimal per minggu yang dibuka; sisanya lewat tombol. */
-const EXPANDED_GROUP_LIMIT = 24;
-
-/** Palet pita washi — lembut, tembus pandang, bergantian supaya terasa ditempel tangan. */
-const WASHI_TAPES = [
-  { bg: 'rgba(244, 198, 169, 0.5)', edge: '#E8B493' },
-  { bg: 'rgba(217, 208, 232, 0.5)', edge: '#C4B3DD' },
-  { bg: 'rgba(200, 223, 201, 0.5)', edge: '#A9CDA9' },
-  { bg: 'rgba(243, 210, 216, 0.5)', edge: '#E2AFB9' },
-];
-
 export interface DeskDrawerProps {
   groups: DrawerWeekGroup[];
   totalCount: number;
@@ -29,6 +18,28 @@ export interface DeskDrawerProps {
 }
 
 const DRAG_OPEN_THRESHOLD_PX = 28;
+
+/** Kartu ter-hidrasi maksimal per minggu yang dibuka; sisanya lewat tombol. */
+const EXPANDED_GROUP_LIMIT = 24;
+
+/** Palet pita washi — lembut, tembus pandang, bergantian supaya terasa ditempel tangan. */
+const WASHI_TAPES = [
+  { bg: 'rgba(244, 198, 169, 0.5)', edge: '#E8B493' },
+  { bg: 'rgba(217, 208, 232, 0.5)', edge: '#C4B3DD' },
+  { bg: 'rgba(200, 223, 201, 0.5)', edge: '#A9CDA9' },
+  { bg: 'rgba(243, 210, 216, 0.5)', edge: '#E2AFB9' },
+];
+
+/** Token "Kayu Jati Tenang": serat kayu vertikal samar di atas gradasi jati. */
+const WOOD_GRAIN =
+  'repeating-linear-gradient(90deg, rgba(122, 82, 34, 0.05) 0 2px, transparent 2px 7px)';
+
+function woodFrameStyle(isNightMode: boolean): React.CSSProperties {
+  const gradient = isNightMode
+    ? 'linear-gradient(to bottom, #D8BA8E, #C29E6E)'
+    : 'linear-gradient(to bottom, #EAC89B, #D9AE7D)';
+  return { backgroundImage: `${WOOD_GRAIN}, ${gradient}` };
+}
 
 function drawerHaptic() {
   try {
@@ -84,19 +95,17 @@ function WeekStackGlyph({ isNightMode }: { isNightMode: boolean }) {
 }
 
 /**
- * Laci Meja (Lapis 2) — "Laci Berlapis Kertas".
+ * Laci Meja (Lapis 2) — gaya "Kayu Jati Tenang".
  *
- * Prinsip desain:
- * 1. MenyusuR, bukan berteriak: bingkai linen krem senada papan, tanpa blok
- *    cokelat jenuh. Perabot arsip harus tenang agar isi papan yang menonjol.
- * 2. Material jujur: interior dilapisi kertas bergaris halus (seperti alas
- *    laci sungguhan) — sticky note memang hidup di atas kertas, bukan serat kayu.
- * 3. Afordansi tanpa label: tumpukan kertas pastel mengintip di tepi atas
- *    saat tertutup; pengertinya "ada isi" lebih cepat dari kata mana pun.
+ * Prinsip desain: berkomitmen jadi perabot. Bingkai kayu jati berserat halus
+ * senada papan rak Pustaka; saat terbuka terlihat NAMPELAI pelapis krem yang
+ * lebih terang dari bingkainya (kartu tetap hidup di atas kertas, bukan kayu
+ * gelap), dengan bayangan inset sebagai rongga. Aksen kuningan disiplin:
+ * roundel hitungan, gagang tarik, dan tombol chevron — tiga titik, tidak lebih.
  *
- * Interaksi: tap pada baris atas ATAU tarikan vertikal pelan di baris atas
- * (bukan seluruh isi), supaya tidak bentrok dengan gesture WebView Telegram.
- * Konten hanya di-render saat terbuka: DOM papan tetap ramping.
+ * Interaksi tak berubah: tap pada baris atas ATAU tarikan vertikal pelan
+ * (bukan seluruh isi), haptic Telegram, akordeon satu-minggu-terbuka,
+ * pita washi lompat bulanan, konten hanya dirender saat terbuka.
  */
 export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, renderNoteCard }: DeskDrawerProps) {
   const [dragOffset, setDragOffset] = useState(0);
@@ -169,14 +178,15 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
     <section aria-label="Laci arsip catatan minggu-minggu lalu" className="relative mt-3">
       <div
         className={cn(
-          'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
+          'overflow-hidden rounded-[24px] border-2 transition-all duration-300 ease-out',
           isNightMode
-            ? 'border-[#C9B59C] bg-[#E2D4BC] shadow-[0_4px_14px_#503A1F14]'
-            : 'border-[#D9C9AC] bg-[#F0E7D4] shadow-[0_6px_18px_#66472612]',
-          isOpen && 'shadow-[0_14px_34px_#503A1F1F]'
+            ? 'border-[#8F6B44] shadow-[0_6px_18px_#503A1F1C]'
+            : 'border-[#B98653] shadow-[0_8px_22px_#66472620]',
+          isOpen && 'shadow-[0_16px_36px_#5E421F2A]'
         )}
+        style={woodFrameStyle(isNightMode)}
       >
-        {/* ── Baris atas: tombol buka/tutup + tumpukan kertas mengintip ── */}
+        {/* ── Muka laci: tombol buka/tutup, kertas mengintip, gagang kuningan ── */}
         <div
           role="button"
           tabIndex={0}
@@ -196,28 +206,30 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
           onPointerCancel={() => { dragStartRef.current = null; setDragOffset(0); }}
           style={{ transform: `translateY(${dragOffset}px)`, touchAction: 'none' }}
           className={cn(
-            'relative flex min-h-[64px] w-full cursor-pointer select-none items-center justify-between gap-3 px-5 py-3.5',
-            'focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#BA5218] active:scale-[0.995] motion-safe:transition-transform',
-            !isOpen && 'border-b border-[#0000000f]'
+            'relative flex min-h-[68px] w-full cursor-pointer select-none items-center justify-between gap-3 px-5 pb-5 pt-3.5',
+            'focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#FFF3DC] active:scale-[0.995] motion-safe:transition-transform',
+            !isOpen && 'border-b-2 border-[#A9805A]/70'
           )}
         >
           {!isOpen && <PeekStack isNightMode={isNightMode} />}
           <span className="min-w-0">
-            <span className={cn('block text-[10px] font-bold uppercase tracking-[0.14em]', isNightMode ? 'text-[#8A7455]' : 'text-[#9A8266]')}>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A6B45]">
               Arsip
             </span>
-            <span className={cn('block font-display text-[16px] font-extrabold leading-tight', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+            <span className="block font-display text-[16px] font-extrabold leading-tight text-[#4A3423]">
               Catatan Terdahulu
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-2.5">
-            <span className="flex h-9 min-w-9 items-center justify-center rounded-full border border-[#E3D2B4] bg-[#FFF9EC] px-2 text-xs font-extrabold text-[#7A6041] shadow-[0_2px_5px_#6647261A]">
+            <span className="flex h-9 min-w-9 items-center justify-center rounded-full border border-[#A9823C] bg-gradient-to-b from-[#F0D68C] to-[#CDA648] px-2 text-xs font-extrabold text-[#4A3410] shadow-[0_2px_4px_#8A6B2E3D]">
               {totalCount}
             </span>
             <span
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full border',
-                isNightMode ? 'border-[#B39B77] bg-[#D9C6A5] text-[#4A3B2C]' : 'border-[#CBB488] bg-[#E4D3B2] text-[#6B5533]'
+                'flex h-10 w-10 items-center justify-center rounded-full border shadow-[0_2px_5px_#7A5B2230]',
+                isNightMode
+                  ? 'border-[#8F6B44] bg-gradient-to-b from-[#C29E6E] to-[#B08A57] text-[#F7ECD8]'
+                  : 'border-[#A9805A] bg-gradient-to-b from-[#D3A971] to-[#C2925C] text-[#FFF3DC]'
               )}
             >
               <ChevronDown
@@ -226,19 +238,26 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
               />
             </span>
           </span>
+          {/* Gagang tarik kuningan — pusat afordansi fisik laci. */}
+          {!isOpen && (
+            <span
+              aria-hidden="true"
+              className="absolute bottom-[7px] left-1/2 block h-[5px] w-14 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#B98D3F] via-[#EFD191] to-[#B98D3F] shadow-[0_1px_2px_#7A5B2230]"
+            />
+          )}
         </div>
 
-        {/* ── Interior: alas kertas bergaris, rongga laci terasa dari bayangan atas ── */}
+        {/* ── Rongga laci: nampan pelapis krem, lebih terang dari bingkainya ── */}
         <div
           id="desk-drawer-body"
           hidden={!isOpen}
           className={cn(
-            'space-y-2.5 px-4 pb-6 pt-5',
-            isNightMode ? 'bg-[#FAF3E6]' : 'bg-[#FFFDF7]'
+            'mx-1.5 mb-1.5 mt-1.5 space-y-2.5 rounded-[18px] px-3 pb-5 pt-4',
+            isNightMode ? 'bg-[#F4EAD6]' : 'bg-[#FFF8E7]'
           )}
           style={{
-            backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 23px, ${isNightMode ? '#EFE4D0' : '#F1E8D8'} 24px)`,
-            boxShadow: 'inset 0 10px 16px -12px #5E46242E',
+            boxShadow:
+              'inset 0 10px 18px -12px rgba(94, 66, 31, 0.5), inset 0 0 0 1px rgba(169, 128, 90, 0.28)',
           }}
         >
           {months.length > 1 && (
@@ -262,7 +281,6 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
                       transform: `rotate(${i % 2 === 0 ? -1.6 : 1.2}deg)`,
                       backgroundColor: tape.bg,
                       borderColor: isActive ? tape.edge : 'transparent',
-                      // Serat pita washi: garis halus 45° di atas warna dasar.
                       backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 4px, transparent 4px 9px)',
                     }}
                     className={cn(
@@ -277,7 +295,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
               })}
             </div>
           )}
-          <p className="text-center text-[11px] italic leading-5 text-[#A08B6E]">
+          <p className="text-center text-[11px] italic leading-5 text-[#9A8158]">
             Catatan lama tidur tenang di sini — Mochi menjaganya. 🍡
           </p>
           {groups.map(group => {
@@ -304,22 +322,24 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
                   className={cn(
                     'flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
                     isExpanded
-                      ? 'border-[#E3D2B4] bg-[#FFF9EC] shadow-[0_3px_10px_#66472614]'
-                      : 'border-transparent hover:bg-[#00000006]'
+                      ? isNightMode
+                        ? 'border-[#D9C096] bg-[#FBF4E4] shadow-[0_2px_8px_#66472614]'
+                        : 'border-[#E2CBA0] bg-[#FFFDF6] shadow-[0_2px_8px_#66472614]'
+                      : cn('border-transparent hover:bg-[#FFFFFF66]', isNightMode && 'hover:bg-[#FFFFFF40]')
                   )}
                 >
                   <WeekStackGlyph isNightMode={isNightMode} />
                   <span className="min-w-0 flex-1">
-                    <span className={cn('block text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+                    <span className={cn('block text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#463524]' : 'text-[#4A3423]')}>
                       {group.label}
                     </span>
-                    <span className="block text-[11px] font-semibold text-[#9A8266]">
+                    <span className="block text-[11px] font-semibold text-[#9A8158]">
                       {group.notes.length} catatan
                     </span>
                   </span>
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn('h-4 w-4 shrink-0 text-[#9A8266] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                    className={cn('h-4 w-4 shrink-0 text-[#9A8158] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
                   />
                 </button>
                 {isExpanded && (
@@ -335,7 +355,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
                       <button
                         type="button"
                         onClick={() => setExpandedShowAll(true)}
-                        className="mt-3 min-h-11 w-full rounded-full border border-[#E3D2B4] bg-[#FFF9EC] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                        className="mt-3 min-h-11 w-full rounded-full border border-[#D9BE93] bg-[#FFFDF6] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
                       >
                         Tampilkan {hiddenCount} catatan lagi minggu ini
                       </button>
