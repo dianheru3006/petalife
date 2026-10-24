@@ -16,6 +16,19 @@ export async function getAllNotes(database: PetalifeDatabase = db): Promise<Note
   }
 }
 
+/**
+ * Jendela terbaru untuk Papan Minggu Ini — hanya memuat `limit` kartu
+ * terbaru (key-set by index updatedAtTimestamp), bukan seluruh tabel.
+ */
+export async function getRecentNotes(limit = 14, database: PetalifeDatabase = db): Promise<Note[]> {
+  try {
+    return await database.notes.orderBy('updatedAtTimestamp').reverse().limit(limit).toArray();
+  } catch (err) {
+    console.error('[NotesRepository] Failed to fetch recent notes:', err);
+    throw new Error('Could not retrieve recent notes from local storage.');
+  }
+}
+
 /** Count without materializing every note body during Home startup. */
 export async function getNotesCount(database: PetalifeDatabase = db): Promise<number> {
   return database.notes.count();

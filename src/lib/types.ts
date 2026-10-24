@@ -87,6 +87,8 @@ export type LinkProvenance =
 export interface SavedLink {
   id: string;
   url: string;
+  /** normalizeUrl(url) — terindeks untuk deteksi duplikat O(1) sejak Dexie v4. */
+  urlHash?: string;
   title: string;
   platform: PlatformType;
   domain: string;
@@ -141,6 +143,8 @@ export interface Note {
   noteType?: 'note' | 'journal';
   mood?: JournalMood;
   mochiSpokenReply?: string;
+  /** Harta yang disematkan: tetap di Papan Minggu Ini meski sudah berumur lebih dari 7 hari. */
+  pinned?: boolean;
 }
 
 export interface ChatMessage {

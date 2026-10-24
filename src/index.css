@@ -1284,6 +1284,13 @@
   box-shadow: inset 0 0 0 5px #ead2ab, 0 8px 18px #6647261c;
 }
 
+/* Tahap-1 Scale Workspace: kartu di luar viewport dilewati browser saat
+   layout & paint — rotasi/shadow sticky note hanya dibayar saat terlihat. */
+.note-card-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: 140px 190px;
+}
+
 .notes-lined-paper {
   background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, #efe6d8 32px);
   background-origin: content-box;

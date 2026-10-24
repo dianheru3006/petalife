@@ -28,13 +28,18 @@ export async function getLinkById(id: string, database: PetalifeDatabase = db): 
 
 /**
  * Finds if a URL is already saved by applying the documented URL normalization policy.
+ * O(1) via indeks urlHash (Dexie v4); fallback indeks url untuk baris yang
+ * belum ter-backfill, tanpa pernah memuat seluruh tabel ke memori.
  */
 export async function findDuplicateLink(rawUrl: string, database: PetalifeDatabase = db): Promise<SavedLink | undefined> {
-  const targetNormalized = normalizeUrl(rawUrl);
-  if (!targetNormalized) return undefined;
+  const normalized = normalizeUrl(rawUrl);
+  if (!normalized) return undefined;
 
-  const all = await database.savedLinks.toArray();
-  return all.find(item => normalizeUrl(item.url) === targetNormalized);
+  const byHash = await database.savedLinks.where('urlHash').equals(normalized).first();
+  if (byHash) return byHash;
+
+  // Legacy safety net: baris pra-v4 yang belum punya urlHash.
+  return database.savedLinks.where('url').equals(rawUrl.trim()).first();
 }
 
 export interface CreateLinkInput {
@@ -69,6 +74,7 @@ export async function createLink(input: CreateLinkInput, database: PetalifeDatab
   const newLink: SavedLink = {
     id: input.id || `link-${now}-${Math.random().toString(36).slice(2, 7)}`,
     url: input.url.trim(),
+    urlHash: normalized,
     title: input.title.trim() || `Saved Link (${input.domain})`,
     platform: input.platform,
     domain: input.domain,

@@ -1,9 +1,11 @@
 import type { FC, FormEvent } from 'react';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { Note, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { ArrowLeft, Check, Mic, Pencil, Plus, Search, Trash2, Volume2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { NotesMochi } from './NotesMochi';
+import { DeskDrawer } from './DeskDrawer';
+import { splitWorkspace } from './notesWorkspace';
 import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
@@ -75,6 +77,7 @@ export const NotesPage: FC<NotesPageProps> = ({
   const [notice, setNotice] = useState<string | null>(null);
   const [mochiGreetingIndex, setMochiGreetingIndex] = useState(0);
   const [isMochiHopping, setIsMochiHopping] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const hopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -89,10 +92,6 @@ export const NotesPage: FC<NotesPageProps> = ({
     isSavingRef.current = isSaving;
   }, [isSaving]);
 
-  const sortedNotes = [...notes].sort(
-    (a, b) => (b.updatedAtTimestamp || b.createdAt || 0) - (a.updatedAtTimestamp || a.createdAt || 0)
-  );
-
   const tagCounts = new Map<string, number>();
   for (const note of notes) {
     for (const tag of note.tags ?? []) {
@@ -105,15 +104,30 @@ export const NotesPage: FC<NotesPageProps> = ({
   const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
 
   const query = searchQuery.trim().toLocaleLowerCase('id-ID');
-  const filteredNotes = sortedNotes.filter(note => {
-    const matchesQuery = !query || [note.title || '', note.body || '', ...(note.tags ?? [])].some(value =>
-      (value || '').toLocaleLowerCase('id-ID').includes(query)
+  const isFilterActive = Boolean(query) || selectedTag !== 'All';
+
+  // Tahap-1 Scale Workspace: filter + pemisahan papan/laci dihitung sekali per
+  // perubahan data (bukan per render), dan papan tidak pernah memuat lebih dari
+  // 14 kartu kecuali saat pengguna sedang mencari/menyaring (hasil lintas lapis).
+  const { filteredNotes, workspace } = useMemo(() => {
+    const sorted = [...notes].sort(
+      (a, b) => (b.updatedAtTimestamp || b.createdAt || 0) - (a.updatedAtTimestamp || a.createdAt || 0)
     );
-    const matchesTag = selectedTag === 'All' || (note.tags ?? []).some(
-      tag => tag.replace(/^#/, '').trim().toLowerCase() === selectedTag.toLowerCase()
-    );
-    return matchesQuery && matchesTag;
-  });
+    const filtered = sorted.filter(note => {
+      const matchesQuery = !query || [note.title || '', note.body || '', ...(note.tags ?? [])].some(value =>
+        (value || '').toLocaleLowerCase('id-ID').includes(query)
+      );
+      const matchesTag = selectedTag === 'All' || (note.tags ?? []).some(
+        tag => tag.replace(/^#/, '').trim().toLowerCase() === selectedTag.toLowerCase()
+      );
+      return matchesQuery && matchesTag;
+    });
+    return { filteredNotes: filtered, workspace: splitWorkspace(filtered) };
+  }, [notes, query, selectedTag]);
+
+  // Saat mencari/menyaring, hasil datang dari seluruh catatan (papan + laci)
+  // supaya catatan lama tetap mudah ditemukan; tata letak papan/laci dinonaktifkan.
+  const boardNotes = isFilterActive ? filteredNotes : workspace.boardNotes;
 
   const selectedNote = notes.find(note => note.id === selectedNoteId);
   const mochiGreetings = notes.length === 0
@@ -275,7 +289,7 @@ export const NotesPage: FC<NotesPageProps> = ({
 
   // AUDIT-FIX (P0): Telegram's hardware back used to close the whole Mini App
   // even with the editor (and an unsaved draft) open. The editor outranks the
-  // note detail page, which outranks the corkboard.
+  // note detail page, which outranks the drawer, which outranks the corkboard.
   useTelegramBackButton([
     {
       id: 'note-editor',
@@ -291,6 +305,12 @@ export const NotesPage: FC<NotesPageProps> = ({
       priority: 20,
       onBack: goBack,
     },
+    {
+      id: 'notes-drawer',
+      isOpen: isDrawerOpen && !isEditorOpen && !selectedNoteId,
+      priority: 10,
+      onBack: () => setIsDrawerOpen(false),
+    },
   ]);
 
   // Auto-dismiss the success notice so it cannot pile up across actions.
@@ -299,6 +319,42 @@ export const NotesPage: FC<NotesPageProps> = ({
     const timer = setTimeout(() => setNotice(null), 4000);
     return () => clearTimeout(timer);
   }, [notice]);
+
+  // Kartu sticky-note dipakai bersama oleh Papan Minggu Ini, hasil pencarian,
+  // dan Laci Meja — satu markup, satu tempat perawatan. `note-card-cv`
+  // (content-visibility) membuat WebView melewati layout/paint kartu yang
+  // sedang di luar viewport.
+  const renderNoteCard = (note: Note, index: number) => {
+    const paper = NOTE_COLORS.find(color => color.value === note.color)?.paper ?? NOTE_COLORS[0].paper;
+    return (
+      <button
+        key={note.id}
+        ref={node => { if (node) noteButtonRefs.current.set(note.id, node); else noteButtonRefs.current.delete(note.id); }}
+        type="button"
+        onClick={() => { setIsDrawerOpen(false); setSelectedNoteId(note.id); setNotice(null); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+        aria-label={`Baca catatan ${note.title}`}
+        className={cn('note-card-cv group relative min-h-[178px] w-full rounded-[4px] border border-[#E7DED1] px-3.5 pb-4 pt-6 text-left shadow-[2px_5px_8px_#5E462432] motion-safe:transition-transform motion-safe:duration-200 hover:-translate-y-1 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#68452A]', paper, index % 3 === 1 ? 'rotate-[1deg]' : index % 3 === 2 ? '-rotate-[0.8deg]' : 'rotate-[-0.5deg]')}
+      >
+        <span aria-hidden="true" className="absolute left-1/2 top-1 h-3.5 w-3.5 -translate-x-1/2 rounded-full border border-[#AF4838] bg-[radial-gradient(circle_at_35%_25%,#FFB7AA,#D35B48_65%,#9E3E31)] shadow-[1px_2px_3px_#50342655]" />
+        <span className="line-clamp-3 font-display text-[14px] font-extrabold leading-snug text-[#332D28]">{note.title}</span>
+        {note.body && <span className="mt-2 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
+        {(note.tags ?? []).some(t => t !== 'general') && (
+          <div className="mt-2.5 flex flex-wrap gap-1">
+            {(note.tags ?? []).filter(t => t !== 'general').slice(0, 3).map(tag => (
+              <span key={tag} className="text-[10px] font-bold text-[#7E6953] bg-[#0000000d] px-1.5 py-0.5 rounded">
+                #{tag.replace(/^#/, '')}
+              </span>
+            ))}
+          </div>
+        )}
+        {note.pinned && (
+          <span className="absolute right-2 top-2 rounded-full bg-[#FFEFE8] px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#BA5218]" aria-label="Catatan disematkan">
+            Disematkan
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -517,36 +573,35 @@ export const NotesPage: FC<NotesPageProps> = ({
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 items-start gap-3.5">
-                {filteredNotes.map((note, index) => {
-                  const paper = NOTE_COLORS.find(color => color.value === note.color)?.paper ?? NOTE_COLORS[0].paper;
-                  return (
-                    <button
-                      key={note.id}
-                      ref={node => { if (node) noteButtonRefs.current.set(note.id, node); else noteButtonRefs.current.delete(note.id); }}
-                      type="button"
-                      onClick={() => { setSelectedNoteId(note.id); setNotice(null); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                      aria-label={`Baca catatan ${note.title}`}
-                      className={cn('group relative min-h-[178px] w-full rounded-[4px] border border-[#E7DED1] px-3.5 pb-4 pt-6 text-left shadow-[2px_5px_8px_#5E462432] motion-safe:transition-transform motion-safe:duration-200 hover:-translate-y-1 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#68452A]', paper, index % 3 === 1 ? 'rotate-[1deg]' : index % 3 === 2 ? '-rotate-[0.8deg]' : 'rotate-[-0.5deg]')}
-                    >
-                      <span aria-hidden="true" className="absolute left-1/2 top-1 h-3.5 w-3.5 -translate-x-1/2 rounded-full border border-[#AF4838] bg-[radial-gradient(circle_at_35%_25%,#FFB7AA,#D35B48_65%,#9E3E31)] shadow-[1px_2px_3px_#50342655]" />
-                      <span className="line-clamp-3 font-display text-[14px] font-extrabold leading-snug text-[#332D28]">{note.title}</span>
-                      {note.body && <span className="mt-2 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
-                      {(note.tags ?? []).some(t => t !== 'general') && (
-                        <div className="mt-2.5 flex flex-wrap gap-1">
-                          {(note.tags ?? []).filter(t => t !== 'general').slice(0, 3).map(tag => (
-                            <span key={tag} className="text-[10px] font-bold text-[#7E6953] bg-[#0000000d] px-1.5 py-0.5 rounded">
-                              #{tag.replace(/^#/, '')}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                {!isFilterActive && (
+                  <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-wide text-[#8A7455]">
+                    Papan Minggu Ini · {boardNotes.length} kartu
+                  </p>
+                )}
+                <div className="grid grid-cols-2 items-start gap-3.5">
+                  {boardNotes.map((note, index) => renderNoteCard(note, index))}
+                </div>
+              </>
             )}
           </section>
+
+          {!isFilterActive && workspace.isBoardNearFull && (
+            <p className="mt-2.5 rounded-2xl border border-[#F0DFC4] bg-[#FFFAF0] px-4 py-2.5 text-xs leading-5 text-[#7A6046]" role="status">
+              Papanmu hampir penuh… Mochi siap bantu merapikan yang lama ke laci, atau simpan yang paling berarti dengan &ldquo;Disematkan&rdquo;. 🍡
+            </p>
+          )}
+
+          {!isFilterActive && (
+            <DeskDrawer
+              groups={workspace.drawerGroups}
+              totalCount={workspace.drawerCount}
+              isNightMode={isNightMode}
+              isOpen={isDrawerOpen}
+              onOpenChange={setIsDrawerOpen}
+              renderNoteCard={renderNoteCard}
+            />
+          )}
           <div className="flex flex-wrap justify-end gap-2 pt-4">
             <button type="button" onClick={() => setIsVoiceJournalOpen(true)} className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[#CDBBA7] bg-[#FFFCF7] px-5 text-sm font-bold text-[#5D4633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"><Mic className="h-5 w-5" /> Jurnal suara</button>
             <button type="button" onClick={() => openEditor()} className="inline-flex min-h-12 items-center gap-2.5 rounded-full bg-[#5D4633] px-5 text-sm font-bold text-white shadow-[0_8px_20px_#4A342D38] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]">
