@@ -5,7 +5,6 @@ import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { VaultMonthGroup } from './vaultWorkspace';
 import { shouldAutoExpandNewestMonth } from './vaultWorkspace';
-import { VaultBookArtwork } from './VaultBookArtwork';
 
 export interface ArchiveCabinetProps {
   groups: VaultMonthGroup[];
@@ -14,21 +13,17 @@ export interface ArchiveCabinetProps {
   /** Terkontrol dari VaultPage agar tombol back Telegram bisa menutup laci. */
   isOpen: boolean;
   onOpenChange: (next: boolean) => void;
-  /** Membuka halaman baca materi — dipakai kartu di dalam laci. */
+  /** Membuka halaman baca materi — dipakai baris isi di dalam folder. */
   onOpenLink: (link: SavedLink) => void;
 }
 
 const DRAG_OPEN_THRESHOLD_PX = 28;
 
-/** Kartu ter-hidrasi maksimal per bulan yang dibuka; sisanya lewat tombol. */
+/** Baris ter-hidrasi maksimal per bulan yang dibuka; sisanya lewat tombol. */
 const EXPANDED_MONTH_LIMIT = 12;
 
-/** Varian A: strip aksen tenang untuk kartu konten. */
-const ACCENT_STRIP = '#5B7FA6';
-const ACCENT_STRIP_NIGHT = '#7C97B8';
-
-/** Warna ikon tumpukan buku varian A — deterministik per bulan. */
-const MONTH_STACK_PALETTE = [
+/** Aksen titik isi folder — satu warna per bulan, kalem dan konsisten. */
+const MONTH_ACCENTS = [
   '#5B7FA6', '#4E8F7B', '#8A6E93', '#7C8A5A', '#B07B6A', '#4E6E9E', '#6E8F5A', '#5E7B8A',
 ];
 
@@ -37,10 +32,8 @@ function monthAccent(key: string): string {
   for (let i = 0; i < key.length; i++) {
     hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   }
-  return MONTH_STACK_PALETTE[hash % MONTH_STACK_PALETTE.length];
+  return MONTH_ACCENTS[hash % MONTH_ACCENTS.length];
 }
-
-type ArchiveVariant = 'a' | 'b' | 'c' | 'd';
 
 function drawerHaptic() {
   try {
@@ -60,7 +53,7 @@ const indexDate = (timestamp: number) => {
   }
 };
 
-/** Tepi kartu putih yang mengintip dari laci tertutup. */
+/** Tepi kertas putih yang mengintip dari laci tertutup. */
 function PeekStack({ isNightMode }: { isNightMode: boolean }) {
   const sheets = [
     { rotate: '-7deg', translate: '2px', bg: isNightMode ? '#F3EFE3' : '#FFFFFF', z: 1 },
@@ -84,22 +77,7 @@ function PeekStack({ isNightMode }: { isNightMode: boolean }) {
   );
 }
 
-/** Varian A — ikon tumpukan buku berwarna per bulan. */
-function BookStackGlyph({ color }: { color: string }) {
-  return (
-    <span aria-hidden="true" className="relative block h-9 w-12 shrink-0">
-      {[0.5, 0.72, 1].map((opacity, i) => (
-        <span
-          key={i}
-          className="absolute block h-2.5 w-10 rounded-[3px] border border-[#00000012] shadow-[0_1px_2px_#4A463A18]"
-          style={{ backgroundColor: color, opacity, bottom: i * 5, right: i * 1.5, zIndex: 3 - i }}
-        />
-      ))}
-    </span>
-  );
-}
-
-/** Varian B — folder arsip 3D; aktif = biru pucat, tidak = manila. */
+/** Folder arsip 3D — manila saat terlipat, biru pucat saat aktif. */
 function FolderGlyph({ active }: { active: boolean }) {
   const body = active ? '#DCE8F4' : '#EFE3C4';
   const edge = active ? '#A9C4DE' : '#D9C48F';
@@ -111,9 +89,12 @@ function FolderGlyph({ active }: { active: boolean }) {
   );
 }
 
-/** Varian A — kartu konten putih dengan strip aksen di kiri. */
-function BookRow({ link, isNightMode, onOpen }: {
-  link: SavedLink; isNightMode: boolean; onOpen: (link: SavedLink) => void;
+/** Baris isi folder: titik aksen bulan + judul + tanggal. */
+function FileRow({ link, accent, isNightMode, onOpen }: {
+  link: SavedLink;
+  accent: string;
+  isNightMode: boolean;
+  onOpen: (link: SavedLink) => void;
 }) {
   return (
     <button
@@ -121,42 +102,13 @@ function BookRow({ link, isNightMode, onOpen }: {
       onClick={() => onOpen(link)}
       aria-label={`Buka materi: ${link.title}`}
       className={cn(
-        'flex w-full cursor-pointer items-stretch overflow-hidden rounded-xl border text-left shadow-[0_1px_4px_#4A463A10] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-        isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2]' : 'border-[#ECE9E0] bg-white'
+        'flex w-full cursor-pointer items-center gap-2.5 border-b px-2 py-2.5 text-left last:border-b-0 active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+        isNightMode ? 'border-[#EAE6DA]' : 'border-[#EDEDE8]'
       )}
     >
-      <span aria-hidden="true" className="w-[4px] shrink-0" style={{ backgroundColor: isNightMode ? ACCENT_STRIP_NIGHT : ACCENT_STRIP }} />
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3.5 py-2.5">
-        <span
-          className={cn('text-[13px] font-bold leading-snug', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}
-          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-        >
-          {link.title}
-        </span>
-        <span className="truncate text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A8778]">
-          {indexDate(link.createdAt)} · {link.domain}
-        </span>
-      </span>
-    </button>
-  );
-}
-
-/** Varian B — baris tersarang dalam folder (file-manager). */
-function FileRow({ link, onOpen }: { link: SavedLink; onOpen: (link: SavedLink) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(link)}
-      aria-label={`Buka materi: ${link.title}`}
-      className="flex w-full cursor-pointer items-center gap-2.5 border-b border-[#EDEDE8] px-2 py-2.5 text-left last:border-b-0 active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
-    >
+      <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
       <span
-        aria-hidden="true"
-        className="h-1.5 w-1.5 shrink-0 rounded-full"
-        style={{ backgroundColor: monthAccent(indexDate(link.createdAt)) }}
-      />
-      <span
-        className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-[#333A45]"
+        className={cn('min-w-0 flex-1 truncate text-[12.5px] font-semibold', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}
         title={link.title}
       >
         {link.title}
@@ -168,72 +120,13 @@ function FileRow({ link, onOpen }: { link: SavedLink; onOpen: (link: SavedLink) 
   );
 }
 
-/** Varian C — kartu koleksi editorial: sampul + judul + pill tanggal. */
-function MediaCard({ link, isNightMode, onOpen }: {
-  link: SavedLink; isNightMode: boolean; onOpen: (link: SavedLink) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(link)}
-      aria-label={`Buka materi: ${link.title}`}
-      className={cn(
-        'flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-2.5 text-left shadow-[0_2px_8px_#4A463A0F] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-        isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2]' : 'border-[#ECE9E0] bg-white'
-      )}
-    >
-      <span className="w-[64px] shrink-0 overflow-hidden rounded-lg">
-        <VaultBookArtwork link={link} />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span
-          className={cn('text-[13px] font-bold leading-snug', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}
-          style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-        >
-          {link.title}
-        </span>
-        <span className="truncate text-[10px] font-semibold lowercase text-[#8A8778]">{link.domain}</span>
-      </span>
-      <span className={cn('shrink-0 self-start rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide', isNightMode ? 'bg-[#EFEBDD] text-[#5E5A48]' : 'bg-[#F1EFE9] text-[#5E5B50]')}>
-        {indexDate(link.createdAt)}
-      </span>
-    </button>
-  );
-}
-
-/** Varian D — slip kertas terselip di kantong folder kraft. */
-function PaperSlip({ link, isNightMode, onOpen }: {
-  link: SavedLink; isNightMode: boolean; onOpen: (link: SavedLink) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(link)}
-      aria-label={`Buka materi: ${link.title}`}
-      className={cn(
-        'block w-full cursor-pointer rounded-[8px] border px-3.5 py-2.5 text-left shadow-[0_1px_3px_#5E46241C] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-        isNightMode ? 'border-[#E6D9B8] bg-[#FBF4E2]' : 'border-[#E9DDBD] bg-[#FFFDF4]'
-      )}
-    >
-      <span
-        className={cn('block text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#463524]' : 'text-[#4A3B26]')}
-        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-      >
-        {link.title}
-      </span>
-      <span className="mt-0.5 block truncate text-[10px] font-bold uppercase tracking-[0.08em] text-[#9A8158]">
-        {indexDate(link.createdAt)} · {link.domain}
-      </span>
-    </button>
-  );
-}
-
 /**
- * Laci Materi (Lapis 2 Pustaka) — PRATINJAU 4 VARIAN dari referensi pemilik
- * produk (A Rak Minimal / B Folder Arsip / C Kartu Koleksi / D Laci Mochi).
- * Pemilih varian di dalam laci bersifat SEMENTARA: setelah varian terpilih,
- * pemilih dibuang dan varian dikunci. Interaksi identik untuk semua varian:
- * tertutup rapat, tap/tarik vertikal, haptic, akordeon satu bulan, back button.
+ * Laci Materi (Lapis 2 Pustaka) — varian B "Folder Arsip Digital" pilihan
+ * pemilik produk. Kembar interaksi dengan Laci Catatan (tertutup rapat, tap
+ * atau tarikan vertikal, haptic, back button). Tiap bulan = baris folder
+ * arsip 3D (manila; biru pucat saat aktif); isinya tersarang terindentasi
+ * dengan garis pandu vertikal, tiap baris bertitik aksen warna bulannya.
+ * Satu bulan terbuka pada satu waktu.
  */
 export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
   const [dragOffset, setDragOffset] = useState(0);
@@ -241,11 +134,10 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [expandedShowAll, setExpandedShowAll] = useState(false);
   const autoExpandTriedRef = useRef(false);
-  // PRATINJAU (sementara): varian tampilan arsip — A/B/C/D dari referensi.
-  const [variant, setVariant] = useState<ArchiveVariant>('a');
 
   const toggleDrawer = (next: boolean) => {
     if (next !== isOpen) drawerHaptic();
+    // Arsip kecil dibuka ramah: bulan terbaru terbuka sendiri saat pertama kali.
     if (next && !autoExpandTriedRef.current) {
       autoExpandTriedRef.current = true;
       if (shouldAutoExpandNewestMonth(totalCount)) setExpandedMonth(groups[0]?.monthStart ?? null);
@@ -266,6 +158,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
   const onHandlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (dragStartRef.current === null) return;
     const delta = event.clientY - dragStartRef.current;
+    // Pratinjau tarikan dibatasi agar terasa seperti laci berkayu, bukan karet.
     setDragOffset(Math.max(-12, Math.min(24, delta)));
   };
 
@@ -285,138 +178,6 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
       </p>
     );
   }
-
-  const renderMonthRow = (group: VaultMonthGroup, isExpanded: boolean) => {
-    switch (variant) {
-      case 'b':
-        return (
-          <button
-            type="button"
-            onClick={() => onMonthTap(group.monthStart)}
-            aria-expanded={isExpanded}
-            aria-controls={`vault-month-${group.key}`}
-            className={cn(
-              'flex min-h-[50px] w-full cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-              isExpanded ? 'bg-[#EAF1F8]' : 'hover:bg-[#00000005]'
-            )}
-          >
-            <FolderGlyph active={isExpanded} />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[13px] font-bold leading-snug text-[#333A45]">{group.label}</span>
-              <span className="block text-[11px] font-semibold text-[#8A8778]">{group.links.length} materi</span>
-            </span>
-            <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')} />
-          </button>
-        );
-      case 'c':
-        return (
-          <button
-            type="button"
-            onClick={() => onMonthTap(group.monthStart)}
-            aria-expanded={isExpanded}
-            aria-controls={`vault-month-${group.key}`}
-            className="flex w-full cursor-pointer items-baseline gap-3 px-1 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
-          >
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#333A45]">{group.label}</span>
-            <span className="text-[10px] font-bold text-[#8A8778]">{group.links.length}</span>
-            <span aria-hidden="true" className="h-px flex-1 bg-[#E4E1D6]" />
-            <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 self-center text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')} />
-          </button>
-        );
-      case 'd':
-        return (
-          <div className="pt-2">
-            {/* Tab folder kraft — label bulan menonjol di atas badan folder. */}
-            <button
-              type="button"
-              onClick={() => onMonthTap(group.monthStart)}
-              aria-expanded={isExpanded}
-              aria-controls={`vault-month-${group.key}`}
-              className="flex w-full cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
-            >
-              <span
-                className={cn(
-                  'self-start rounded-t-[8px] border border-b-0 px-3.5 py-1 text-[11px] font-extrabold tracking-wide',
-                  isExpanded
-                    ? 'border-[#C4AC72] bg-[#E4D2A2] text-[#5E4B22]'
-                    : 'border-[#CDB878] bg-[#DCC68C] text-[#6B5729]'
-                )}
-              >
-                {group.label} · {group.links.length}
-              </span>
-              <span
-                className={cn(
-                  'flex w-full items-center justify-between gap-2 rounded-[10px] border px-3.5 py-2.5 shadow-[0_2px_6px_#5E46241A] active:scale-[0.99] motion-safe:transition-transform',
-                  isExpanded ? 'border-[#C4AC72] bg-[#F0E4C6]' : 'border-[#CDB878] bg-[#EBDCB4]'
-                )}
-              >
-                <span className="text-[12px] font-bold text-[#5E4B22]">
-                  {isExpanded ? 'Folder terbuka — isi di bawah' : 'Folder tertutup'}
-                </span>
-                <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 text-[#8A6F3A] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')} />
-              </span>
-            </button>
-          </div>
-        );
-      default: // 'a'
-        return (
-          <button
-            type="button"
-            onClick={() => onMonthTap(group.monthStart)}
-            aria-expanded={isExpanded}
-            aria-controls={`vault-month-${group.key}`}
-            className={cn(
-              'relative flex min-h-[54px] w-full cursor-pointer items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-              isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2]' : 'border-[#ECE9E0] bg-white',
-              isExpanded && 'shadow-[0_3px_10px_#4A463A14]'
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-y-2 left-0 w-[3px] rounded-full"
-              style={{ backgroundColor: isExpanded ? monthAccent(group.key) : 'transparent' }}
-            />
-            <BookStackGlyph color={monthAccent(group.key)} />
-            <span className="min-w-0 flex-1">
-              <span className={cn('block text-[13px] font-bold leading-snug', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}>
-                {group.label}
-              </span>
-              <span className="block text-[11px] font-semibold text-[#8A8778]">
-                {group.links.length} materi
-              </span>
-            </span>
-            <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')} />
-          </button>
-        );
-    }
-  };
-
-  const renderItem = (link: SavedLink) => {
-    switch (variant) {
-      case 'b': return <FileRow link={link} onOpen={onOpenLink} />;
-      case 'c': return <MediaCard link={link} isNightMode={isNightMode} onOpen={onOpenLink} />;
-      case 'd': return <PaperSlip link={link} isNightMode={isNightMode} onOpen={onOpenLink} />;
-      default: return <BookRow link={link} isNightMode={isNightMode} onOpen={onOpenLink} />;
-    }
-  };
-
-  const interiorStyle = (() => {
-    if (variant === 'd') {
-      return {
-        className: cn('space-y-2 px-4 pb-6 pt-4', isNightMode ? 'bg-[#E2D2AC]' : 'bg-[#E9DBC0]'),
-        style: {
-          backgroundImage:
-            'repeating-linear-gradient(0deg, rgba(120,90,40,0.045) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(120,90,40,0.045) 0 1px, transparent 1px 5px)',
-          boxShadow:
-            'inset 0 2px 0 rgba(255,252,240,0.6), inset 0 -2px 0 rgba(94,70,36,0.18), inset 0 10px 16px -12px rgba(94,66,31,0.4)',
-        } as React.CSSProperties,
-      };
-    }
-    return {
-      className: cn('space-y-2 px-4 pb-6 pt-4', isNightMode ? 'bg-[#EDE9DC]' : 'bg-[#F7F6F1]'),
-      style: { boxShadow: 'inset 0 10px 16px -12px rgba(60, 56, 44, 0.22)' } as React.CSSProperties,
-    };
-  })();
 
   return (
     <section aria-label="Laci arsip materi bulan-bulan lalu" className="relative mt-3">
@@ -481,33 +242,16 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
           </span>
         </div>
 
-        {/* ── Interior: varian A/B/C bidang tenang; varian D kraft ber-emboss ── */}
-        <div id="vault-drawer-body" hidden={!isOpen} className={interiorStyle.className} style={interiorStyle.style}>
-          {/* PRATINJAU SEMENTARA: pemilih varian dari referensi pemilik produk.
-              Setelah varian dipilih, blok ini dihapus dan varian dikunci. */}
-          <div className="mb-3 flex items-center justify-center gap-1.5" role="group" aria-label="Pratinjau varian desain arsip (sementara)">
-            <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8A8778]">Varian</span>
-            {(['a', 'b', 'c', 'd'] as const).map(code => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => { setVariant(code); drawerHaptic(); }}
-                aria-pressed={variant === code}
-                aria-label={`Varian ${code.toUpperCase()}`}
-                className={cn(
-                  'h-8 w-8 cursor-pointer rounded-full border text-[11px] font-extrabold uppercase active:scale-[0.95] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-                  variant === code
-                    ? 'border-[#5B7FA6] bg-[#5B7FA6] text-white'
-                    : 'border-[#DFDBCC] bg-white text-[#39424E]'
-                )}
-              >
-                {code}
-              </button>
-            ))}
-          </div>
-
+        {/* ── Interior: bidang tenang — folder dan isinya memimpin ── */}
+        <div
+          id="vault-drawer-body"
+          hidden={!isOpen}
+          className={cn('space-y-1.5 px-4 pb-6 pt-4', isNightMode ? 'bg-[#EDE9DC]' : 'bg-[#F7F6F1]')}
+          style={{ boxShadow: 'inset 0 10px 16px -12px rgba(60, 56, 44, 0.22)' }}
+        >
           {groups.map(group => {
             const isExpanded = expandedMonth === group.monthStart;
+            const accent = monthAccent(group.key);
             const visibleLinks = isExpanded
               ? (expandedShowAll ? group.links : group.links.slice(0, EXPANDED_MONTH_LIMIT))
               : [];
@@ -516,29 +260,50 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
               : 0;
             return (
               <div key={group.key}>
-                {renderMonthRow(group, isExpanded)}
+                <button
+                  type="button"
+                  onClick={() => onMonthTap(group.monthStart)}
+                  aria-expanded={isExpanded}
+                  aria-controls={`vault-month-${group.key}`}
+                  className={cn(
+                    'flex min-h-[50px] w-full cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+                    isExpanded ? 'bg-[#EAF1F8]' : 'hover:bg-[#00000006]'
+                  )}
+                >
+                  <FolderGlyph active={isExpanded} />
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block text-[13px] font-bold leading-snug', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}>
+                      {group.label}
+                    </span>
+                    <span className="block text-[11px] font-semibold text-[#8A8778]">
+                      {group.links.length} materi
+                    </span>
+                  </span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn('h-4 w-4 shrink-0 text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                  />
+                </button>
                 {isExpanded && (
-                  <div id={`vault-month-${group.key}`} className="mt-2">
-                    {variant === 'b' ? (
-                      <div className="ml-4 space-y-0 border-l-2 border-[#D8DEE8] pl-3">
-                        <div role="list" aria-label={`Isi ${group.label}`} className="rounded-xl bg-white shadow-[0_1px_4px_#4A463A0D]">
-                          {visibleLinks.map(link => (
-                            <div key={link.id} role="listitem"><FileRow link={link} onOpen={onOpenLink} /></div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div role="list" aria-label={`Isi ${group.label}`} className="space-y-2">
+                  <div id={`vault-month-${group.key}`} className="mt-1.5">
+                    <div className="ml-4 border-l-2 border-[#D8DEE8] pl-3">
+                      <div
+                        role="list"
+                        aria-label={`Isi folder ${group.label}`}
+                        className={cn('rounded-xl shadow-[0_1px_4px_#4A463A0D]', isNightMode ? 'bg-[#FBF9F2]' : 'bg-white')}
+                      >
                         {visibleLinks.map(link => (
-                          <div key={link.id} role="listitem">{renderItem(link)}</div>
+                          <div key={link.id} role="listitem">
+                            <FileRow link={link} accent={accent} isNightMode={isNightMode} onOpen={onOpenLink} />
+                          </div>
                         ))}
                       </div>
-                    )}
+                    </div>
                     {hiddenCount > 0 && (
                       <button
                         type="button"
                         onClick={() => setExpandedShowAll(true)}
-                        className={cn('mt-2 min-h-11 w-full rounded-full border text-xs font-bold active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]', isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2] text-[#3A362C]' : 'border-[#E3E0D5] bg-white text-[#39424E]')}
+                        className={cn('ml-4 mt-2 min-h-11 w-[calc(100%-1rem)] rounded-full border text-xs font-bold active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]', isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2] text-[#3A362C]' : 'border-[#E3E0D5] bg-white text-[#39424E]')}
                       >
                         Tampilkan {hiddenCount} materi lagi bulan ini
                       </button>
