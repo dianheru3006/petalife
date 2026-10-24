@@ -28,6 +28,7 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
   const [stage, setStage] = useState<Stage>('idle');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pendingAudio, setPendingAudio] = useState<Blob | null>(null);
   const startPendingRef = useRef(false);
   const recordingRef = useRef<VoiceRecording | null>(null);
   const runIdRef = useRef(0);
@@ -46,6 +47,7 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     recordingRef.current = null;
     abortRef.current?.abort();
     abortRef.current = null;
+    setPendingAudio(null);
     setStage('idle');
     haptic('cancel');
   };
@@ -88,19 +90,49 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
     recordingRef.current = null;
     setStage('processing');
     haptic('success');
+    let audio: Blob | null = null;
+    let controller: AbortController | null = null;
     try {
-      const audio = await recording.stop();
+      audio = await recording.stop();
       if (runId !== runIdRef.current) return;
-      const controller = new AbortController();
+      controller = new AbortController();
       abortRef.current = controller;
       const draft = await createVoiceJournalDraft(audio, controller.signal);
-      if (runId === runIdRef.current && !controller.signal.aborted) onDraft(draft);
+      if (runId === runIdRef.current && !controller.signal.aborted) {
+        setPendingAudio(null);
+        onDraft(draft);
+      }
     } catch (cause) {
       if (runId === runIdRef.current && !abortRef.current?.signal.aborted) {
+        if (audio?.size && audio.size <= 2 * 1024 * 1024) setPendingAudio(audio);
         setError(cause instanceof Error ? cause.message : 'Rekaman belum berhasil diproses.');
       }
     } finally {
-      abortRef.current = null;
+      if (abortRef.current === controller) abortRef.current = null;
+      if (runId === runIdRef.current) setStage('idle');
+    }
+  };
+
+  const retryPendingAudio = async () => {
+    if (stage !== 'idle' || !pendingAudio || abortRef.current) return;
+    const audio = pendingAudio;
+    const runId = runIdRef.current;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStage('processing');
+    setError(null);
+    try {
+      const draft = await createVoiceJournalDraft(audio, controller.signal);
+      if (runId === runIdRef.current && !controller.signal.aborted) {
+        setPendingAudio(null);
+        onDraft(draft);
+      }
+    } catch (cause) {
+      if (runId === runIdRef.current && !controller.signal.aborted) {
+        setError(cause instanceof Error ? cause.message : 'Rekaman belum berhasil dikirim.');
+      }
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       if (runId === runIdRef.current) setStage('idle');
     }
   };
@@ -122,6 +154,7 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
         return;
       }
       recordingRef.current = recording;
+      setPendingAudio(null);
       setStage('recording');
       timerRef.current = setTimeout(() => { void finish(); }, 60000);
     }).catch(cause => {
@@ -160,6 +193,18 @@ export function VoiceJournalSheet({ onClose, onDraft }: VoiceJournalSheetProps) 
           </div>
 
         {error && <p role="alert" className="mt-4 rounded-xl bg-[#FFF0E8] p-3 text-sm text-[#873E1F]">{error}</p>}
+        {pendingAudio && stage === 'idle' && (
+          <div className="mt-4 text-center">
+            <p className="mb-3 text-sm leading-5 text-[#5A5149]">Rekaman terakhir masih tersedia selama layar ini terbuka.</p>
+            <button
+              type="button"
+              onClick={() => { void retryPendingAudio(); }}
+              className="min-h-[44px] w-full rounded-full bg-[#BA5218] px-6 text-sm font-bold text-white transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BA5218]"
+            >
+              Kirim ulang rekaman terakhir
+            </button>
+          </div>
+        )}
         {notice && <p role="status" className="mt-4 rounded-xl bg-[#EAF6EE] p-3 text-sm text-[#285C3D]">{notice}</p>}
         <p className="mt-4 text-center text-xs leading-5 text-[#7A6E60]">Di sela rekaman, mikrofon dibisukan. Akses dilepas saat keluar dari Catatan atau setelah 5 menit tidak dipakai.</p>
         <p className="mt-6 text-center text-xs leading-5 text-[#7A6E60]">Audio dikirim ke server Mochi dan Gemini untuk diproses, tanpa disimpan sebagai berkas oleh Petalife. Draf hanya tersimpan setelah kamu menyetujuinya.</p>
