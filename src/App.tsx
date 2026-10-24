@@ -259,6 +259,9 @@ export function App() {
 
     const schedule = () => {
       if (cancelled || notesLoaded) return;
+      // Sol Guard: pastikan window.load selesai (readyState === 'complete')
+      // agar visibilitychange tidak memicu preload sebelum load selesai.
+      if (typeof document !== 'undefined' && document.readyState !== 'complete') return;
       if (document.visibilityState === 'hidden') return;
 
       if (idleId) {
