@@ -266,8 +266,13 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                   aria-expanded={isExpanded}
                   aria-controls={`vault-month-${group.key}`}
                   className={cn(
-                    'flex min-h-[50px] w-full cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-                    isExpanded ? 'bg-[#EAF1F8]' : 'hover:bg-[#00000006]'
+                    'flex min-h-[50px] w-full cursor-pointer items-center gap-3 rounded-lg border px-2.5 py-2 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+                    isExpanded
+                      ? 'border-[#CFE0EF] bg-[#EAF1F8]'
+                      : cn(
+                          'shadow-[0_1px_3px_#4A463A08]',
+                          isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2]' : 'border-[#ECE9E0] bg-white'
+                        )
                   )}
                 >
                   <FolderGlyph active={isExpanded} />
