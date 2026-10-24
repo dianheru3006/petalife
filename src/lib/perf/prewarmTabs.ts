@@ -25,14 +25,30 @@ export interface PrewarmNetworkInfo {
   deviceMemory?: number;
 }
 
-export function shouldPrewarm(network: PrewarmNetworkInfo = {}): boolean {
+/**
+ * Sol Perf V3: Pisahkan kebijakan chunk JS vs gambar diorama.
+ * Chunk JS (26 KB gzip) aman dipanaskan pada RAM > 2 GB (termasuk 4 GB Narzo target).
+ */
+export function shouldPrewarmChunks(network: PrewarmNetworkInfo = {}): boolean {
   if (network.saveData) return false;
-  // The 4 GB phone is the primary target. Avoid retaining inactive chunks and
-  // images in its WebView before the user actually opens those tabs.
+  if (network.deviceMemory !== undefined && network.deviceMemory <= 2) return false;
+  const effectiveType = (network.effectiveType || '').toLowerCase();
+  return !SLOW_EFFECTIVE_TYPES.has(effectiveType);
+}
+
+/**
+ * Prefetch gambar diorama (148 KB total) tetap di-guard untuk RAM > 4 GB saja,
+ * agar tidak menumpuk decoded bitmap di WebView perangkat klien (mis. smartphone 4 GB).
+ */
+export function shouldPrefetchImages(network: PrewarmNetworkInfo = {}): boolean {
+  if (network.saveData) return false;
   if (network.deviceMemory !== undefined && network.deviceMemory <= 4) return false;
   const effectiveType = (network.effectiveType || '').toLowerCase();
   return !SLOW_EFFECTIVE_TYPES.has(effectiveType);
 }
+
+/** Kompatibilitas mundur untuk pemanggil/tes yang sudah ada */
+export const shouldPrewarm = shouldPrewarmChunks;
 
 export interface PrewarmDeps {
   /** Penjadwal tugas (requestIdleCallback di produksi, sinkron di test). */
@@ -43,11 +59,19 @@ export interface PrewarmDeps {
   prefetchImage: (url: string) => void;
 }
 
+export interface PrewarmOptions {
+  prefetchImages?: boolean;
+}
+
 /**
  * Menjalankan pemanasan. Kegagalan jaringan/import tidak pernah boleh muncul ke
  * pengguna: semua penolakan ditelan dan promise tetap selesai.
+ * Kontrak deps.schedule selalu dipertahankan.
  */
-export function prewarmInactiveTabs(deps: PrewarmDeps): Promise<void> {
+export function prewarmInactiveTabs(
+  deps: PrewarmDeps,
+  options: PrewarmOptions = { prefetchImages: true }
+): Promise<void> {
   return new Promise<void>((resolve) => {
     deps.schedule(() => {
       const chunks = [
@@ -55,11 +79,13 @@ export function prewarmInactiveTabs(deps: PrewarmDeps): Promise<void> {
         deps.loadNotesPage().catch(() => undefined),
       ];
 
-      for (const url of PREWARM_IMAGE_URLS) {
-        try {
-          deps.prefetchImage(url);
-        } catch {
-          // Prefetch hanyalah optimasi; kegagalannya tidak boleh menjatuhkan app.
+      if (options.prefetchImages !== false) {
+        for (const url of PREWARM_IMAGE_URLS) {
+          try {
+            deps.prefetchImage(url);
+          } catch {
+            // Prefetch hanyalah optimasi; kegagalannya tidak boleh menjatuhkan app.
+          }
         }
       }
 
@@ -94,22 +120,30 @@ export function prewarmInactiveTabsOnIdle(): void {
 
   const device = navigator as Navigator & { connection?: PrewarmNetworkInfo; deviceMemory?: number };
   const connection = device.connection;
-  if (!shouldPrewarm({
+  const netInfo: PrewarmNetworkInfo = {
     saveData: connection?.saveData,
     effectiveType: connection?.effectiveType,
     deviceMemory: device.deviceMemory,
-  })) {
+  };
+
+  const canPrewarmChunks = shouldPrewarmChunks(netInfo);
+  const canPrefetchImages = shouldPrefetchImages(netInfo);
+
+  if (!canPrewarmChunks && !canPrefetchImages) {
     return;
   }
 
   const run = () => {
     if (document.visibilityState === 'hidden') return;
-    void prewarmInactiveTabs({
-      schedule: task => task(),
-      loadVaultPage: () => import('../../features/vault/VaultPage'),
-      loadNotesPage: () => import('../../features/notes/NotesPage'),
-      prefetchImage: prefetchImageViaLink,
-    });
+    void prewarmInactiveTabs(
+      {
+        schedule: task => task(),
+        loadVaultPage: () => import('../../features/vault/VaultPage'),
+        loadNotesPage: () => import('../../features/notes/NotesPage'),
+        prefetchImage: prefetchImageViaLink,
+      },
+      { prefetchImages: canPrefetchImages },
+    );
   };
 
   // Tunggu `load` lebih dulu: pada jaringan lambat, idle callback bisa datang

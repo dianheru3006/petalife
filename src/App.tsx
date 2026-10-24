@@ -240,6 +240,55 @@ export function App() {
     });
   }, [currentTab, isLoading, notesLoaded, ensureNotesLoaded]);
 
+  // Sol Perf V3 Audit Fix: Preload notes only after window.load, when visible, and notesCount > 0.
+  // Cancels schedule cleanly on unmount or when visibility is hidden.
+  useEffect(() => {
+    if (isLoading || notesLoaded) return;
+    if (notesCount === 0) {
+      setNotesLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    let idleId: number | ReturnType<typeof setTimeout>;
+
+    const schedule = () => {
+      if (document.visibilityState === 'hidden') return;
+
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        idleId = (window as unknown as {
+          requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number;
+        }).requestIdleCallback(() => {
+          if (!cancelled && document.visibilityState !== 'hidden') {
+            void ensureNotesLoaded().catch(() => {});
+          }
+        }, { timeout: 3500 });
+      } else {
+        idleId = setTimeout(() => {
+          if (!cancelled && document.visibilityState !== 'hidden') {
+            void ensureNotesLoaded().catch(() => {});
+          }
+        }, 1200);
+      }
+    };
+
+    if (typeof document === 'undefined' || document.readyState === 'complete') {
+      schedule();
+    } else {
+      window.addEventListener('load', schedule, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('load', schedule);
+      if (typeof window !== 'undefined' && 'cancelIdleCallback' in window && typeof idleId === 'number') {
+        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+      } else if (idleId) {
+        clearTimeout(idleId as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, [isLoading, notesLoaded, notesCount, ensureNotesLoaded]);
+
   // R2-DATA-01: ref agar mutasi XP tidak bergantung pada flush useEffect.
   const petRef = useRef<Pet>(pet);
 

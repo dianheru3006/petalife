@@ -1,5 +1,5 @@
 import type { CSSProperties, FC } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SavedLink, LinkStatus, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { detectPlatform, getYouTubeThumbnail, cn } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
@@ -374,15 +374,18 @@ export const VaultPage: FC<VaultPageProps> = ({
   }
   const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-  const filteredLinks = links
-    .filter(link => {
-      const q = searchQuery.trim().toLowerCase();
-      const searchable = [link.title, link.domain, link.notes, link.summary, link.category, ...link.tags].join(' ').toLowerCase();
-      return (!q || searchable.includes(q))
-        && (selectedCategory === 'All' || link.tags.some(tag => tag.replace(/^#/, '').toLowerCase() === selectedCategory))
-        && (selectedStatusFilter === 'all' || link.status === selectedStatusFilter);
-    })
-    .sort((a, b) => b.createdAt - a.createdAt);
+  // Sol Perf V3: Memoize filtered and sorted links across non-filtering renders (toasts, mochi speech, etc.)
+  const filteredLinks = useMemo(() => {
+    return links
+      .filter(link => {
+        const q = searchQuery.trim().toLowerCase();
+        const searchable = [link.title, link.domain, link.notes, link.summary, link.category, ...link.tags].join(' ').toLowerCase();
+        return (!q || searchable.includes(q))
+          && (selectedCategory === 'All' || link.tags.some(tag => tag.replace(/^#/, '').toLowerCase() === selectedCategory))
+          && (selectedStatusFilter === 'all' || link.status === selectedStatusFilter);
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }, [links, searchQuery, selectedCategory, selectedStatusFilter]);
 
   const selectedLink = links.find(link => link.id === selectedLinkId);
   const youtubeVideoId = selectedLink?.platform === 'youtube'

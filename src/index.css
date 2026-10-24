@@ -1036,7 +1036,7 @@
 }
 
 .anim-page-enter {
-  animation: page-enter 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: page-enter 0.14s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
 
