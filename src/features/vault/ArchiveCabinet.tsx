@@ -5,7 +5,6 @@ import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { VaultMonthGroup } from './vaultWorkspace';
 import { shouldAutoExpandNewestMonth } from './vaultWorkspace';
-import { getPlatformTheme } from './VaultBookArtwork';
 
 export interface ArchiveCabinetProps {
   groups: VaultMonthGroup[];
@@ -20,8 +19,32 @@ export interface ArchiveCabinetProps {
 
 const DRAG_OPEN_THRESHOLD_PX = 28;
 
-/** Kartu indeks ter-hidrasi maksimal per bulan yang dibuka; sisanya lewat tombol. */
+/** Kartu ter-hidrasi maksimal per bulan yang dibuka; sisanya lewat tombol. */
 const EXPANDED_MONTH_LIMIT = 12;
+
+/** Varian A "Rak Buku Minimal": strip aksen tenang untuk kartu konten. */
+const ACCENT_STRIP = '#5B7FA6';
+const ACCENT_STRIP_NIGHT = '#7C97B8';
+
+/** Warna ikon tumpukan buku — deterministik per bulan, senada dan kalem. */
+const MONTH_STACK_PALETTE = [
+  '#5B7FA6', // indigo redup
+  '#4E8F7B', // teal sage
+  '#8A6E93', // plum redup
+  '#7C8A5A', // olive
+  '#B07B6A', // bata lembut
+  '#4E6E9E', // denim
+  '#6E8F5A', // moss
+  '#5E7B8A', // steel blue
+];
+
+function monthAccent(key: string): string {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  return MONTH_STACK_PALETTE[hash % MONTH_STACK_PALETTE.length];
+}
 
 function drawerHaptic() {
   try {
@@ -33,12 +56,12 @@ function drawerHaptic() {
   }
 }
 
-/** Tepi kartu indeks yang mengintip dari laci tertutup. */
+/** Tepi kartu putih yang mengintip dari laci tertutup. */
 function PeekStack({ isNightMode }: { isNightMode: boolean }) {
   const sheets = [
-    { rotate: '-7deg', translate: '2px', bg: isNightMode ? '#EFE3C8' : '#FFFDF4', z: 1 },
-    { rotate: '3deg', translate: '5px', bg: isNightMode ? '#EADCBE' : '#FBF4E2', z: 2 },
-    { rotate: '-2deg', translate: '8px', bg: isNightMode ? '#E5D6B4' : '#F5ECD4', z: 3 },
+    { rotate: '-7deg', translate: '2px', bg: isNightMode ? '#F3EFE3' : '#FFFFFF', z: 1 },
+    { rotate: '3deg', translate: '5px', bg: isNightMode ? '#EAE5D6' : '#F7F5F0', z: 2 },
+    { rotate: '-2deg', translate: '8px', bg: isNightMode ? '#E0DAC8' : '#EFECE3', z: 3 },
   ];
   return (
     <span aria-hidden="true" className="pointer-events-none absolute right-4 top-2.5 block h-9 w-14">
@@ -57,16 +80,15 @@ function PeekStack({ isNightMode }: { isNightMode: boolean }) {
   );
 }
 
-/** Ikon baris bulan: tumpukan buku tampak samping — tebalnya bicara. */
-function BookStackGlyph() {
-  const spines = ['#E4C39B', '#D9B48F', '#CDA67E'];
+/** Ikon baris bulan: tumpukan buku tampak samping, berwarna per bulan. */
+function BookStackGlyph({ color }: { color: string }) {
   return (
     <span aria-hidden="true" className="relative block h-9 w-12 shrink-0">
-      {spines.map((bg, i) => (
+      {[0.5, 0.72, 1].map((opacity, i) => (
         <span
-          key={bg}
-          className="absolute block h-2.5 w-10 rounded-[3px] border border-[#00000012] shadow-[0_1px_2px_#5E46241A]"
-          style={{ backgroundColor: bg, bottom: i * 5, right: i * 1.5, zIndex: 3 - i }}
+          key={i}
+          className="absolute block h-2.5 w-10 rounded-[3px] border border-[#00000012] shadow-[0_1px_2px_#4A463A18]"
+          style={{ backgroundColor: color, opacity, bottom: i * 5, right: i * 1.5, zIndex: 3 - i }}
         />
       ))}
     </span>
@@ -82,44 +104,37 @@ const indexDate = (timestamp: number) => {
 };
 
 /**
- * Baris buku rebah — satu materi = satu buku tergeletak di atas kain laci:
- * punggung buku berwarna kain platform (dengan alur punggung) di kiri,
- * label judul + meta di sisiannya. Nol garis kertas — bukan catatan.
+ * Baris konten varian A "Rak Buku Minimal": kartu putih dengan strip aksen
+ * tenang di kiri, judul + meta (tanggal · domain). Fokus ke konten.
  */
 function BookRow({ link, isNightMode, onOpen }: {
   link: SavedLink;
   isNightMode: boolean;
   onOpen: (link: SavedLink) => void;
 }) {
-  const theme = getPlatformTheme(link.platform);
   return (
     <button
       type="button"
       onClick={() => onOpen(link)}
       aria-label={`Buka materi: ${link.title}`}
       className={cn(
-        'flex w-full cursor-pointer items-stretch gap-0 overflow-hidden rounded-[12px] border text-left shadow-[0_2px_6px_#66472614] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-        isNightMode ? 'border-[#E2D3B4] bg-[#FBF4E4]' : 'border-[#E7DCC2] bg-[#FFFDF6]'
+        'flex w-full cursor-pointer items-stretch overflow-hidden rounded-xl border text-left shadow-[0_1px_4px_#4A463A10] active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+        isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2]' : 'border-[#ECE9E0] bg-white'
       )}
     >
-      {/* Punggung buku: kain platform + dua alur khas punggung jilid. */}
       <span
         aria-hidden="true"
-        className="relative flex w-[34px] shrink-0 items-center justify-center"
-        style={{ backgroundColor: theme.cloth }}
-      >
-        <span className="absolute inset-x-2 top-2 h-px rounded bg-white/35" />
-        <span className="absolute inset-x-2 bottom-2 h-px rounded bg-white/35" />
-        <span className="absolute inset-y-0 right-0 w-px bg-black/20" />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2.5">
+        className="w-[4px] shrink-0"
+        style={{ backgroundColor: isNightMode ? ACCENT_STRIP_NIGHT : ACCENT_STRIP }}
+      />
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3.5 py-2.5">
         <span
-          className={cn('text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#463524]' : 'text-[#4A3423]')}
+          className={cn('text-[13px] font-bold leading-snug', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}
           style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
         >
           {link.title}
         </span>
-        <span className="truncate text-[10px] font-bold uppercase tracking-[0.08em] text-[#9A8158]">
+        <span className="truncate text-[10px] font-bold uppercase tracking-[0.08em] text-[#8A8778]">
           {indexDate(link.createdAt)} · {link.domain}
         </span>
       </span>
@@ -128,12 +143,12 @@ function BookRow({ link, isNightMode, onOpen }: {
 }
 
 /**
- * Laci Materi (Lapis 2 Pustaka) — kembar interaksi dari Laci Catatan:
- * tertutup rapat dengan buku mengintip, dibuka via tap ATAU tarikan vertikal
- * pada baris atas, haptic Telegram, interior alas kain tenung dengan bayangan
- * inset. Isinya baris bulan ber-akordeon; tiap bulan membuka barisan buku
- * rebah (punggung kain platform + label judul) di atas kain. Satu bulan
- * terbuka pada satu waktu.
+ * Laci Materi (Lapis 2 Pustaka) — varian A "Rak Buku Minimal" dari referensi
+ * pemilik produk. Kembar interaksi dengan Laci Catatan (tertutup rapat, tap
+ * atau tarikan vertikal, haptic, back button), namun berparas minimal: bingkai
+ * netral hangat, interior bidang datar tanpa tekstur, baris bulan kartu putih
+ * dengan ikon tumpukan berwarna per bulan + bar aksen saat aktif, dan isi
+ * berupa kartu konten putih bergaris aksen. Satu bulan terbuka pada satu waktu.
  */
 export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
   const [dragOffset, setDragOffset] = useState(0);
@@ -192,9 +207,9 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
         className={cn(
           'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
           isNightMode
-            ? 'border-[#C9B59C] bg-[#E2D4BC] shadow-[0_4px_14px_#503A1F14]'
-            : 'border-[#D9C9AC] bg-[#F0E7D4] shadow-[0_6px_18px_#66472612]',
-          isOpen && 'shadow-[0_14px_34px_#503A1F1F]'
+            ? 'border-[#CBC3B0] bg-[#E3DDD0] shadow-[0_4px_14px_#4A463A14]'
+            : 'border-[#DFDBCC] bg-[#F4F2EC] shadow-[0_6px_18px_#4A463A12]',
+          isOpen && 'shadow-[0_14px_34px_#4A463A1C]'
         )}
       >
         {/* ── Baris atas: tombol buka/tutup + kartu indeks mengintip ── */}
@@ -224,21 +239,21 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
         >
           {!isOpen && <PeekStack isNightMode={isNightMode} />}
           <span className="min-w-0">
-            <span className={cn('block text-[10px] font-bold uppercase tracking-[0.14em]', isNightMode ? 'text-[#8A7455]' : 'text-[#9A8266]')}>
+            <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A8778]">
               Arsip
             </span>
-            <span className={cn('block font-display text-[16px] font-extrabold leading-tight', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+            <span className={cn('block font-display text-[16px] font-extrabold leading-tight', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}>
               Materi Terdahulu
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-2.5">
-            <span className="flex h-9 min-w-9 items-center justify-center rounded-full border border-[#E3D2B4] bg-[#FFF9EC] px-2 text-xs font-extrabold text-[#7A6041] shadow-[0_2px_5px_#6647261A]">
+            <span className={cn('flex h-9 min-w-9 items-center justify-center rounded-full border px-2 text-xs font-extrabold shadow-[0_2px_5px_#4A463A14]', isNightMode ? 'border-[#E2DCCB] bg-[#FAF8F1] text-[#3A362C]' : 'border-[#E3E0D5] bg-white text-[#39424E]')}>
               {totalCount}
             </span>
             <span
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-full border',
-                isNightMode ? 'border-[#B39B77] bg-[#D9C6A5] text-[#4A3B2C]' : 'border-[#CBB488] bg-[#E4D3B2] text-[#6B5533]'
+                isNightMode ? 'border-[#CBC3B0] bg-[#E8E2D4] text-[#4A4438]' : 'border-[#DFDBCC] bg-[#EDEAE0] text-[#39424E]'
               )}
             >
               <ChevronDown
@@ -249,25 +264,16 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
           </span>
         </div>
 
-        {/* ── Interior: alas kain tenung — khas laci penyimpanan, bukan kertas
-             bergaris (itu identitas Laci Catatan). Kartu indeks menonjol
-             di atas anyaman halus dua arah. ── */}
+        {/* ── Interior varian A: bidang tenang tanpa tekstur — konten memimpin. ── */}
         <div
           id="vault-drawer-body"
           hidden={!isOpen}
           className={cn(
-            'space-y-2.5 px-4 pb-6 pt-5',
-            isNightMode ? 'bg-[#E2D3B6]' : 'bg-[#EBDFC6]'
+            'space-y-2 px-4 pb-6 pt-4',
+            isNightMode ? 'bg-[#EDE9DC]' : 'bg-[#F7F6F1]'
           )}
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, rgba(140,110,70,0.055) 0 1px, transparent 1px 4px), repeating-linear-gradient(90deg, rgba(140,110,70,0.055) 0 1px, transparent 1px 4px)',
-            boxShadow: 'inset 0 10px 16px -12px #5E46242E',
-          }}
+          style={{ boxShadow: 'inset 0 10px 16px -12px rgba(60, 56, 44, 0.22)' }}
         >
-          <p className="text-center text-[11px] font-semibold italic leading-5 text-[#6B5433]">
-            Materi lama tidur tenang di sini — Mochi merawat raknya. 🍵
-          </p>
           {groups.map(group => {
             const isExpanded = expandedMonth === group.monthStart;
             const visibleLinks = isExpanded
@@ -284,23 +290,29 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                   aria-expanded={isExpanded}
                   aria-controls={`vault-month-${group.key}`}
                   className={cn(
-                    'flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-                    isNightMode ? 'border-[#D9C096] bg-[#FBF4E4]' : 'border-[#E3D2B4] bg-[#FFF9EC]',
-                    isExpanded && 'shadow-[0_3px_10px_#66472614]'
+                    'relative flex min-h-[54px] w-full cursor-pointer items-center gap-3 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+                    isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2]' : 'border-[#ECE9E0] bg-white',
+                    isExpanded && 'shadow-[0_3px_10px_#4A463A14]'
                   )}
                 >
-                  <BookStackGlyph />
+                  {/* Bar aksen bulan — menyala saat rak itu terbuka. */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-2 left-0 w-[3px] rounded-full"
+                    style={{ backgroundColor: isExpanded ? monthAccent(group.key) : 'transparent' }}
+                  />
+                  <BookStackGlyph color={monthAccent(group.key)} />
                   <span className="min-w-0 flex-1">
-                    <span className={cn('block text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+                    <span className={cn('block text-[13px] font-bold leading-snug', isNightMode ? 'text-[#3A362C]' : 'text-[#333A45]')}>
                       {group.label}
                     </span>
-                    <span className="block text-[11px] font-semibold text-[#9A8266]">
+                    <span className="block text-[11px] font-semibold text-[#8A8778]">
                       {group.links.length} materi
                     </span>
                   </span>
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn('h-4 w-4 shrink-0 text-[#9A8266] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                    className={cn('h-4 w-4 shrink-0 text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
                   />
                 </button>
                 {isExpanded && (
@@ -316,9 +328,9 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                       <button
                         type="button"
                         onClick={() => setExpandedShowAll(true)}
-                        className="mt-3 min-h-11 w-full rounded-full border border-[#E3D2B4] bg-[#FFF9EC] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                        className={cn('mt-3 min-h-11 w-full rounded-full border text-xs font-bold active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]', isNightMode ? 'border-[#E2DCCB] bg-[#FBF9F2] text-[#3A362C]' : 'border-[#E3E0D5] bg-white text-[#39424E]')}
                       >
-                        Tampilkan {hiddenCount} buku lagi bulan ini
+                        Tampilkan {hiddenCount} materi lagi bulan ini
                       </button>
                     )}
                   </div>
