@@ -411,6 +411,28 @@ export const VaultPage: FC<VaultPageProps> = ({
     return getNoteViewSections(formatStructuredNotes(selectedLink) || selectedLink.summary || '');
   })();
 
+  // Satu pintu membuka halaman baca — dipakai kartu rak utama, hasil filter,
+  // dan kartu indeks di Katalog Arsip, supaya perilakunya tak pernah berbeda.
+  const openLinkFromArchive = (link: SavedLink) => {
+    try {
+      (window as unknown as {
+        Telegram?: {
+          WebApp?: {
+            HapticFeedback?: {
+              selectionChanged?: () => void;
+            };
+          };
+        };
+      })?.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+    } catch {
+      // Safe fallback outside Telegram
+    }
+    setSelectedLinkId(link.id);
+    setPlayingVideoId(null);
+    setEditingLinkId(null);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   // Kartu buku dipakai bersama oleh Rak Terbaru, hasil filter, dan Lemari
   // Arsip — satu markup, satu tempat perawatan. `book-card-cv` membuat WebView
   // melewatkan layout/paint kartu di luar viewport.
@@ -418,25 +440,7 @@ export const VaultPage: FC<VaultPageProps> = ({
     <button
       key={link.id}
       type="button"
-      onClick={() => {
-        try {
-          (window as unknown as {
-            Telegram?: {
-              WebApp?: {
-                HapticFeedback?: {
-                  selectionChanged?: () => void;
-                };
-              };
-            };
-          })?.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
-        } catch {
-          // Safe fallback outside Telegram
-        }
-        setSelectedLinkId(link.id);
-        setPlayingVideoId(null);
-        setEditingLinkId(null);
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      }}
+      onClick={() => openLinkFromArchive(link)}
       aria-label={`Buka materi: ${link.title}`}
       className="book-card-cv group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
     >
@@ -1091,7 +1095,7 @@ export const VaultPage: FC<VaultPageProps> = ({
                     groups={monthGroups}
                     totalCount={archiveCount}
                     isNightMode={isNightMode}
-                    renderBookCard={renderBookCard}
+                    onOpenLink={openLinkFromArchive}
                   />
                 </>
               )}
