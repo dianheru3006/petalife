@@ -5,7 +5,6 @@ import {
   getWeekStart,
   formatWeekLabel,
   canPinNotes,
-  shouldAutoExpandNewestGroup,
   groupDrawerMonths,
   monthKeyOf,
   monthLabelOf,
@@ -117,13 +116,6 @@ describe('notesWorkspace — Meja Kerja Bermusim (Tahap 1)', () => {
     expect(canPinNotes([...fivePinned, fresh])).toBe(false); // penuh
     expect(canPinNotes([fivePinned[0], fresh])).toBe(true); // masih ada tempat
     expect(canPinNotes([fresh])).toBe(true); // kosong
-  });
-
-  it('shouldAutoExpandNewestGroup: arsip kecil auto-buka, besar terlipat semua', () => {
-    expect(shouldAutoExpandNewestGroup(0)).toBe(false);
-    expect(shouldAutoExpandNewestGroup(1)).toBe(true);
-    expect(shouldAutoExpandNewestGroup(24)).toBe(true);
-    expect(shouldAutoExpandNewestGroup(25)).toBe(false);
   });
 
   it('groupDrawerMonths: grup minggu jadi ember bulanan menurun dengan target lompatan', () => {

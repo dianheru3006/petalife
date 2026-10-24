@@ -4,7 +4,7 @@ import type { Note } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type { DrawerWeekGroup, MonthBucket } from './notesWorkspace';
-import { groupDrawerMonths, monthKeyOf, shouldAutoExpandNewestGroup } from './notesWorkspace';
+import { groupDrawerMonths, monthKeyOf } from './notesWorkspace';
 
 /** Kartu ter-hidrasi maksimal per minggu yang dibuka; sisanya lewat tombol. */
 const EXPANDED_GROUP_LIMIT = 24;
@@ -105,20 +105,15 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
   // terlipat sehingga DOM laci tetap ramping walau arsip menumpuk bertahun.
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [expandedShowAll, setExpandedShowAll] = useState(false);
-  const autoExpandTriedRef = useRef(false);
   const weekRowRefs = useRef(new Map<number, HTMLDivElement>());
 
   // Pita Washi Waktu: indeks bulanan; hanya tampil bila arsip melintasi bulan.
   const months = useMemo(() => groupDrawerMonths(groups), [groups]);
   const activeMonthKey = expandedWeek !== null ? monthKeyOf(expandedWeek) : null;
 
+  // Laci selalu terbuka dengan semua minggu terlipat — pilihan ada pada pengguna.
   const toggleDrawer = (next: boolean) => {
     if (next !== isOpen) drawerHaptic();
-    // Arsip kecil dibuka ramah: minggu terbaru terbuka sendiri saat pertama kali.
-    if (next && !autoExpandTriedRef.current) {
-      autoExpandTriedRef.current = true;
-      if (shouldAutoExpandNewestGroup(totalCount)) setExpandedWeek(groups[0]?.weekStart ?? null);
-    }
     onOpenChange(next);
   };
 
