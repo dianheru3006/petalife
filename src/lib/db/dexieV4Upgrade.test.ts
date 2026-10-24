@@ -5,6 +5,7 @@ import type { SavedLink, Note } from '../types';
 import { PetalifeDatabase } from './database';
 import { createLink, findDuplicateLink } from './linksRepository';
 import { createNote, getRecentNotes } from './notesRepository';
+import { initializeDatabase } from './seed';
 import { normalizeUrl } from '../utils/urlUtils';
 
 /**
@@ -125,6 +126,30 @@ describe('Dexie v4 — migrasi urlHash & duplikasi O(1)', () => {
     expect(recent[0].title).toBe('Note 0');
     expect(recent[4].title).toBe('Note 4');
     expect(await testDb.notes.count()).toBe(20);
+    await testDb.close();
+  });
+});
+
+describe('Backfill urlHash untuk baris seed (instalasi baru v4)', () => {
+  it('initializeDatabase: semua tautan seed memiliki urlHash dan varian URL terdeteksi duplikat', async () => {
+    const testDb = new PetalifeDatabase(dbName());
+    await testDb.open();
+
+    const result = await initializeDatabase(testDb);
+    expect(result.seeded).toBe(true);
+
+    const all = await testDb.savedLinks.toArray();
+    expect(all.length).toBeGreaterThan(0);
+    for (const link of all) {
+      expect(typeof link.urlHash).toBe('string');
+      expect(link.urlHash).toBe(normalizeUrl(link.url));
+    }
+
+    // Varian www/http dari URL seed harus tetap terdeteksi sebagai duplikat.
+    const seeded = all[0];
+    const variant = seeded.url.replace(/^https:/i, 'http:').replace(/^\/\//, '//www.');
+    const dup = await findDuplicateLink(variant, testDb);
+    expect(dup?.id).toBe(seeded.id);
     await testDb.close();
   });
 });

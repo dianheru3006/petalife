@@ -79,15 +79,18 @@ export function splitWorkspace(
   // Urut menurun berdasar aktivitas terakhir — sekali saja, stabil.
   const sorted = [...notes].sort((a, b) => noteActivityAt(b) - noteActivityAt(a));
 
-  const pinned = sorted.filter(note => note.pinned === true);
+  // Pin selalu di papan; data korup (pin > kapasitas) dipangkas dan
+  // kelebihannya diarahkan ke laci — tidak ada catatan yang hilang.
+  const pinnedAll = sorted.filter(note => note.pinned === true);
+  const pinned = pinnedAll.slice(0, maxBoardNotes);
+  const pinnedOverflow = pinnedAll.slice(maxBoardNotes);
   const active = sorted.filter(note => note.pinned !== true && noteActivityAt(note) >= weekAgo);
   const stale = sorted.filter(note => note.pinned !== true && noteActivityAt(note) < weekAgo);
 
-  // Pin selalu di papan; sisa kapasitas untuk catatan aktif terbaru.
   const boardCapacity = Math.max(0, maxBoardNotes - pinned.length);
   const boardNotes = [...pinned, ...active.slice(0, boardCapacity)];
   const overflow = active.slice(boardCapacity);
-  const drawerNotes = [...overflow, ...stale];
+  const drawerNotes = [...pinnedOverflow, ...overflow, ...stale];
 
   const groupsByWeek = new Map<number, Note[]>();
   for (const note of drawerNotes) {

@@ -101,6 +101,7 @@ function WeekStackGlyph({ isNightMode }: { isNightMode: boolean }) {
 export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, renderNoteCard }: DeskDrawerProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
   // Akordeon minggu: satu minggu terbuka pada satu waktu; minggu lain otomatis
   // terlipat sehingga DOM laci tetap ramping walau arsip menumpuk bertahun.
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
@@ -148,8 +149,21 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
     const delta = event.clientY - dragStartRef.current;
     dragStartRef.current = null;
     setDragOffset(0);
-    if (delta > DRAG_OPEN_THRESHOLD_PX) toggleDrawer(true);
-    else if (delta < -DRAG_OPEN_THRESHOLD_PX) toggleDrawer(false);
+    if (delta > DRAG_OPEN_THRESHOLD_PX) {
+      suppressClickRef.current = true; // cegah click pasca-tarik meng-toggle ganda
+      toggleDrawer(true);
+    } else if (delta < -DRAG_OPEN_THRESHOLD_PX) {
+      suppressClickRef.current = true;
+      toggleDrawer(false);
+    }
+  };
+
+  const onHandleClick = () => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    toggleDrawer(!isOpen);
   };
 
   if (totalCount === 0 && groups.length === 0) {
@@ -178,7 +192,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
           aria-expanded={isOpen}
           aria-controls="desk-drawer-body"
           aria-label={isOpen ? 'Tutup laci catatan lama' : `Buka laci catatan lama (${totalCount} catatan)`}
-          onClick={() => toggleDrawer(!isOpen)}
+          onClick={onHandleClick}
           onKeyDown={event => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();

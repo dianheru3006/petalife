@@ -130,6 +130,7 @@ function FileRow({ link, accent, isNightMode, onOpen }: {
 export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartRef = useRef<number | null>(null);
+  const suppressClickRef = useRef(false);
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [expandedShowAll, setExpandedShowAll] = useState(false);
 
@@ -161,8 +162,21 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
     const delta = event.clientY - dragStartRef.current;
     dragStartRef.current = null;
     setDragOffset(0);
-    if (delta > DRAG_OPEN_THRESHOLD_PX) toggleDrawer(true);
-    else if (delta < -DRAG_OPEN_THRESHOLD_PX) toggleDrawer(false);
+    if (delta > DRAG_OPEN_THRESHOLD_PX) {
+      suppressClickRef.current = true; // cegah click pasca-tarik meng-toggle ganda
+      toggleDrawer(true);
+    } else if (delta < -DRAG_OPEN_THRESHOLD_PX) {
+      suppressClickRef.current = true;
+      toggleDrawer(false);
+    }
+  };
+
+  const onHandleClick = () => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    toggleDrawer(!isOpen);
   };
 
   if (totalCount === 0 && groups.length === 0) {
@@ -191,7 +205,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
           aria-expanded={isOpen}
           aria-controls="vault-drawer-body"
           aria-label={isOpen ? 'Tutup laci materi lama' : `Buka laci materi lama (${totalCount} materi)`}
-          onClick={() => toggleDrawer(!isOpen)}
+          onClick={onHandleClick}
           onKeyDown={event => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();

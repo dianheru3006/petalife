@@ -70,6 +70,15 @@ describe('notesWorkspace — Meja Kerja Bermusim (Tahap 1)', () => {
     expect(result.boardNotes.slice(1)).toHaveLength(MAX_BOARD_NOTES - 1);
   });
 
+  it('data korup (pin > kapasitas papan) dipangkas aman: papan <= cap, sisanya ke laci, tak ada yang hilang', () => {
+    const pinnedMany = Array.from({ length: MAX_BOARD_NOTES + 3 }, (_, i) => makeNote(`p${i}`, 30, true));
+    const result = splitWorkspace(pinnedMany, NOW);
+    expect(result.boardNotes).toHaveLength(MAX_BOARD_NOTES);
+    expect(result.boardNotes.every(n => n.pinned === true)).toBe(true);
+    expect(result.drawerCount).toBe(3);
+    expect(result.boardNotes.length + result.drawerCount).toBe(pinnedMany.length);
+  });
+
   it('catatan lama dikelompokkan per minggu kalender menurun dengan label manusiawi', () => {
     // NOW = Rabu 21 Okt 2026. Umur 8-9 hari = minggu Senin 12–18 Okt;
     // umur 16 hari = minggu Senin 5–11 Okt.

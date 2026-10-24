@@ -1,5 +1,6 @@
 import { db, PetalifeDatabase } from './database';
 import { initialSavedLinks, initialNotes } from '../mockData';
+import { normalizeUrl } from '../utils/urlUtils';
 
 export interface InitDatabaseResult {
   seeded: boolean;
@@ -37,6 +38,18 @@ export async function initializeDatabase(database: PetalifeDatabase = db): Promi
       }
       if (notesCount === 0) {
         await database.notes.bulkAdd(initialNotes);
+      }
+
+      // Dexie v4: baris tanpa urlHash (hasil seed di instalasi baru, atau
+      // penambahan langsung pra-migrasi) di-backfill idempoten — menutup
+      // titik buta deteksi duplikat O(1) untuk varian www/http/tracking.
+      const withoutHash = await database.savedLinks.filter(link => !link.urlHash).toArray();
+      if (withoutHash.length) {
+        await Promise.all(withoutHash.map(link =>
+          database.savedLinks.update(link.id, {
+            urlHash: normalizeUrl(link.url) || link.url.trim().toLowerCase(),
+          })
+        ));
       }
 
       const [finalLinksCount, finalNotesCount] = await Promise.all([
