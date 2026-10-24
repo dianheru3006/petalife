@@ -1291,6 +1291,12 @@
   contain-intrinsic-size: 140px 190px;
 }
 
+/* Tahap-4 Scale Workspace (Pustaka): sama untuk kartu buku 3 kolom. */
+.book-card-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: 110px 220px;
+}
+
 .notes-lined-paper {
   background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, #efe6d8 32px);
   background-origin: content-box;

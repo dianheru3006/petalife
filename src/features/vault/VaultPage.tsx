@@ -28,6 +28,8 @@ import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import { formatStructuredNotes, getNoteViewSections, noteTextForDraft } from '../../lib/utils/noteView';
 import { VaultBookArtwork } from './VaultBookArtwork';
 import { VaultReadingSections } from './VaultReadingSections';
+import { ArchiveCabinet } from './ArchiveCabinet';
+import { splitVaultWorkspace } from './vaultWorkspace';
 import type { LibraryMochiActivity } from './LibraryMochi';
 import { LibraryMochi } from './LibraryMochi';
 import { proceduralAudio } from '../../lib/audio/proceduralAudio';
@@ -125,7 +127,6 @@ export const VaultPage: FC<VaultPageProps> = ({
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentDay, setCurrentDay] = useState(() => new Date().toDateString());
 
   // Mochi interactive activities and speech in diorama
   const [mochiActivity, setMochiActivity] = useState<LibraryMochiActivity>('reading');
@@ -245,17 +246,6 @@ export const VaultPage: FC<VaultPageProps> = ({
     startIdleTimer();
   };
 
-  useEffect(() => {
-    const refreshDay = () => setCurrentDay(new Date().toDateString());
-    const interval = window.setInterval(refreshDay, 60_000);
-    window.addEventListener('focus', refreshDay);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener('focus', refreshDay);
-    };
-  }, []);
-
-  // Telegram Mini App Native BackButton Integration
   // AUDIT-FIX (P0): unified with the shared layered hook so every screen behaves
   // identically, and the delete confirmation is dismissed before the page.
   const closeReadingView = () => {
@@ -397,8 +387,10 @@ export const VaultPage: FC<VaultPageProps> = ({
     ? getYouTubeThumbnail(selectedLink.url)?.match(/\/vi\/([A-Za-z0-9_-]{11})\//)?.[1]
     : undefined;
   const selectedIndex = selectedLink ? filteredLinks.findIndex(link => link.id === selectedLink.id) : -1;
-  const todayLinks = filteredLinks.filter(link => new Date(link.createdAt).toDateString() === currentDay);
-  const olderLinks = filteredLinks.filter(link => new Date(link.createdAt).toDateString() !== currentDay);
+
+  // Tahap-4 Scale Workspace: Rak Terbaru (<=10: 7 hari terakhir + yang sedang
+  // dibaca) dan Lemari Arsip bulanan; filter aktif tetap menyajikan hasil flat.
+  const { mainShelfLinks, monthGroups, archiveCount } = splitVaultWorkspace(filteredLinks);
 
   const hasActiveFilter = selectedCategory !== 'All' || selectedStatusFilter !== 'all' || Boolean(searchQuery.trim());
 
@@ -419,6 +411,58 @@ export const VaultPage: FC<VaultPageProps> = ({
     return getNoteViewSections(formatStructuredNotes(selectedLink) || selectedLink.summary || '');
   })();
 
+  // Kartu buku dipakai bersama oleh Rak Terbaru, hasil filter, dan Lemari
+  // Arsip — satu markup, satu tempat perawatan. `book-card-cv` membuat WebView
+  // melewatkan layout/paint kartu di luar viewport.
+  const renderBookCard = (link: SavedLink) => (
+    <button
+      key={link.id}
+      type="button"
+      onClick={() => {
+        try {
+          (window as unknown as {
+            Telegram?: {
+              WebApp?: {
+                HapticFeedback?: {
+                  selectionChanged?: () => void;
+                };
+              };
+            };
+          })?.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+        } catch {
+          // Safe fallback outside Telegram
+        }
+        setSelectedLinkId(link.id);
+        setPlayingVideoId(null);
+        setEditingLinkId(null);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }}
+      aria-label={`Buka materi: ${link.title}`}
+      className="book-card-cv group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
+    >
+      {/* Book Spine & Cover Container with Realistic Shelf Elevation */}
+      <div className="relative w-full rounded-2xl overflow-hidden border border-[#CDBB9E] bg-[#E6D4B8] p-1 shadow-[2px_3px_0_#B79368,3px_5px_9px_#66503928] group-hover:shadow-[3px_7px_0_#B79368,4px_12px_18px_#66503935] transition-all duration-300">
+        <VaultBookArtwork link={link} />
+      </div>
+
+      {/* Book Title & Platform Subtitle */}
+      <span
+        className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#BA5218] transition-colors leading-snug"
+        style={{
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
+        {link.title}
+      </span>
+      <span className="mt-0.5 max-w-full truncate text-[10px] font-medium text-[#73685E]">
+        {link.domain}
+      </span>
+    </button>
+  );
+
   const renderShelf = (items: SavedLink[], label: string) => items.length > 0 && (
     <section aria-label={label} className="space-y-3">
       {/* Shelf Header */}
@@ -431,54 +475,7 @@ export const VaultPage: FC<VaultPageProps> = ({
 
       {/* 3-Column Cozy Book Grid */}
       <div className="grid grid-cols-3 gap-3 px-0.5">
-        {items.map(link => (
-          <button
-            key={link.id}
-            type="button"
-            onClick={() => {
-              try {
-                (window as unknown as {
-                  Telegram?: {
-                    WebApp?: {
-                      HapticFeedback?: {
-                        selectionChanged?: () => void;
-                      };
-                    };
-                  };
-                })?.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
-              } catch {
-                // Safe fallback outside Telegram
-              }
-              setSelectedLinkId(link.id);
-              setPlayingVideoId(null);
-              setEditingLinkId(null);
-              window.scrollTo({ top: 0, behavior: 'instant' });
-            }}
-            aria-label={`Buka materi: ${link.title}`}
-            className="group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
-          >
-            {/* Book Spine & Cover Container with Realistic Shelf Elevation */}
-            <div className="relative w-full rounded-2xl overflow-hidden border border-[#CDBB9E] bg-[#E6D4B8] p-1 shadow-[2px_3px_0_#B79368,3px_5px_9px_#66503928] group-hover:shadow-[3px_7px_0_#B79368,4px_12px_18px_#66503935] transition-all duration-300">
-              <VaultBookArtwork link={link} />
-            </div>
-
-            {/* Book Title & Platform Subtitle */}
-            <span
-              className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#BA5218] transition-colors leading-snug"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {link.title}
-            </span>
-            <span className="mt-0.5 max-w-full truncate text-[10px] font-medium text-[#73685E]">
-              {link.domain}
-            </span>
-          </button>
-        ))}
+        {items.map(renderBookCard)}
       </div>
 
       {/* Tamagotchi/Animal Crossing Beech Wood Shelf Plank */}
@@ -1085,8 +1082,19 @@ export const VaultPage: FC<VaultPageProps> = ({
           {/* 6. The Bookshelves Grid */}
           {filteredLinks.length ? (
             <div className="space-y-6 pt-1">
-              {renderShelf(todayLinks, 'Hari ini')}
-              {renderShelf(olderLinks, 'Sebelumnya')}
+              {hasActiveFilter ? (
+                renderShelf(filteredLinks, 'Hasil')
+              ) : (
+                <>
+                  {renderShelf(mainShelfLinks, 'Rak Terbaru')}
+                  <ArchiveCabinet
+                    groups={monthGroups}
+                    totalCount={archiveCount}
+                    isNightMode={isNightMode}
+                    renderBookCard={renderBookCard}
+                  />
+                </>
+              )}
             </div>
           ) : (
             <div className="rounded-[32px] border border-dashed border-[#EAE3D5] bg-[#FAF7F2] p-8 text-center space-y-2">
