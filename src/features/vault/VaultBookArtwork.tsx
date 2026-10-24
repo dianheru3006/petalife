@@ -46,29 +46,29 @@ export interface PlatformTheme {
 
 export const PLATFORM_THEMES: Record<PlatformType, PlatformTheme> = {
   youtube: {
-    cloth: '#E89A88',   // Soft warm terracotta / coral red
-    ink: '#943826',
-    paper: '#FFF5F2',
+    cloth: '#CE7154',   // Terracotta jenuh (model referensi A)
+    ink: '#7E2E1D',
+    paper: '#FFF3EE',
   },
   instagram: {
-    cloth: '#D996AD',   // Soft dusty berry-rose
-    ink: '#872A4E',
-    paper: '#FCF2F6',
+    cloth: '#CE89A6',   // Berry-rose jenuh
+    ink: '#7E2745',
+    paper: '#FCF0F5',
   },
   threads: {
-    cloth: '#585E6B',   // Soft muted carbon slate
-    ink: '#282D36',
-    paper: '#F4F5F8',
+    cloth: '#525A66',   // Slate karbon
+    ink: '#23272E',
+    paper: '#F3F4F6',
   },
   tiktok: {
-    cloth: '#4B4D58',   // Soft graphite charcoal
-    ink: '#24262E',
-    paper: '#F4F5F7',
+    cloth: '#3F4857',   // Navy grafit (model referensi A)
+    ink: '#1E232B',
+    paper: '#F3F4F6',
   },
   web: {
-    cloth: '#8CA8C7',   // Soft dusty denim blue
-    ink: '#28496E',
-    paper: '#F2F6FB',
+    cloth: '#7590B2',   // Denim jenuh
+    ink: '#24405E',
+    paper: '#F0F4F9',
   },
 };
 
@@ -130,53 +130,90 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
 
   const isVideo = link.platform === 'youtube' || link.platform === 'tiktok';
 
+  // ── Mode besar (halaman baca): thumbnail asli atau segel besar ──
+  if (large) {
+    return (
+      <div
+        className="relative w-full overflow-hidden rounded-[20px] aspect-video"
+        style={{ backgroundColor: theme.cloth }}
+      >
+        {showImage ? (
+          <img
+            src={imageUrl!}
+            alt={`Pratinjau ${link.title}`}
+            width={640}
+            height={360}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+            onError={() => setFailedUrl(imageUrl!)}
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-x-3 top-3 h-px bg-white/40" aria-hidden="true" />
+            <div
+              className="flex h-20 w-20 items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+              style={{ backgroundColor: theme.paper, color: theme.ink }}
+            >
+              <BrandIcon className="h-9 w-9" />
+            </div>
+            <span className="mt-3 max-w-[80%] truncate text-xs font-bold text-white drop-shadow-xs">{link.domain}</span>
+            <div className="absolute inset-x-3 bottom-3 h-px bg-white/40" aria-hidden="true" />
+          </div>
+        )}
+
+        {showImage && isVideo && (
+          <span
+            className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-white/95 text-[#7B4827] shadow-md"
+            aria-hidden="true"
+          >
+            <Play className="h-6 w-6 translate-x-0.5 fill-current" />
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  // ── Sampul rak: hardcover 3D (model referensi A) ──
   return (
     <div
-      className={`relative w-full overflow-hidden ${large ? 'aspect-video rounded-[20px]' : 'aspect-[3/4] rounded-xl'}`}
+      className="relative w-full overflow-hidden rounded-xl aspect-[4/5]"
       style={{ backgroundColor: theme.cloth }}
     >
-      {showImage ? (
-        <img
-          src={imageUrl!}
-          alt={`Pratinjau ${link.title}`}
-          width={large ? 640 : 240}
-          height={large ? 360 : 320}
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={() => setFailedUrl(imageUrl!)}
-        />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {!large && (
-            <>
-              <div className="absolute inset-y-0 left-0 w-2.5 border-r border-black/15 bg-black/10 shadow-[inset_-1px_0_2px_rgba(0,0,0,0.1)]" aria-hidden="true" />
-              <div className="absolute inset-y-0 left-2.5 w-px bg-white/20" aria-hidden="true" />
-            </>
-          )}
-          <div className="absolute inset-x-3 top-3 h-px bg-white/40" aria-hidden="true" />
-          <div
-            className={`flex items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.08)] ${
-              large ? 'h-20 w-20' : 'h-12 w-12'
-            }`}
-            style={{ backgroundColor: theme.paper, color: theme.ink }}
-          >
-            <BrandIcon className={large ? 'h-9 w-9' : 'h-6 w-6'} />
-          </div>
-          {large && <span className="mt-3 max-w-[80%] truncate text-xs font-bold text-white drop-shadow-xs">{link.domain}</span>}
-          <div className="absolute inset-x-3 bottom-3 h-px bg-white/40" aria-hidden="true" />
-        </div>
-      )}
-
-      {/* Large central play overlay only in Reading View video thumbnail */}
-      {large && isVideo && (
-        <span
-          className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full bg-white/95 text-[#7B4827] shadow-md"
-          aria-hidden="true"
-        >
-          <Play className="h-6 w-6 translate-x-0.5 fill-current" />
-        </span>
-      )}
+      {/* Serat kertas matte halus. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{ backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px)' }}
+      />
+      {/* Punggung kiri: lebih gelap dengan dua pasang pita jilid. */}
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[14%] border-r border-black/15 bg-black/15">
+        <span className="absolute inset-x-[18%] top-[16%] h-px bg-white/25" />
+        <span className="absolute inset-x-[18%] top-[23%] h-px bg-white/20" />
+        <span className="absolute inset-x-[18%] bottom-[23%] h-px bg-white/20" />
+        <span className="absolute inset-x-[18%] bottom-[16%] h-px bg-white/25" />
+      </span>
+      {/* Blok halaman krem: tepi bawah dan kanan. */}
+      <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[5px] border-t border-black/10 bg-[#F2E9D8]" />
+      <span aria-hidden="true" className="absolute inset-y-0 right-0 w-[5px] border-l border-black/10 bg-[#F2E9D8]" />
+      {/* Bingkai emas ganda khas jilid hardcover. */}
+      <span aria-hidden="true" className="absolute bottom-[8px] right-[8px] left-[calc(14%+8px)] top-[8px] rounded-[3px] border border-[#D9A66C]/80" />
+      <span aria-hidden="true" className="absolute bottom-[11px] right-[11px] left-[calc(14%+11px)] top-[11px] rounded-[2px] border border-[#D9A66C]/50" />
+      {/* Pita pembatas tan di sudut kanan atas, ekor berlekuk V. */}
+      <span
+        aria-hidden="true"
+        className="absolute right-[12%] top-0 h-[26%] w-[11%] origin-top rotate-[7deg] shadow-[1px_2px_3px_rgba(0,0,0,0.18)]"
+        style={{ backgroundColor: '#C9A876', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)' }}
+      />
+      {/* Segel logo platform di tengah. */}
+      <span
+        className="absolute left-1/2 top-1/2 flex h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.10)]"
+        style={{ backgroundColor: theme.paper, color: theme.ink }}
+        aria-label={`Platform ${link.platform}`}
+        role="img"
+      >
+        <BrandIcon className="h-[46%] w-[46%]" />
+      </span>
     </div>
   );
 };
