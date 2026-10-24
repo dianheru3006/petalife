@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { SavedLink } from '../../lib/types';
 import { cn } from '../../lib/utils';
+import { ChevronDown } from 'lucide-react';
 import type { VaultMonthGroup } from './vaultWorkspace';
 import { shouldAutoExpandNewestMonth } from './vaultWorkspace';
 
@@ -8,14 +10,19 @@ export interface ArchiveCabinetProps {
   groups: VaultMonthGroup[];
   totalCount: number;
   isNightMode?: boolean;
-  /** Membuka halaman baca materi — menggantikan kartu sampul di dalam katalog. */
+  /** Terkontrol dari VaultPage agar tombol back Telegram bisa menutup laci. */
+  isOpen: boolean;
+  onOpenChange: (next: boolean) => void;
+  /** Membuka halaman baca materi — dipakai kartu indeks di dalam laci. */
   onOpenLink: (link: SavedLink) => void;
 }
 
-/** Kartu indeks ter-hidrasi maksimal per bulan; sisanya lewat tombol. */
+const DRAG_OPEN_THRESHOLD_PX = 28;
+
+/** Kartu indeks ter-hidrasi maksimal per bulan yang dibuka; sisanya lewat tombol. */
 const EXPANDED_MONTH_LIMIT = 12;
 
-function cabinetHaptic() {
+function drawerHaptic() {
   try {
     (window as unknown as {
       Telegram?: { WebApp?: { HapticFeedback?: { selectionChanged?: () => void } } };
@@ -23,6 +30,46 @@ function cabinetHaptic() {
   } catch {
     // Di luar Telegram WebView: tanpa haptic, tanpa masalah.
   }
+}
+
+/** Tepi kartu indeks yang mengintip dari laci tertutup. */
+function PeekStack({ isNightMode }: { isNightMode: boolean }) {
+  const sheets = [
+    { rotate: '-7deg', translate: '2px', bg: isNightMode ? '#EFE3C8' : '#FFFDF4', z: 1 },
+    { rotate: '3deg', translate: '5px', bg: isNightMode ? '#EADCBE' : '#FBF4E2', z: 2 },
+    { rotate: '-2deg', translate: '8px', bg: isNightMode ? '#E5D6B4' : '#F5ECD4', z: 3 },
+  ];
+  return (
+    <span aria-hidden="true" className="pointer-events-none absolute right-4 top-2.5 block h-9 w-14">
+      {sheets.map(sheet => (
+        <span
+          key={sheet.z}
+          className="absolute bottom-0 right-0 block h-8 w-12 rounded-[3px] border border-[#00000014] shadow-[0_2px_4px_#5E46241F]"
+          style={{
+            transform: `rotate(${sheet.rotate}) translateY(${sheet.translate})`,
+            backgroundColor: sheet.bg,
+            zIndex: sheet.z,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** Ikon baris bulan: tumpukan buku tampak samping — tebalnya bicara. */
+function BookStackGlyph() {
+  const spines = ['#E4C39B', '#D9B48F', '#CDA67E'];
+  return (
+    <span aria-hidden="true" className="relative block h-9 w-12 shrink-0">
+      {spines.map((bg, i) => (
+        <span
+          key={bg}
+          className="absolute block h-2.5 w-10 rounded-[3px] border border-[#00000012] shadow-[0_1px_2px_#5E46241A]"
+          style={{ backgroundColor: bg, bottom: i * 5, right: i * 1.5, zIndex: 3 - i }}
+        />
+      ))}
+    </span>
+  );
 }
 
 const indexDate = (timestamp: number) => {
@@ -34,10 +81,9 @@ const indexDate = (timestamp: number) => {
 };
 
 /**
- * Kartu indeks — satu kartu per materi, selaras metafora katalog perpustakaan:
- * kertas krem bergaris, garis merah bata khas di bawah kepala kartu, entri
- * mesin-ketik (tanggal · domain · judul). Lebih ringan dari kartu sampul:
- * tanpa gambar, tanpa papan kayu.
+ * Kartu indeks — satu kartu per materi: kertas krem bergaris, garis merah bata
+ * klasik di bawah kepala kartu, entri tanggal · domain · judul. Tanpa gambar
+ * sampul — jauh lebih ringan dari kartu buku untuk arsip berbulan-tahun.
  */
 function IndexCard({ link, isNightMode, onOpen }: {
   link: SavedLink;
@@ -77,129 +123,201 @@ function IndexCard({ link, isNightMode, onOpen }: {
 }
 
 /**
- * Katalog Kartu Arsip (Lapis 2 Pustaka) — metafora katalog kartu perpustakaan
- * klasik: muka laci berlabel, tab pembatas bulan menonjol, dan kartu indeks
- * bergaris di dalamnya. Satu bulan terbuka pada satu waktu; arsip kecil (<=12)
- * otomatis membuka bulan terbarunya.
+ * Laci Materi (Lapis 2 Pustaka) — kembar interaksi dari Laci Catatan:
+ * tertutup rapat dengan kartu mengintip, dibuka via tap ATAU tarikan vertikal
+ * pada baris atas, haptic Telegram, interior pelapis kertas bergaris dengan
+ * bayangan inset. Isinya katalog: baris bulan ber-akordeon, masing-masing
+ * membuka kartu indeks materinya. Satu bulan terbuka pada satu waktu.
  */
-export function ArchiveCabinet({ groups, totalCount, isNightMode = false, onOpenLink }: ArchiveCabinetProps) {
-  const [expandedMonth, setExpandedMonth] = useState<number | null>(() =>
-    shouldAutoExpandNewestMonth(totalCount) ? (groups[0]?.monthStart ?? null) : null
-  );
+export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
+  const [dragOffset, setDragOffset] = useState(0);
+  const dragStartRef = useRef<number | null>(null);
+  const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [expandedShowAll, setExpandedShowAll] = useState(false);
+  const autoExpandTriedRef = useRef(false);
 
-  const onTabTap = (monthStart: number) => {
-    cabinetHaptic();
+  const toggleDrawer = (next: boolean) => {
+    if (next !== isOpen) drawerHaptic();
+    // Arsip kecil dibuka ramah: bulan terbaru terbuka sendiri saat pertama kali.
+    if (next && !autoExpandTriedRef.current) {
+      autoExpandTriedRef.current = true;
+      if (shouldAutoExpandNewestMonth(totalCount)) setExpandedMonth(groups[0]?.monthStart ?? null);
+    }
+    onOpenChange(next);
+  };
+
+  const onMonthTap = (monthStart: number) => {
     setExpandedShowAll(false);
     setExpandedMonth(prev => (prev === monthStart ? null : monthStart));
   };
 
-  if (totalCount === 0 && groups.length === 0) return null;
+  const onHandlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    dragStartRef.current = event.clientY;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
 
-  const activeGroup = groups.find(group => group.monthStart === expandedMonth);
-  const visibleLinks = activeGroup
-    ? (expandedShowAll ? activeGroup.links : activeGroup.links.slice(0, EXPANDED_MONTH_LIMIT))
-    : [];
-  const hiddenCount = activeGroup && !expandedShowAll
-    ? activeGroup.links.length - visibleLinks.length
-    : 0;
+  const onHandlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current === null) return;
+    const delta = event.clientY - dragStartRef.current;
+    // Pratinjau tarikan dibatasi agar terasa seperti laci berkayu, bukan karet.
+    setDragOffset(Math.max(-12, Math.min(24, delta)));
+  };
+
+  const onHandlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current === null) return;
+    const delta = event.clientY - dragStartRef.current;
+    dragStartRef.current = null;
+    setDragOffset(0);
+    if (delta > DRAG_OPEN_THRESHOLD_PX) toggleDrawer(true);
+    else if (delta < -DRAG_OPEN_THRESHOLD_PX) toggleDrawer(false);
+  };
+
+  if (totalCount === 0 && groups.length === 0) {
+    return (
+      <p className="px-2 pb-2 pt-3 text-center text-xs leading-5 text-[#8A7C6D]">
+        Belum ada materi lama — rakmu masih muda. 📚
+      </p>
+    );
+  }
 
   return (
-    <section aria-label="Katalog kartu arsip materi bulan-bulan lalu">
+    <section aria-label="Laci arsip materi bulan-bulan lalu" className="relative mt-3">
       <div
         className={cn(
           'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
           isNightMode
             ? 'border-[#C9B59C] bg-[#E2D4BC] shadow-[0_4px_14px_#503A1F14]'
-            : 'border-[#D9C9AC] bg-[#F0E7D4] shadow-[0_6px_18px_#66472612]'
+            : 'border-[#D9C9AC] bg-[#F0E7D4] shadow-[0_6px_18px_#66472612]',
+          isOpen && 'shadow-[0_14px_34px_#503A1F1F]'
         )}
       >
-        {/* ── Muka laci katalog: pemegang label berbingkai, seperti laci arsip sungguhan ── */}
-        <div className="flex min-h-[58px] items-center justify-between gap-3 px-5 py-3">
-          <span
-            className={cn(
-              'inline-flex min-h-9 items-center gap-2 rounded-[6px] border px-3 py-1 shadow-[0_1px_3px_#6647261F]',
-              isNightMode ? 'border-[#B39B77] bg-[#FAF3E6]' : 'border-[#C8AE83] bg-[#FFFDF4]'
-            )}
-          >
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8A6B45]">
+        {/* ── Baris atas: tombol buka/tutup + kartu indeks mengintip ── */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          aria-controls="vault-drawer-body"
+          aria-label={isOpen ? 'Tutup laci materi lama' : `Buka laci materi lama (${totalCount} materi)`}
+          onClick={() => toggleDrawer(!isOpen)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              toggleDrawer(!isOpen);
+            }
+          }}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={() => { dragStartRef.current = null; setDragOffset(0); }}
+          style={{ transform: `translateY(${dragOffset}px)`, touchAction: 'none' }}
+          className={cn(
+            'relative flex min-h-[64px] w-full cursor-pointer select-none items-center justify-between gap-3 px-5 py-3.5',
+            'focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#BA5218] active:scale-[0.995] motion-safe:transition-transform',
+            !isOpen && 'border-b border-[#0000000f]'
+          )}
+        >
+          {!isOpen && <PeekStack isNightMode={isNightMode} />}
+          <span className="min-w-0">
+            <span className={cn('block text-[10px] font-bold uppercase tracking-[0.14em]', isNightMode ? 'text-[#8A7455]' : 'text-[#9A8266]')}>
               Arsip
             </span>
-            <span aria-hidden="true" className="h-3.5 w-px bg-[#D9C9AC]" />
-            <span className={cn('text-[12px] font-extrabold', isNightMode ? 'text-[#463524]' : 'text-[#4A3423]')}>
-              Katalog Materi
+            <span className={cn('block font-display text-[16px] font-extrabold leading-tight', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+              Materi Terdahulu
             </span>
           </span>
-          <span className="shrink-0 text-[11px] font-bold text-[#9A8158]">
-            {totalCount} kartu
+          <span className="flex shrink-0 items-center gap-2.5">
+            <span className="flex h-9 min-w-9 items-center justify-center rounded-full border border-[#E3D2B4] bg-[#FFF9EC] px-2 text-xs font-extrabold text-[#7A6041] shadow-[0_2px_5px_#6647261A]">
+              {totalCount}
+            </span>
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full border',
+                isNightMode ? 'border-[#B39B77] bg-[#D9C6A5] text-[#4A3B2C]' : 'border-[#CBB488] bg-[#E4D3B2] text-[#6B5533]'
+              )}
+            >
+              <ChevronDown
+                aria-hidden="true"
+                className={cn('h-5 w-5 motion-safe:transition-transform duration-300', isOpen && 'rotate-180')}
+              />
+            </span>
           </span>
         </div>
 
-        {/* ── Tab pembatas bulan — menonjol dari tumpukan kartu ── */}
-        {groups.length > 1 && (
-          <div
-            className="flex gap-1.5 overflow-x-auto px-4 pb-0 pt-1 scrollbar-none"
-            role="tablist"
-            aria-label="Pilih bulan arsip"
-          >
-            {groups.map(group => {
-              const isActive = expandedMonth === group.monthStart;
-              return (
+        {/* ── Interior: alas kertas bergaris, rongga laci terasa dari bayangan atas ── */}
+        <div
+          id="vault-drawer-body"
+          hidden={!isOpen}
+          className={cn(
+            'space-y-2.5 px-4 pb-6 pt-5',
+            isNightMode ? 'bg-[#FAF3E6]' : 'bg-[#FFFDF7]'
+          )}
+          style={{
+            backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent 23px, ${isNightMode ? '#EFE4D0' : '#F1E8D8'} 24px)`,
+            boxShadow: 'inset 0 10px 16px -12px #5E46242E',
+          }}
+        >
+          <p className="text-center text-[11px] italic leading-5 text-[#A08B6E]">
+            Materi lama tidur tenang di sini — Mochi merawat raknya. 🍵
+          </p>
+          {groups.map(group => {
+            const isExpanded = expandedMonth === group.monthStart;
+            const visibleLinks = isExpanded
+              ? (expandedShowAll ? group.links : group.links.slice(0, EXPANDED_MONTH_LIMIT))
+              : [];
+            const hiddenCount = isExpanded && !expandedShowAll
+              ? group.links.length - visibleLinks.length
+              : 0;
+            return (
+              <div key={group.key}>
                 <button
-                  key={group.key}
                   type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-controls="catalog-card-list"
-                  aria-label={`${group.label}, ${group.links.length} materi`}
-                  onClick={() => onTabTap(group.monthStart)}
+                  onClick={() => onMonthTap(group.monthStart)}
+                  aria-expanded={isExpanded}
+                  aria-controls={`vault-month-${group.key}`}
                   className={cn(
-                    'min-h-10 shrink-0 cursor-pointer rounded-t-[10px] border-x border-t px-3.5 py-1.5 text-[11px] font-extrabold active:scale-[0.97] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
-                    isActive
-                      ? cn('border-[#D9C9AC]', isNightMode ? 'bg-[#FBF4E4] text-[#463524]' : 'bg-[#FFFDF4] text-[#4A3423]')
-                      : cn('border-transparent', isNightMode ? 'bg-[#E9DCC4] text-[#8A7455]' : 'bg-[#EDE2CB] text-[#8A7455]')
+                    'flex min-h-[56px] w-full cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left active:scale-[0.99] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]',
+                    isExpanded
+                      ? 'border-[#E3D2B4] bg-[#FFF9EC] shadow-[0_3px_10px_#66472614]'
+                      : 'border-transparent hover:bg-[#00000006]'
                   )}
                 >
-                  {group.label}
-                  <span className="ml-1.5 font-bold opacity-70">{group.links.length}</span>
+                  <BookStackGlyph />
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block text-[13px] font-extrabold leading-snug', isNightMode ? 'text-[#4A3B2C]' : 'text-[#4E4030]')}>
+                      {group.label}
+                    </span>
+                    <span className="block text-[11px] font-semibold text-[#9A8266]">
+                      {group.links.length} materi
+                    </span>
+                  </span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn('h-4 w-4 shrink-0 text-[#9A8266] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                  />
                 </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── Rak kartu: kartu indeks bulan terpilih ── */}
-        <div
-          className={cn('mx-1.5 mb-1.5 mt-1.5 rounded-[18px] px-3 pb-5 pt-4', isNightMode ? 'bg-[#F4EAD6]' : 'bg-[#FFF8E7]')}
-          style={{ boxShadow: 'inset 0 10px 18px -12px rgba(94, 66, 31, 0.45), inset 0 0 0 1px rgba(169, 128, 90, 0.25)' }}
-        >
-          {!activeGroup ? (
-            <p className="px-1 py-2 text-center text-[11px] leading-5 text-[#9A8158]">
-              Pilih tab bulan di atas untuk menelusuri kartunya. 🍵
-            </p>
-          ) : (
-            <>
-              <p className="mb-3 text-center text-[11px] italic leading-5 text-[#9A8158]">
-                {activeGroup.label} — {activeGroup.links.length} kartu tersimpan rapi.
-              </p>
-              <div id="catalog-card-list" role="list" aria-label={`Kartu ${activeGroup.label}`} className="space-y-2.5">
-                {visibleLinks.map(link => (
-                  <div key={link.id} role="listitem">
-                    <IndexCard link={link} isNightMode={isNightMode} onOpen={onOpenLink} />
+                {isExpanded && (
+                  <div id={`vault-month-${group.key}`} className="mt-3">
+                    <div role="list" aria-label={`Kartu ${group.label}`} className="space-y-2.5">
+                      {visibleLinks.map(link => (
+                        <div key={link.id} role="listitem">
+                          <IndexCard link={link} isNightMode={isNightMode} onOpen={onOpenLink} />
+                        </div>
+                      ))}
+                    </div>
+                    {hiddenCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedShowAll(true)}
+                        className="mt-3 min-h-11 w-full rounded-full border border-[#E3D2B4] bg-[#FFF9EC] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
+                      >
+                        Tampilkan {hiddenCount} kartu lagi bulan ini
+                      </button>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
-              {hiddenCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setExpandedShowAll(true)}
-                  className="mt-3 min-h-11 w-full rounded-full border border-[#D9BE93] bg-[#FFFDF6] text-xs font-bold text-[#7A6041] active:scale-[0.98] motion-safe:transition-transform focus-visible:outline-2 focus-visible:outline-[#BA5218]"
-                >
-                  Tampilkan {hiddenCount} kartu lagi bulan ini
-                </button>
-              )}
-            </>
-          )}
+            );
+          })}
         </div>
       </div>
     </section>

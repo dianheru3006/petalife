@@ -125,6 +125,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   const [retryingLinkId, setRetryingLinkId] = useState<string | null>(null);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -260,6 +261,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   useTelegramBackButton([
     { id: 'vault-delete-confirm', isOpen: Boolean(confirmDeleteId), priority: 30, onBack: () => setConfirmDeleteId(null) },
     { id: 'vault-reading', isOpen: Boolean(selectedLinkId), priority: 20, onBack: closeReadingView },
+    { id: 'vault-archive-drawer', isOpen: isArchiveOpen && !selectedLinkId, priority: 10, onBack: () => setIsArchiveOpen(false) },
   ]);
 
   // Card edit mode states
@@ -412,7 +414,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   })();
 
   // Satu pintu membuka halaman baca — dipakai kartu rak utama, hasil filter,
-  // dan kartu indeks di Katalog Arsip, supaya perilakunya tak pernah berbeda.
+  // dan kartu indeks di Laci Arsip. Membuka materi sekaligus melipat lacinya.
   const openLinkFromArchive = (link: SavedLink) => {
     try {
       (window as unknown as {
@@ -427,6 +429,7 @@ export const VaultPage: FC<VaultPageProps> = ({
     } catch {
       // Safe fallback outside Telegram
     }
+    setIsArchiveOpen(false);
     setSelectedLinkId(link.id);
     setPlayingVideoId(null);
     setEditingLinkId(null);
@@ -1095,6 +1098,8 @@ export const VaultPage: FC<VaultPageProps> = ({
                     groups={monthGroups}
                     totalCount={archiveCount}
                     isNightMode={isNightMode}
+                    isOpen={isArchiveOpen}
+                    onOpenChange={setIsArchiveOpen}
                     onOpenLink={openLinkFromArchive}
                   />
                 </>
