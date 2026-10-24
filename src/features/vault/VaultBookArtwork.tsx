@@ -181,8 +181,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
         aria-hidden="true"
         className="absolute top-[3px] bottom-[5px] right-[1px] w-[5px] rounded-r-[3px] border-l border-black/15 pointer-events-none"
         style={{
-          backgroundColor: '#F3EAD3',
-          backgroundImage: 'repeating-linear-gradient(180deg, rgba(140,110,70,0.16) 0 1px, transparent 1px 3px)',
+          background: 'linear-gradient(90deg, #D6C4A4 0%, #FFF7E6 50%, #DFCBA9 100%)',
           boxShadow: 'inset 1px 0 2px rgba(0,0,0,0.18)',
         }}
       />
@@ -192,8 +191,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
         aria-hidden="true"
         className="absolute bottom-[1px] left-[8px] right-[3px] h-[5px] rounded-b-[3px] border-t border-black/15 pointer-events-none"
         style={{
-          backgroundColor: '#EFE3C8',
-          backgroundImage: 'repeating-linear-gradient(90deg, rgba(140,110,70,0.16) 0 1px, transparent 1px 3px)',
+          background: 'linear-gradient(180deg, #FFF7E6 0%, #D7C3A2 100%)',
           boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.18)',
         }}
       />
@@ -207,19 +205,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
           boxShadow: '1px 2px 3px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.35), inset -1px -1px 2px rgba(0,0,0,0.26)',
         }}
       >
-        {/* Serat tekstur kulit halus */}
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none opacity-35 mix-blend-overlay"
-          style={{
-            backgroundImage:
-              'radial-gradient(rgba(255,255,255,0.22) 0.5px, transparent 0.7px), radial-gradient(rgba(0,0,0,0.19) 0.5px, transparent 0.7px)',
-            backgroundSize: '3px 3px',
-            backgroundPosition: '0 0, 1.5px 1.5px',
-          }}
-        />
-
-        {/* Punggung buku membulat, dengan alur engsel dan rusuk kecil. */}
+        {/* Punggung membulat. Rusuk SVG mengikuti perspektif sampul. */}
         <span
           aria-hidden="true"
           className="absolute inset-y-0 left-0 w-[11%] pointer-events-none"
@@ -228,17 +214,15 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
               'linear-gradient(90deg, rgba(0,0,0,0.24), rgba(255,255,255,0.13) 34%, rgba(0,0,0,0.11) 70%, rgba(0,0,0,0.4))',
           }}
         >
-          {/* Rusuk Timbul Atas (Raised Bands) */}
-          <span className="absolute top-[16%] inset-x-0 h-[6px] flex flex-col justify-between px-0.5">
-            <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-black/35 shadow-[0_1px_0_rgba(255,255,255,0.2)]'}`} />
-            <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-white/25 shadow-[0_-1px_0_rgba(0,0,0,0.2)]'}`} />
-          </span>
-
-          {/* Rusuk Timbul Bawah (Raised Bands) */}
-          <span className="absolute bottom-[18%] inset-x-0 h-[6px] flex flex-col justify-between px-0.5">
-            <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-black/35 shadow-[0_1px_0_rgba(255,255,255,0.2)]'}`} />
-            <span className={`h-px w-full ${isDark ? 'bg-[#D4AF37]/85 shadow-[0_0_2px_#D4AF37]' : 'bg-white/25 shadow-[0_-1px_0_rgba(0,0,0,0.2)]'}`} />
-          </span>
+          <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 18 192" preserveAspectRatio="none" focusable="false">
+            <path d="M0 49 C6 46 12 44 18 43 M0 166 C6 163 12 161 18 160" fill="none" stroke="rgba(22,19,17,0.58)" strokeWidth="2.5" />
+            <path
+              d="M0 45 C6 42 12 40 18 39 M0 162 C6 159 12 157 18 156"
+              fill="none"
+              stroke={isDark ? '#D5B47D' : '#E8AE93'}
+              strokeWidth="2"
+            />
+          </svg>
         </span>
 
         {/* Alur Engsel / Hinge Gutter (garis parit vertikal pemisah punggung & sampul) */}
