@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { SavedLink } from '../../lib/types';
 import { cn } from '../../lib/utils';
@@ -37,8 +37,8 @@ function monthAccent(key: string): string {
 function drawerHaptic() {
   try {
     (window as unknown as {
-      Telegram?: { WebApp?: { HapticFeedback?: { selectionChanged?: () => void } } };
-    })?.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+      Telegram?: { WebApp?: { HapticFeedback?: { impactOccurred?: (style: string) => void } } };
+    })?.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light');
   } catch {
     // Di luar Telegram WebView: tanpa haptic, tanpa masalah.
   }
@@ -127,7 +127,7 @@ function FileRow({ link, accent, isNightMode, onOpen }: {
  * dengan garis pandu vertikal, tiap baris bertitik aksen warna bulannya.
  * Satu bulan terbuka pada satu waktu.
  */
-export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
+export const ArchiveCabinet = memo(function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen, onOpenChange, onOpenLink }: ArchiveCabinetProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
@@ -191,7 +191,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
     <section aria-label="Laci arsip materi bulan-bulan lalu" className="relative mt-3">
       <div
         className={cn(
-          'overflow-hidden rounded-[24px] border-2 transition-all duration-300 ease-out',
+          'overflow-hidden rounded-[24px] border-2 transition-[box-shadow] duration-200 ease-out',
           isNightMode
             ? 'border-[#C8B98F] bg-[#E2D7BD] shadow-[0_6px_18px_#4A463A18]'
             : 'border-[#D3C6A4] bg-[#EDE3CC] shadow-[0_8px_20px_#4A463A16]',
@@ -244,7 +244,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
             >
               <ChevronDown
                 aria-hidden="true"
-                className={cn('h-5 w-5 motion-safe:transition-transform duration-300', isOpen && 'rotate-180')}
+                className={cn('h-5 w-5 transition-transform duration-200 ease-out will-change-transform', isOpen && 'rotate-180')}
               />
             </span>
           </span>
@@ -294,7 +294,7 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
                   </span>
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn('h-4 w-4 shrink-0 text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                    className={cn('h-4 w-4 shrink-0 text-[#8A8778] transition-transform duration-200 ease-out will-change-transform', isExpanded && 'rotate-180')}
                   />
                 </button>
                 {isExpanded && (
@@ -330,4 +330,4 @@ export function ArchiveCabinet({ groups, totalCount, isNightMode = false, isOpen
       </div>
     </section>
   );
-}
+});

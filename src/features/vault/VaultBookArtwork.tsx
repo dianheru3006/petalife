@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react';
+import { memo, useState, type FC } from 'react';
 import { Play } from 'lucide-react';
 import type { SavedLink, PlatformType } from '../../lib/types';
 import { getYouTubeThumbnail } from '../../lib/utils';
@@ -108,7 +108,7 @@ export function getPlatformTheme(platform: PlatformType): PlatformTheme {
   return PLATFORM_THEMES[platform] || PLATFORM_THEMES.web;
 }
 
-export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ link, large = false }) => {
+export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = memo(({ link, large = false }) => {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const imageUrl = getLinkThumbnailUrl(link);
   const showImage = Boolean(large && imageUrl && failedUrl !== imageUrl);
@@ -280,4 +280,4 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
       </div>
     </div>
   );
-};
+});

@@ -1,5 +1,5 @@
 import type { CSSProperties, FC } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SavedLink, LinkStatus, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { detectPlatform, getYouTubeThumbnail, cn } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
@@ -106,6 +106,22 @@ export const MOCHI_SPEECH_POOLS: Record<LibraryMochiActivity, string[]> = {
     'Mochi suka banget kalau kita rajin membaca dan menyerap ilmu!',
   ],
 };
+
+const BookCardItem: FC<{ link: SavedLink; onOpen: (link: SavedLink) => void }> = memo(({ link, onOpen }) => (
+  <button
+    type="button"
+    onClick={() => onOpen(link)}
+    aria-label={`Buka materi: ${link.title}`}
+    className="book-card-cv group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
+  >
+    <VaultBookArtwork link={link} />
+    <span
+      className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#BA5218] transition-colors leading-snug line-clamp-2"
+    >
+      {link.title}
+    </span>
+  </button>
+));
 
 export const VaultPage: FC<VaultPageProps> = ({
   links,
@@ -374,14 +390,16 @@ export const VaultPage: FC<VaultPageProps> = ({
 
 
 
-  const tagCounts = new Map<string, number>();
-  for (const link of links) {
-    for (const tag of link.tags) {
-      const normalized = tag.replace(/^#/, '').toLowerCase();
-      if (normalized) tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+  const popularTags = useMemo(() => {
+    const tagCounts = new Map<string, number>();
+    for (const link of links) {
+      for (const tag of link.tags) {
+        const normalized = tag.replace(/^#/, '').toLowerCase();
+        if (normalized) tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+      }
     }
-  }
-  const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    return [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [links]);
 
   // Sol Perf V3: Memoize filtered and sorted links across non-filtering renders (toasts, mochi speech, etc.)
   const filteredLinks = useMemo(() => {
@@ -417,7 +435,7 @@ export const VaultPage: FC<VaultPageProps> = ({
 
   // Tahap-4 Scale Workspace: Rak Terbaru (<=10: 7 hari terakhir + yang sedang
   // dibaca) dan Lemari Arsip bulanan; filter aktif tetap menyajikan hasil flat.
-  const { mainShelfLinks, monthGroups, archiveCount } = splitVaultWorkspace(filteredLinks);
+  const { mainShelfLinks, monthGroups, archiveCount } = useMemo(() => splitVaultWorkspace(filteredLinks), [filteredLinks]);
 
   const hasActiveFilter = selectedCategory !== 'All' || selectedStatusFilter !== 'all' || Boolean(searchQuery.trim());
 
@@ -441,7 +459,7 @@ export const VaultPage: FC<VaultPageProps> = ({
 
   // Satu pintu membuka halaman baca — dipakai kartu rak utama, hasil filter,
   // dan kartu indeks di Laci Arsip. Membuka materi sekaligus melipat lacinya.
-  const openLinkFromArchive = (link: SavedLink) => {
+  const openLinkFromArchive = useCallback((link: SavedLink) => {
     try {
       (window as unknown as {
         Telegram?: {
@@ -460,35 +478,13 @@ export const VaultPage: FC<VaultPageProps> = ({
     setPlayingVideoId(null);
     setEditingLinkId(null);
     window.scrollTo({ top: 0, behavior: 'instant' });
-  };
+  }, []);
 
   // Kartu buku dipakai bersama oleh Rak Terbaru, hasil filter, dan Lemari
   // Arsip — satu markup, satu tempat perawatan. `book-card-cv` membuat WebView
   // melewatkan layout/paint kartu di luar viewport.
   const renderBookCard = (link: SavedLink) => (
-    <button
-      key={link.id}
-      type="button"
-      onClick={() => openLinkFromArchive(link)}
-      aria-label={`Buka materi: ${link.title}`}
-      className="book-card-cv group relative flex min-w-0 flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218] motion-safe:transition-transform motion-safe:duration-300 active:scale-[0.98] hover:-translate-y-2 active:-translate-y-1"
-    >
-      {/* Sampul hardcover berdiri langsung di rak — tanpa slipcase (spesifikasi referensi). */}
-      <VaultBookArtwork link={link} />
-
-      {/* Book Title */}
-      <span
-        className="mt-2 text-xs font-bold text-[#2E2E3A] group-hover:text-[#BA5218] transition-colors leading-snug"
-        style={{
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-        }}
-      >
-        {link.title}
-      </span>
-    </button>
+    <BookCardItem key={link.id} link={link} onOpen={openLinkFromArchive} />
   );
 
   const renderShelf = (items: SavedLink[], label: string) => items.length > 0 && (

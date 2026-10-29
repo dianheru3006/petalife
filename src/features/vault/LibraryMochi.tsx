@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { memo, type FC } from 'react';
 import type { CosmeticId, CosmeticSlot } from '../../lib/types';
 import {
   MOCHI_BODY_GRADIENT_STOPS,
@@ -26,7 +26,7 @@ export interface LibraryMochiProps {
  * - 'drowsy': Sleepy eye curves, tiny zZz bubble floating up from long study session.
  * - 'cheering': Joyful sparkling smile, jumping with book recommendations on click.
  */
-export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMochiClick, seated = false, equippedCosmetics }) => {
+export const LibraryMochi: FC<LibraryMochiProps> = memo(({ activity = 'reading', onMochiClick, seated = false, equippedCosmetics }) => {
   return (
     <svg
       aria-hidden="true"
@@ -384,4 +384,4 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
       </g>
     </svg>
   );
-};
+});
