@@ -1,6 +1,6 @@
 // Petalife Service Worker (PWA & Complete Offline Precache - Sol ADR-002)
 const CACHE_PREFIX = 'petalife-shell-';
-const BUILD_ID = 'mvte0a8w';
+const BUILD_ID = 'mvterlef';
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID === '__BUILD_ID__' ? 'v5' : BUILD_ID}`;
 const PERSISTENT_CSS_BACKUP_CACHE = 'petalife-css-permanent-v1';
 const STABLE_CSS_KEY = '/__petalife_active_stylesheet__.css';
@@ -28,7 +28,7 @@ const STATIC_PRECACHE = [
 ];
 
 // 2. Dynamic Hashed Build Assets (Injected during production build by Vite plugin)
-const BUILD_ASSETS = ["./assets/assistantEngine-ETaD8lI-.js","./assets/AssistantPage-CuGHF62k.js","./assets/Button-WkwFmB3X.js","./assets/db-CVYXVgJg.js","./assets/icons-BD68Qt7l.js","./assets/index-Co6vEV57.js","./assets/index-D_qNh-5j.css","./assets/library-front-bg-BpVUQZy_.webp","./assets/notes-study-bg-CoMVUSgG.webp","./assets/NotesPage-BoRM3i5c.js","./assets/notesWorkspace-CrZesVg3.js","./assets/nunito-latin-variable-CjueodBP.woff2","./assets/plus-jakarta-sans-latin-variable-B2KjpZfh.woff2","./assets/react-CMtgJ5Uy.js","./assets/rolldown-runtime-XKyaHtl9.js","./assets/room-bg-DO9PK5HB.webp","./assets/SettingsPage-BSaD_jX0.js","./assets/VaultPage-51qXIgLN.js","./assets/VoiceJournalSheet-DwqJntL7.js"];
+const BUILD_ASSETS = ["./assets/assistantEngine-DiRjbIBZ.js","./assets/AssistantPage-Dx74znVM.js","./assets/Button-B_ayqaRI.js","./assets/db-CVYXVgJg.js","./assets/icons-BD68Qt7l.js","./assets/index-C1nBLSps.js","./assets/index-DRBuY-Av.css","./assets/library-front-bg-BpVUQZy_.webp","./assets/notes-study-bg-CoMVUSgG.webp","./assets/NotesPage-DGOllhCZ.js","./assets/notesWorkspace-CrZesVg3.js","./assets/nunito-latin-variable-CjueodBP.woff2","./assets/plus-jakarta-sans-latin-variable-B2KjpZfh.woff2","./assets/react-CMtgJ5Uy.js","./assets/rolldown-runtime-XKyaHtl9.js","./assets/room-bg-DO9PK5HB.webp","./assets/SettingsPage-DCyO0F7w.js","./assets/VaultPage-BdaeDpFA.js","./assets/VoiceJournalSheet-D1lRoEpp.js"];
 
 const ALL_PRECACHE = [...STATIC_PRECACHE, ...BUILD_ASSETS];
 
