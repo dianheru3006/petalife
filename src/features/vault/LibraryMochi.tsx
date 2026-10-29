@@ -32,7 +32,7 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
       aria-hidden="true"
       viewBox="0 0 150 170"
       onClick={onMochiClick}
-      className="h-full w-full overflow-visible drop-shadow-[0_8px_14px_rgba(80,50,30,0.22)] select-none"
+      className="h-full w-full overflow-visible select-none"
     >
       <defs>
         {/* The same clay material used by Mochi at Home. */}
@@ -101,15 +101,16 @@ export const LibraryMochi: FC<LibraryMochiProps> = ({ activity = 'reading', onMo
           <stop offset="100%" stopColor="#F5EEE1" />
         </linearGradient>
 
-        {/* Soft Floor Shadow Filter */}
-        <filter id="mochiFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="3.2" />
-        </filter>
+        {/* Hardware-accelerated floor contact shadow (radial gradient replaces heavy feGaussianBlur filter) */}
+        <radialGradient id="mochiFloorContactShadow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#20140D" stopOpacity="0.32" />
+          <stop offset="65%" stopColor="#322219" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#322219" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
-      {/* 1. Directional Ambient Shadow on Floor */}
-      <ellipse cx="75" cy="158" rx="46" ry="8" fill="#322219" opacity="0.28" filter="url(#mochiFloorBlur)" />
-      <ellipse cx="75" cy="156" rx="32" ry="5.5" fill="#20140D" opacity="0.32" filter="url(#mochiFloorBlur)" />
+      {/* 1. Directional Ambient Shadow on Floor (Zero Gaussian blur shader overhead) */}
+      <ellipse cx="75" cy="157" rx="46" ry="8.5" fill="url(#mochiFloorContactShadow)" />
 
       {/* 2. Main Animated Character Group with Squash-and-Stretch Breathing */}
       <g className={activity === 'cheering' ? 'anim-mochi-hop' : 'library-mochi-breathe'}>

@@ -1295,6 +1295,7 @@
 .book-card-cv {
   content-visibility: auto;
   contain-intrinsic-size: 110px 220px;
+  contain: layout paint;
 }
 
 .notes-lined-paper {

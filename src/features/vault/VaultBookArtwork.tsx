@@ -230,7 +230,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = ({ lin
         <span
           aria-hidden="true"
           className="absolute inset-0 pointer-events-none"
-          style={{ backgroundImage: `url(${leatherGrain})`, backgroundSize: '96px 96px', mixBlendMode: 'soft-light', opacity: 0.45 }}
+          style={{ backgroundImage: `url(${leatherGrain})`, backgroundSize: '96px 96px', opacity: 0.12 }}
         />
 
         {/* Alur Engsel / Hinge Gutter (garis parit vertikal pemisah punggung & sampul) */}

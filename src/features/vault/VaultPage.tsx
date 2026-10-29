@@ -60,7 +60,7 @@ const LibraryDioramaArt: FC<{
       width={1376}
       height={768}
       loading="eager"
-      decoding={priority ? 'sync' : 'async'}
+      decoding="async"
       fetchPriority={priority ? 'high' : 'auto'}
       className={className}
       style={style}
@@ -119,6 +119,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   const [urlError, setUrlError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
@@ -167,6 +168,14 @@ export const VaultPage: FC<VaultPageProps> = ({
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
+
+  // Debounce search input to maintain 60 FPS typing on mobile WebViews
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Idle gentle activity rotation every 14 seconds when shelf is viewed
   const startIdleTimer = useCallback(() => {
@@ -376,16 +385,29 @@ export const VaultPage: FC<VaultPageProps> = ({
 
   // Sol Perf V3: Memoize filtered and sorted links across non-filtering renders (toasts, mochi speech, etc.)
   const filteredLinks = useMemo(() => {
+    const q = debouncedSearchQuery.trim().toLowerCase();
     return links
       .filter(link => {
-        const q = searchQuery.trim().toLowerCase();
-        const searchable = [link.title, link.domain, link.notes, link.summary, link.category, ...link.tags].join(' ').toLowerCase();
-        return (!q || searchable.includes(q))
+        if (!q) {
+          return (selectedCategory === 'All' || link.tags.some(tag => tag.replace(/^#/, '').toLowerCase() === selectedCategory))
+            && (selectedStatusFilter === 'all' || link.status === selectedStatusFilter);
+        }
+        // Fast-path: check short fields (title, domain, tags) before joining heavy notes/summary
+        const quickMatch = link.title.toLowerCase().includes(q)
+          || link.domain.toLowerCase().includes(q)
+          || link.tags.some(t => t.replace(/^#/, '').toLowerCase().includes(q))
+          || (link.category && link.category.toLowerCase().includes(q));
+        if (quickMatch) {
+          return (selectedCategory === 'All' || link.tags.some(tag => tag.replace(/^#/, '').toLowerCase() === selectedCategory))
+            && (selectedStatusFilter === 'all' || link.status === selectedStatusFilter);
+        }
+        const deepSearch = `${link.summary || ''} ${link.notes || ''}`.toLowerCase();
+        return deepSearch.includes(q)
           && (selectedCategory === 'All' || link.tags.some(tag => tag.replace(/^#/, '').toLowerCase() === selectedCategory))
           && (selectedStatusFilter === 'all' || link.status === selectedStatusFilter);
       })
       .sort((a, b) => b.createdAt - a.createdAt);
-  }, [links, searchQuery, selectedCategory, selectedStatusFilter]);
+  }, [links, debouncedSearchQuery, selectedCategory, selectedStatusFilter]);
 
   const selectedLink = links.find(link => link.id === selectedLinkId);
   const youtubeVideoId = selectedLink?.platform === 'youtube'
@@ -403,6 +425,7 @@ export const VaultPage: FC<VaultPageProps> = ({
     setSelectedCategory('All');
     setSelectedStatusFilter('all');
     setSearchQuery('');
+    setDebouncedSearchQuery('');
     setIsStatusFilterOpen(false);
   };
 
