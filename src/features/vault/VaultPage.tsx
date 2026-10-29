@@ -488,7 +488,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   );
 
   const renderShelf = (items: SavedLink[], label: string) => items.length > 0 && (
-    <section aria-label={label} className="space-y-3">
+    <section aria-label={label} className="space-y-3" style={{ contain: 'layout' }}>
       {/* Shelf Header */}
       <div className="flex items-center gap-3 px-1">
         <h2 className="shrink-0 text-sm font-bold text-[#5F5245]">
@@ -498,7 +498,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       </div>
 
       {/* 3-Column Cozy Book Grid */}
-      <div className="grid grid-cols-3 gap-3 px-0.5">
+      <div className="grid grid-cols-3 gap-3 px-0.5" style={{ contain: 'layout' }}>
         {items.map(renderBookCard)}
       </div>
 
@@ -885,11 +885,11 @@ export const VaultPage: FC<VaultPageProps> = ({
            ========================================================================= */
         <div className="space-y-4">
           {/* Library diorama, with Mochi animated separately from the artwork. */}
-          {/* R4-PERF-03: `contain: paint` membatasi invalidasi paint Mochi yang beranimasi
+          {/* R4-PERF-03: `contain: layout paint` membatasi invalidasi paint Mochi yang beranimasi
               agar tidak memicu repaint seluruh artwork 1376x768 di luar kartu diorama. */}
           <div
             className={`relative h-[220px] min-[380px]:h-[235px] overflow-hidden rounded-[32px] border-2 shadow-md ${isNightMode ? 'border-[#D5C6AF] bg-[#E5D8C3]' : 'border-[#E8DFCF] bg-[#EEE1CD]'}`}
-            style={{ contain: 'paint' }}
+            style={{ contain: 'layout paint' }}
           >
             <LibraryDioramaArt
               priority

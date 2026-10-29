@@ -188,10 +188,10 @@ export const ArchiveCabinet = memo(function ArchiveCabinet({ groups, totalCount,
   }
 
   return (
-    <section aria-label="Laci arsip materi bulan-bulan lalu" className="relative mt-3">
+    <section aria-label="Laci arsip materi bulan-bulan lalu" className="relative mt-3" style={{ contain: 'layout' }}>
       <div
         className={cn(
-          'overflow-hidden rounded-[24px] border-2 transition-[box-shadow] duration-200 ease-out',
+          'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
           isNightMode
             ? 'border-[#C8B98F] bg-[#E2D7BD] shadow-[0_6px_18px_#4A463A18]'
             : 'border-[#D3C6A4] bg-[#EDE3CC] shadow-[0_8px_20px_#4A463A16]',
@@ -244,7 +244,7 @@ export const ArchiveCabinet = memo(function ArchiveCabinet({ groups, totalCount,
             >
               <ChevronDown
                 aria-hidden="true"
-                className={cn('h-5 w-5 transition-transform duration-200 ease-out will-change-transform', isOpen && 'rotate-180')}
+                className={cn('h-5 w-5 motion-safe:transition-transform duration-300', isOpen && 'rotate-180')}
               />
             </span>
           </span>
@@ -294,7 +294,7 @@ export const ArchiveCabinet = memo(function ArchiveCabinet({ groups, totalCount,
                   </span>
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn('h-4 w-4 shrink-0 text-[#8A8778] transition-transform duration-200 ease-out will-change-transform', isExpanded && 'rotate-180')}
+                    className={cn('h-4 w-4 shrink-0 text-[#8A8778] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
                   />
                 </button>
                 {isExpanded && (
