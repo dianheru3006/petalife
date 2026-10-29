@@ -18,6 +18,7 @@ import {
   type LinkRewardResult
 } from './lib/db/rewardLedgerRepository';
 import { usePageVisible } from './lib/perf/usePageVisible';
+import { useTelegramBackButton } from './lib/utils/telegramBack';
 import { loadStoredDailyGoals, saveStoredDailyGoals, getTodayDateString } from './features/dashboard/dailyGoalsStorage';
 import { AppLayout } from './app/layout/AppLayout';
 import { SolidSproutIcon } from './components/common/SolidSproutIcon';
@@ -34,6 +35,19 @@ const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant', 
 function tabFromHash(): NavigationTab {
   const hash = window.location.hash.slice(1);
   return navigationTabs.find(tab => tab === hash) ?? 'home';
+}
+
+function syncPetStudyProgress(previous: Pet, progress: StudyProgress): Pet {
+  const synced = syncPetCosmeticUnlocks(previous, progress);
+  const before = previous.identity?.cosmetics?.unlocked ?? [];
+  const after = synced.identity?.cosmetics?.unlocked ?? [];
+  if (previous.identity && previous.cosmetics &&
+      previous.streakDays === progress.currentStreakDays &&
+      before.length === after.length && before.every((id, index) => id === after[index])) {
+    return previous;
+  }
+  const updated = { ...synced, streakDays: progress.currentStreakDays };
+  return updated;
 }
 
 export function App() {
@@ -124,22 +138,20 @@ export function App() {
   useEffect(() => {
     const checkMidnightRollover = async () => {
       const currentDate = getTodayDateString();
-      if (currentDate !== activeDateRef.current) {
-        activeDateRef.current = currentDate;
-        setDailyGoals(loadStoredDailyGoals());
-      }
+      if (currentDate === activeDateRef.current) return;
+      activeDateRef.current = currentDate;
+      setDailyGoals(loadStoredDailyGoals());
+      await refreshStudyProgress();
+    };
+
+    const refreshStudyProgress = async () => {
       try {
         const progress = await getStudyProgress();
-        setStudyProgress(progress);
-        setPet(prev => {
-          const synced = syncPetCosmeticUnlocks(prev, progress);
-          if (synced.streakDays !== progress.currentStreakDays || synced !== prev) {
-            const updated = { ...synced, streakDays: progress.currentStreakDays };
-            saveStoredPet(updated);
-            return updated;
-          }
-          return prev;
-        });
+        setStudyProgress(previous => previous &&
+          previous.currentStreakDays === progress.currentStreakDays &&
+          previous.longestStreakDays === progress.longestStreakDays &&
+          previous.lastStudyDay === progress.lastStudyDay ? previous : progress);
+        setPet(prev => syncPetStudyProgress(prev, progress));
       } catch (err) {
         console.error('[App] Failed to refresh streak on rollover/focus:', err);
       }
@@ -148,7 +160,11 @@ export function App() {
     const interval = setInterval(checkMidnightRollover, 15000);
     const handleVisibilityOrFocus = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        checkMidnightRollover();
+        if (getTodayDateString() !== activeDateRef.current) {
+          void checkMidnightRollover();
+        } else {
+          void refreshStudyProgress();
+        }
       }
     };
 
@@ -173,6 +189,10 @@ export function App() {
     window.location.hash = tab;
   };
 
+  useTelegramBackButton([
+    { id: 'app-subtab-navigation', isOpen: currentTab !== 'home', priority: 1, onBack: () => handleSelectTab('home') },
+  ]);
+
   // Home needs the note count, not every note body. Load bodies on first use.
   useEffect(() => {
     let isMounted = true;
@@ -192,15 +212,7 @@ export function App() {
           setNotesCount(count);
           setStudyProgress(progress);
           setStudyStats(stats);
-          setPet(prev => {
-            const synced = syncPetCosmeticUnlocks(prev, progress);
-            if (synced.streakDays !== progress.currentStreakDays || synced !== prev) {
-              const updated = { ...synced, streakDays: progress.currentStreakDays };
-              saveStoredPet(updated);
-              return updated;
-            }
-            return prev;
-          });
+          setPet(prev => syncPetStudyProgress(prev, progress));
         }
       } catch (err) {
         console.error('[App] Failed to load from IndexedDB:', err);

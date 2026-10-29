@@ -43,6 +43,30 @@ export function getTelegramBackButton(): TelegramBackButtonLike | null {
   return webApp?.BackButton ?? null;
 }
 
+// Telegram exposes one BackButton for the entire Mini App. Keep one native
+// callback and resolve the highest layer across every mounted screen/sheet.
+const registeredLayers = new Map<symbol, { current: readonly BackLayer[] }>();
+let boundButton: TelegramBackButtonLike | null = null;
+const handleNativeBack = () => {
+  const layers = Array.from(registeredLayers.values()).flatMap(entry => entry.current);
+  resolveBackLayer(layers)?.onBack();
+};
+
+function syncNativeBackButton(): void {
+  const button = getTelegramBackButton();
+  const hasOpenLayer = Array.from(registeredLayers.values()).some(entry => resolveBackLayer(entry.current));
+  if (boundButton && (boundButton !== button || !hasOpenLayer)) {
+    boundButton.offClick?.(handleNativeBack);
+    boundButton.hide?.();
+    boundButton = null;
+  }
+  if (button && hasOpenLayer && !boundButton) {
+    boundButton = button;
+    button.onClick?.(handleNativeBack);
+    button.show?.();
+  }
+}
+
 /**
  * Binds the native Back Button to the topmost open layer.
  * The handler reads from a ref so a re-render never leaves a stale closure
@@ -50,36 +74,20 @@ export function getTelegramBackButton(): TelegramBackButtonLike | null {
  */
 export function useTelegramBackButton(layers: readonly BackLayer[]): void {
   const layersRef = useRef(layers);
-
-  // "Latest ref" pattern: kept in an effect (never mutated during render) so the
-  // registered native handler always sees the current layer set without making
-  // the effect below re-subscribe on every render.
-  useEffect(() => {
-    layersRef.current = layers;
-  });
-
+  const key = useRef(Symbol('telegram-back-layer')).current;
   const isActive = resolveBackLayer(layers) !== null;
 
   useEffect(() => {
-    const backButton = getTelegramBackButton();
-    if (!backButton) return;
+    layersRef.current = layers;
+    syncNativeBackButton();
+  });
 
-    if (!isActive) {
-      backButton.hide?.();
-      return;
-    }
-
-    const handleBack = () => {
-      const top = resolveBackLayer(layersRef.current);
-      top?.onBack();
-    };
-
-    backButton.show?.();
-    backButton.onClick?.(handleBack);
-
+  useEffect(() => {
+    if (isActive) registeredLayers.set(key, layersRef);
+    syncNativeBackButton();
     return () => {
-      backButton.offClick?.(handleBack);
-      backButton.hide?.();
+      registeredLayers.delete(key);
+      syncNativeBackButton();
     };
-  }, [isActive]);
+  }, [isActive, key]);
 }

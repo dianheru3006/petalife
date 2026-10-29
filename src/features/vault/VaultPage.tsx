@@ -893,7 +893,7 @@ export const VaultPage: FC<VaultPageProps> = ({
           >
             <LibraryDioramaArt
               priority
-              className={`absolute inset-0 h-full w-full object-cover object-center ${isNightMode ? 'brightness-[0.72] saturate-[0.85]' : ''}`}
+              className="absolute inset-0 h-full w-full object-cover object-center"
             />
 
             {/* Speech Bubble directly above Mochi (harmonized with Home design, comfortable landscape width) */}
@@ -961,9 +961,10 @@ export const VaultPage: FC<VaultPageProps> = ({
                 URL identik dengan layer dasar => bitmap hasil decode dipakai ulang. */}
             <LibraryDioramaArt
               decorative
-              className={`pointer-events-none absolute inset-0 z-10 h-full w-full object-cover object-center ${isNightMode ? 'brightness-[0.72] saturate-[0.85]' : ''}`}
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover object-center"
               style={{ clipPath: 'inset(76% 0 0 0)' }}
             />
+            {isNightMode && <div className="pointer-events-none absolute inset-0 z-20 bg-[#281E15]/35" />}
           </div>
 
           {/* Feedback Toasts */}

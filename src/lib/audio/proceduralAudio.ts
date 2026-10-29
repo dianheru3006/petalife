@@ -37,6 +37,13 @@ class ProceduralAudioEngine {
     } catch {
       this.isMuted = false;
     }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && this.ctx?.state === 'running') {
+          void this.ctx.suspend().catch(() => {});
+        }
+      });
+    }
   }
 
   private setStorageItem(key: string, value: string): void {

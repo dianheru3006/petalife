@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Pet } from '../../lib/types';
 import { cn } from '../../lib/utils';
 import { usePageVisible } from '../../lib/perf/usePageVisible';
@@ -49,7 +49,7 @@ export interface MochiPetProps {
   onNotePaperClick?: () => void;
 }
 
-export const MochiPet: FC<MochiPetProps> = ({
+const MochiPetComponent: FC<MochiPetProps> = ({
   pet,
   onPetClick,
   className,
@@ -1063,3 +1063,5 @@ export const MochiPet: FC<MochiPetProps> = ({
     </div>
   );
 };
+
+export const MochiPet = memo(MochiPetComponent);

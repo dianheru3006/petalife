@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { TV_CHANNELS } from './tvChannelsData';
 
 interface TvScreenProps {
@@ -7,7 +7,7 @@ interface TvScreenProps {
   onTvInteraction?: (speechText: string) => void;
 }
 
-export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) => {
+const TvScreenComponent: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) => {
   const [channelIdx, setChannelIdx] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
   // AUDIT-FIX (P2): each 260 ms flicker timer was untracked. Tapping the screen
@@ -157,6 +157,7 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
       <g
         aria-hidden="true"
         clipPath="url(#tvScreenClip)"
+        style={{ display: isNightMode ? 'none' : undefined }}
         className={`transition-opacity duration-700 ease-out ${
           isNightMode ? 'opacity-0' : 'opacity-100'
         }`}
@@ -442,3 +443,5 @@ export const TvScreen: FC<TvScreenProps> = ({ isNightMode, onTvInteraction }) =>
     </svg>
   );
 };
+
+export const TvScreen = memo(TvScreenComponent);

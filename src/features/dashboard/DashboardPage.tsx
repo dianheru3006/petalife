@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { memo, type FC } from 'react';
 import type { Pet, SavedLink, DailyGoal, NavigationTab, CosmeticId, CosmeticSlot, StudyProgress } from '../../lib/types';
 import { PetRoom } from '../../components/pet/PetRoom';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
@@ -23,7 +23,7 @@ export interface DashboardPageProps {
   totalNotesCreated?: number;
 }
 
-export const DashboardPage: FC<DashboardPageProps> = ({
+const DashboardPageComponent: FC<DashboardPageProps> = ({
   pet,
   savedLinks,
   onFeedPet,
@@ -61,3 +61,5 @@ export const DashboardPage: FC<DashboardPageProps> = ({
     </div>
   );
 };
+
+export const DashboardPage = memo(DashboardPageComponent);

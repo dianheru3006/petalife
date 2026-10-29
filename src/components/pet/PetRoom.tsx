@@ -1,5 +1,5 @@
 import type { FC, FormEvent } from 'react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { Pet, NavigationTab, SavedLink, CosmeticId, CosmeticSlot, StudyProgress } from '../../lib/types';
 import { SolidSproutIcon } from '../common/SolidSproutIcon';
@@ -34,6 +34,7 @@ import { LiveCalendar } from './LiveCalendar';
 import { LiveWallClock } from './LiveWallClock';
 import { proceduralAudio } from '../../lib/audio/proceduralAudio';
 import { usePageVisible } from '../../lib/perf/usePageVisible';
+import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import { MochiNoteSheet } from './MochiNoteSheet';
 import { synthesizeLink, getPendingActiveJobs, resumeActiveJob } from '../../lib/services/aiSynthesisService';
 import type { LinkRewardResult } from '../../lib/db/rewardLedgerRepository';
@@ -56,7 +57,7 @@ export interface PetRoomProps {
   totalNotesCreated?: number;
 }
 
-export const PetRoom: FC<PetRoomProps> = ({
+const PetRoomComponent: FC<PetRoomProps> = ({
   pet,
   onFeed,
   onNavigate,
@@ -121,9 +122,9 @@ export const PetRoom: FC<PetRoomProps> = ({
   const youtubeStageTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const actionSequenceRef = useRef(0);
   // Keep Mochi awake while it processes a link, including during night mode.
-  const effectivePet: Pet = activeNight && !isFeeding && !isSavingLink
+  const effectivePet: Pet = useMemo(() => activeNight && !isFeeding && !isSavingLink
     ? { ...pet, state: 'sleeping' }
-    : pet;
+    : pet, [activeNight, isFeeding, isSavingLink, pet]);
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLevelPulsing, setIsLevelPulsing] = useState(false);
@@ -153,6 +154,12 @@ export const PetRoom: FC<PetRoomProps> = ({
       setIsFabClosing(false);
     }, 280);
   };
+
+  useTelegramBackButton([
+    { id: 'petroom-wardrobe', isOpen: isWardrobeOpen, priority: 30, onBack: () => setIsWardrobeOpen(false) },
+    { id: 'petroom-profile', isOpen: isProfileOpen, priority: 25, onBack: () => setIsProfileOpen(false) },
+    { id: 'petroom-fab', isOpen: isFabOpen && !isFabClosing, priority: 20, onBack: closeFab },
+  ]);
 
   const handleToggleFab = () => {
     if (isFabClosing) return;
@@ -285,7 +292,7 @@ export const PetRoom: FC<PetRoomProps> = ({
   }, [pageVisible]);
 
   // Helper to trigger Mochi's speech bubble and auto-hide after duration
-  const triggerSpeech = (text: string, durationMs = 3800) => {
+  const triggerSpeech = useCallback((text: string, durationMs = 3800) => {
     setSpeech(text);
     setShowSpeech(true);
     proceduralAudio.playAnimaleseChirp(text);
@@ -295,7 +302,9 @@ export const PetRoom: FC<PetRoomProps> = ({
     speechTimerRef.current = setTimeout(() => {
       setShowSpeech(false);
     }, durationMs);
-  };
+  }, []);
+  const handleTvInteraction = useCallback((text: string) => triggerSpeech(text, 3600), [triggerSpeech]);
+  const handleClockInteraction = useCallback((text: string) => triggerSpeech(text, 4000), [triggerSpeech]);
 
   const forceMochiAction = (action: MochiAction) => {
     actionSequenceRef.current += 1;
@@ -491,7 +500,7 @@ export const PetRoom: FC<PetRoomProps> = ({
     }, 2800));
   };
 
-  const handlePetTap = (action?: MochiAction) => {
+  const handlePetTap = useCallback((action?: MochiAction) => {
     if (holdingNoteLink) {
       setIsNoteSheetOpen(true);
       return;
@@ -588,7 +597,8 @@ export const PetRoom: FC<PetRoomProps> = ({
     }
 
     triggerSpeech(cuteReplies[Math.floor(Math.random() * cuteReplies.length)], 4000);
-  };
+  }, [holdingNoteLink, activeNight, triggerSpeech, isFull, pet.streakDays, contextualStatus.speechText, savedLinks.length]);
+  const handleNotePaperClick = useCallback(() => setIsNoteSheetOpen(true), []);
 
   const handleDanceClick = () => {
     if (activeNight) {
@@ -630,7 +640,7 @@ export const PetRoom: FC<PetRoomProps> = ({
       'Eeeh?! Ada guncangan hebat! Mochi pegangan karpet!',
     ];
     triggerSpeech(dizzyQuotes[Math.floor(Math.random() * dizzyQuotes.length)], 3800);
-  }, [triggerSpeech]);
+  }, [triggerSpeech, setIsTerrariumShaking]);
 
   // Global Shake Sensor Hook (Mobile DeviceMotionEvent + Keyboard 'S' for PC)
   useEffect(() => {
@@ -1065,7 +1075,7 @@ export const PetRoom: FC<PetRoomProps> = ({
         {/* Interactive Dynamic Daytime TV & Night Power-off Screen */}
         <TvScreen
           isNightMode={activeNight}
-          onTvInteraction={(speechText) => triggerSpeech(speechText, 3600)}
+          onTvInteraction={handleTvInteraction}
         />
 
         {/* Live Wall Clock & Flip Calendar Overlay */}
@@ -1075,10 +1085,10 @@ export const PetRoom: FC<PetRoomProps> = ({
           className="absolute inset-0 w-full h-full pointer-events-none z-10"
         >
           <LiveWallClock
-            onClockClick={(speechText) => triggerSpeech(speechText, 4000)}
+            onClockClick={handleClockInteraction}
           />
           <LiveCalendar
-            onCalendarClick={(speechText) => triggerSpeech(speechText, 4000)}
+            onCalendarClick={handleClockInteraction}
           />
         </svg>
 
@@ -1215,7 +1225,7 @@ export const PetRoom: FC<PetRoomProps> = ({
             onPetClick={handlePetTap}
             forcedAction={forcedAction}
             holdingNote={Boolean(holdingNoteLink)}
-            onNotePaperClick={() => setIsNoteSheetOpen(true)}
+            onNotePaperClick={handleNotePaperClick}
             showBubble={false}
           />
         </div>
@@ -1530,3 +1540,5 @@ export const PetRoom: FC<PetRoomProps> = ({
     </div>
   );
 };
+
+export const PetRoom = memo(PetRoomComponent);

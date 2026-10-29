@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react';
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { getCalendarDisplayInfo } from './calendarUtils';
 import { getUserDisplayName } from '../../lib/utils';
 
@@ -7,14 +7,27 @@ interface LiveCalendarProps {
   onCalendarClick?: (speechText: string) => void;
 }
 
-export const LiveCalendar: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
+const LiveCalendarComponent: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
   const [dateInfo, setDateInfo] = useState(() => getCalendarDisplayInfo());
 
   // Periodically refresh date so it flips automatically at midnight
   useEffect(() => {
     const update = () => setDateInfo(getCalendarDisplayInfo());
-    const timer = setInterval(update, 30000); // Check every 30s
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const handleVisibility = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      if (document.visibilityState !== 'hidden') {
+        update();
+        timer = setInterval(update, 30000);
+      }
+    };
+    handleVisibility();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const handleClick = () => {
@@ -100,3 +113,5 @@ export const LiveCalendar: FC<LiveCalendarProps> = ({ onCalendarClick }) => {
     </g>
   );
 };
+
+export const LiveCalendar = memo(LiveCalendarComponent);

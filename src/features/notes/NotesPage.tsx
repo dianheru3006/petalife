@@ -1,5 +1,5 @@
 import type { FC, FormEvent } from 'react';
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Note, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { ArrowLeft, Check, Mic, Pencil, Pin, PinOff, Plus, Search, Trash2, Volume2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -44,6 +44,44 @@ const formatDate = (timestamp?: number) => {
     return '';
   }
 };
+
+interface NoteCardItemProps {
+  note: Note;
+  index: number;
+  buttonRefs: React.RefObject<Map<string, HTMLButtonElement>>;
+  onOpen: (id: string) => void;
+}
+
+const NoteCardItem = memo(({ note, index, buttonRefs, onOpen }: NoteCardItemProps) => {
+  const paper = NOTE_COLORS.find(color => color.value === note.color)?.paper ?? NOTE_COLORS[0].paper;
+  return (
+    <button
+      ref={node => { if (node) buttonRefs.current.set(note.id, node); else buttonRefs.current.delete(note.id); }}
+      type="button"
+      onClick={() => onOpen(note.id)}
+      aria-label={`Baca catatan ${note.title}`}
+      className={cn('note-card-cv group relative min-h-[178px] w-full rounded-[4px] border border-[#E7DED1] px-3.5 pb-4 pt-6 text-left shadow-[2px_5px_8px_#5E462432] motion-safe:transition-transform motion-safe:duration-200 hover:-translate-y-1 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#68452A]', paper, index % 3 === 1 ? 'rotate-[1deg]' : index % 3 === 2 ? '-rotate-[0.8deg]' : 'rotate-[-0.5deg]')}
+    >
+      <span aria-hidden="true" className="absolute left-1/2 top-1 h-3.5 w-3.5 -translate-x-1/2 rounded-full border border-[#AF4838] bg-[radial-gradient(circle_at_35%_25%,#FFB7AA,#D35B48_65%,#9E3E31)] shadow-[1px_2px_3px_#50342655]" />
+      <span className="line-clamp-3 font-display text-[14px] font-extrabold leading-snug text-[#332D28]">{note.title}</span>
+      {note.body && <span className="mt-2 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
+      {(note.tags ?? []).some(t => t !== 'general') && (
+        <div className="mt-2.5 flex flex-wrap gap-1">
+          {(note.tags ?? []).filter(t => t !== 'general').slice(0, 3).map(tag => (
+            <span key={tag} className="text-[10px] font-bold text-[#7E6953] bg-[#0000000d] px-1.5 py-0.5 rounded">
+              #{tag.replace(/^#/, '')}
+            </span>
+          ))}
+        </div>
+      )}
+      {note.pinned && (
+        <span className="absolute right-2 top-2 rounded-full bg-[#FFEFE8] px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#BA5218]" aria-label="Catatan disematkan">
+          Disematkan
+        </span>
+      )}
+    </button>
+  );
+});
 
 export const NotesPage: FC<NotesPageProps> = ({
   notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false, equippedCosmetics,
@@ -93,16 +131,18 @@ export const NotesPage: FC<NotesPageProps> = ({
     isSavingRef.current = isSaving;
   }, [isSaving]);
 
-  const tagCounts = new Map<string, number>();
-  for (const note of notes) {
-    for (const tag of note.tags ?? []) {
-      const normalized = tag.replace(/^#/, '').trim().toLowerCase();
-      if (normalized && normalized !== 'general') {
-        tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+  const popularTags = useMemo(() => {
+    const tagCounts = new Map<string, number>();
+    for (const note of notes) {
+      for (const tag of note.tags ?? []) {
+        const normalized = tag.replace(/^#/, '').trim().toLowerCase();
+        if (normalized && normalized !== 'general') {
+          tagCounts.set(normalized, (tagCounts.get(normalized) || 0) + 1);
+        }
       }
     }
-  }
-  const popularTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
+    return [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [notes]);
 
   const query = searchQuery.trim().toLocaleLowerCase('id-ID');
   const isFilterActive = Boolean(query) || selectedTag !== 'All';
@@ -348,37 +388,15 @@ export const NotesPage: FC<NotesPageProps> = ({
   // dan Laci Meja — satu markup, satu tempat perawatan. `note-card-cv`
   // (content-visibility) membuat WebView melewati layout/paint kartu yang
   // sedang di luar viewport.
-  const renderNoteCard = (note: Note, index: number) => {
-    const paper = NOTE_COLORS.find(color => color.value === note.color)?.paper ?? NOTE_COLORS[0].paper;
-    return (
-      <button
-        key={note.id}
-        ref={node => { if (node) noteButtonRefs.current.set(note.id, node); else noteButtonRefs.current.delete(note.id); }}
-        type="button"
-        onClick={() => { setIsDrawerOpen(false); setSelectedNoteId(note.id); setNotice(null); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-        aria-label={`Baca catatan ${note.title}`}
-        className={cn('note-card-cv group relative min-h-[178px] w-full rounded-[4px] border border-[#E7DED1] px-3.5 pb-4 pt-6 text-left shadow-[2px_5px_8px_#5E462432] motion-safe:transition-transform motion-safe:duration-200 hover:-translate-y-1 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#68452A]', paper, index % 3 === 1 ? 'rotate-[1deg]' : index % 3 === 2 ? '-rotate-[0.8deg]' : 'rotate-[-0.5deg]')}
-      >
-        <span aria-hidden="true" className="absolute left-1/2 top-1 h-3.5 w-3.5 -translate-x-1/2 rounded-full border border-[#AF4838] bg-[radial-gradient(circle_at_35%_25%,#FFB7AA,#D35B48_65%,#9E3E31)] shadow-[1px_2px_3px_#50342655]" />
-        <span className="line-clamp-3 font-display text-[14px] font-extrabold leading-snug text-[#332D28]">{note.title}</span>
-        {note.body && <span className="mt-2 line-clamp-3 whitespace-pre-line text-[13px] leading-relaxed text-[#5A5149]">{note.body}</span>}
-        {(note.tags ?? []).some(t => t !== 'general') && (
-          <div className="mt-2.5 flex flex-wrap gap-1">
-            {(note.tags ?? []).filter(t => t !== 'general').slice(0, 3).map(tag => (
-              <span key={tag} className="text-[10px] font-bold text-[#7E6953] bg-[#0000000d] px-1.5 py-0.5 rounded">
-                #{tag.replace(/^#/, '')}
-              </span>
-            ))}
-          </div>
-        )}
-        {note.pinned && (
-          <span className="absolute right-2 top-2 rounded-full bg-[#FFEFE8] px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#BA5218]" aria-label="Catatan disematkan">
-            Disematkan
-          </span>
-        )}
-      </button>
-    );
-  };
+  const openNoteCard = useCallback((id: string) => {
+    setIsDrawerOpen(false);
+    setSelectedNoteId(id);
+    setNotice(null);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+  const renderNoteCard = useCallback((note: Note, index: number) => (
+    <NoteCardItem key={note.id} note={note} index={index} buttonRefs={noteButtonRefs} onOpen={openNoteCard} />
+  ), [openNoteCard]);
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -491,7 +509,8 @@ export const NotesPage: FC<NotesPageProps> = ({
           )}
             style={{ contain: 'paint' }}
           >
-            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} loading="eager" decoding="sync" fetchPriority="high" className={cn('absolute inset-0 h-full w-full object-cover object-center', isNightMode && 'brightness-[0.72] saturate-[0.85]')} />
+            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} loading="eager" decoding="async" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-center" />
+            {isNightMode && <div className="pointer-events-none absolute inset-0 bg-[#281E15]/35" />}
             <div
               role="status"
               aria-live="polite"

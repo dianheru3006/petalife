@@ -1,5 +1,5 @@
 import type { FC, KeyboardEvent } from 'react';
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { projectIsometric, getClockAngles } from './clockUtils';
 import { getUserDisplayName } from '../../lib/utils';
 
@@ -10,14 +10,27 @@ interface LiveWallClockProps {
 const CX = 274.5;
 const CY = 433.0;
 
-export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
+const LiveWallClockComponent: FC<LiveWallClockProps> = ({ onClockClick }) => {
   const [angles, setAngles] = useState(() => getClockAngles());
 
   // Update clock hands every 1000ms to balance accuracy and CPU performance
   useEffect(() => {
     const update = () => setAngles(getClockAngles());
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const handleVisibility = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      if (document.visibilityState !== 'hidden') {
+        update();
+        timer = setInterval(update, 1000);
+      }
+    };
+    handleVisibility();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   // Hand tip positions with isometric projection
@@ -125,3 +138,5 @@ export const LiveWallClock: FC<LiveWallClockProps> = ({ onClockClick }) => {
     </g>
   );
 };
+
+export const LiveWallClock = memo(LiveWallClockComponent);
