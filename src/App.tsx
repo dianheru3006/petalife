@@ -834,7 +834,7 @@ export function App() {
       {swRegistration && (
         <div className="bg-[#BA5218] text-white px-4 py-2.5 rounded-2xl mb-3 flex items-center justify-between text-xs font-bold shadow-md animate-fade-in select-none">
           <div className="flex items-center gap-2">
-            <span>Versi baru Petalife tersedia.</span>
+            <span>Versi baru tersedia.</span>
           </div>
           <button
             type="button"
