@@ -22,6 +22,8 @@ export interface NotesPageProps {
   onDeleteNote: (id: string) => Promise<void> | void;
   isNightMode?: boolean;
   equippedCosmetics?: Partial<Record<CosmeticSlot, CosmeticId>>;
+  /** False saat tab Catatan disembunyikan; back layer tidak boleh menangkap back. */
+  isActive?: boolean;
 }
 
 type NoteColor = NonNullable<Note['color']>;
@@ -84,7 +86,7 @@ const NoteCardItem = memo(({ note, index, buttonRefs, onOpen }: NoteCardItemProp
 });
 
 export const NotesPage: FC<NotesPageProps> = ({
-  notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false, equippedCosmetics,
+  notes, onAddNote, onUpdateNote, onDeleteNote, isNightMode = false, equippedCosmetics, isActive = true,
 }) => {
   useEffect(() => {
     const onPageHide = () => releaseMicrophoneSession();
@@ -334,7 +336,7 @@ export const NotesPage: FC<NotesPageProps> = ({
   useTelegramBackButton([
     {
       id: 'note-editor',
-      isOpen: isEditorOpen,
+      isOpen: isActive && isEditorOpen,
       priority: 30,
       onBack: () => {
         if (!isSavingRef.current) setIsEditorOpen(false);
@@ -342,13 +344,13 @@ export const NotesPage: FC<NotesPageProps> = ({
     },
     {
       id: 'note-detail',
-      isOpen: Boolean(selectedNoteId),
+      isOpen: isActive && Boolean(selectedNoteId),
       priority: 20,
       onBack: goBack,
     },
     {
       id: 'notes-drawer',
-      isOpen: isDrawerOpen && !isEditorOpen && !selectedNoteId,
+      isOpen: isActive && isDrawerOpen && !isEditorOpen && !selectedNoteId,
       priority: 10,
       onBack: () => setIsDrawerOpen(false),
     },
@@ -509,7 +511,7 @@ export const NotesPage: FC<NotesPageProps> = ({
           )}
             style={{ contain: 'paint' }}
           >
-            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} loading="eager" decoding="async" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-center" />
+            <img src={notesStudyBg} alt="Sudut belajar Mochi dengan meja kayu, rak buku, dan papan ide" width={1200} height={675} loading="eager" decoding="sync" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-center" />
             {isNightMode && <div className="pointer-events-none absolute inset-0 bg-[#281E15]/35" />}
             <div
               role="status"

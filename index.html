@@ -28,6 +28,13 @@
     <link rel="preload" as="font" type="font/woff2" crossorigin href="./src/assets/fonts/plus-jakarta-sans-latin-variable.woff2" />
     <link rel="preload" as="font" type="font/woff2" crossorigin href="./src/assets/fonts/nunito-latin-variable.woff2" />
     <style>
+      /* Kanvas WebView default-nya putih. Sebelum CSS Tailwind selesai dimuat,
+         overscroll/rubber-band bisa memperlihatkan putih itu. Samakan kanvas
+         dengan warna aplikasi sejak byte pertama. */
+      html, body {
+        margin: 0;
+        background-color: #FDFBF7;
+      }
       /* R5-PERF-02: boot frame. Di WebView Telegram, pengguna melihat kanvas krem
          kosong selama JS utama diunduh + diparse + React mount. Frame statis ini
          dicat pada paint pertama (~30-50 ms) dengan geometri header, kartu diorama,

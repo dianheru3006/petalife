@@ -32,6 +32,10 @@ import { applyServiceWorkerUpdate } from './registerServiceWorker';
 
 const navigationTabs: NavigationTab[] = ['home', 'vault', 'notes', 'assistant', 'settings'];
 
+const TAB_LOADING_FALLBACK = (
+  <div className="p-6 text-center text-sm font-semibold text-[#8C8275] select-none">Memuat…</div>
+);
+
 function tabFromHash(): NavigationTab {
   const hash = window.location.hash.slice(1);
   return navigationTabs.find(tab => tab === hash) ?? 'home';
@@ -52,6 +56,18 @@ function syncPetStudyProgress(previous: Pet, progress: StudyProgress): Pet {
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavigationTab>(tabFromHash);
+  // Pustaka dan Catatan menyimpan daftar panjang. Dulu setiap pindah tab
+  // keduanya di-unmount lalu dibangun ulang dari nol, sehingga di Narzo frame
+  // pertama datang terlambat dan latar Mochi sempat kosong. Sekali dikunjungi,
+  // keduanya tetap hidup dan hanya disembunyikan.
+  const [visitedTabs, setVisitedTabs] = useState<Set<NavigationTab>>(() =>
+    currentTab === 'vault' || currentTab === 'notes'
+      ? new Set<NavigationTab>([currentTab])
+      : new Set<NavigationTab>()
+  );
+  const markTabVisited = useCallback((tab: NavigationTab) => {
+    setVisitedTabs(previous => previous.has(tab) ? previous : new Set(previous).add(tab));
+  }, []);
   const [pet, setPet] = useState<Pet>(() => loadStoredPet(initialPet).pet);
   const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -179,12 +195,17 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const syncTabFromHash = () => setCurrentTab(tabFromHash());
+    const syncTabFromHash = () => {
+      const nextTab = tabFromHash();
+      setCurrentTab(nextTab);
+      markTabVisited(nextTab);
+    };
     window.addEventListener('hashchange', syncTabFromHash);
     return () => window.removeEventListener('hashchange', syncTabFromHash);
-  }, []);
+  }, [markTabVisited]);
 
   const handleSelectTab = (tab: NavigationTab) => {
+    markTabVisited(tab);
     setCurrentTab(tab);
     window.location.hash = tab;
   };
@@ -825,8 +846,9 @@ export function App() {
         </div>
       )}
 
-      <div key={currentTab} className={currentTab === 'notes' ? '' : currentTab === 'assistant' ? 'flex-1 min-h-0' : 'anim-page-enter'}>
-        <Suspense fallback={<div className="p-6 text-center text-sm font-semibold text-[#8C8275] select-none">Memuat…</div>}>
+      <div className={currentTab === 'assistant' ? 'flex-1 min-h-0' : ''}>
+        {/* Beranda sengaja tetap di-mount ulang: PetRoom punya clock, TV, dan
+            timer Mochi yang tidak boleh terus berjalan di balik tab lain. */}
         {currentTab === 'home' && (
           <DashboardPage
             pet={pet}
@@ -848,45 +870,60 @@ export function App() {
           />
         )}
 
-        {currentTab === 'vault' && (
-          <VaultPage
-            links={savedLinks}
-            onAddLink={handleAddLink}
-            onUpdateLink={handleUpdateLink}
-            onDeleteLink={handleDeleteLink}
-            onUpdateStatus={handleUpdateStatus}
-            isNightMode={isNightMode}
-            equippedCosmetics={pet.identity?.cosmetics?.equipped}
-          />
+        {visitedTabs.has('vault') && (
+          <div hidden={currentTab !== 'vault'}>
+            <Suspense fallback={TAB_LOADING_FALLBACK}>
+              <VaultPage
+                links={savedLinks}
+                onAddLink={handleAddLink}
+                onUpdateLink={handleUpdateLink}
+                onDeleteLink={handleDeleteLink}
+                onUpdateStatus={handleUpdateStatus}
+                isNightMode={isNightMode}
+                equippedCosmetics={pet.identity?.cosmetics?.equipped}
+                isActive={currentTab === 'vault'}
+              />
+            </Suspense>
+          </div>
         )}
 
-        {currentTab === 'notes' && (notesLoaded ? (
-          <NotesPage
-            notes={notes}
-            onAddNote={handleAddNote}
-            onUpdateNote={handleUpdateNote}
-            onDeleteNote={handleDeleteNote}
-            isNightMode={isNightMode}
-            equippedCosmetics={pet.identity?.cosmetics?.equipped}
-          />
-        ) : <div className="p-6 text-center text-sm font-semibold text-[#8C8275]">Memuat Catatan…</div>)}
+        {visitedTabs.has('notes') && (
+          <div hidden={currentTab !== 'notes'}>
+            <Suspense fallback={TAB_LOADING_FALLBACK}>
+              {notesLoaded ? (
+                <NotesPage
+                  notes={notes}
+                  onAddNote={handleAddNote}
+                  onUpdateNote={handleUpdateNote}
+                  onDeleteNote={handleDeleteNote}
+                  isNightMode={isNightMode}
+                  equippedCosmetics={pet.identity?.cosmetics?.equipped}
+                  isActive={currentTab === 'notes'}
+                />
+              ) : <div className="p-6 text-center text-sm font-semibold text-[#8C8275]">Memuat Catatan…</div>}
+            </Suspense>
+          </div>
+        )}
 
         {currentTab === 'assistant' && (
-          <AssistantPage
-            messages={chatMessages}
-            onSendMessage={handleSendMessage}
-            onNavigate={handleSelectTab}
-            isNightMode={isNightMode}
-          />
+          <Suspense fallback={TAB_LOADING_FALLBACK}>
+            <AssistantPage
+              messages={chatMessages}
+              onSendMessage={handleSendMessage}
+              onNavigate={handleSelectTab}
+              isNightMode={isNightMode}
+            />
+          </Suspense>
         )}
         {currentTab === 'settings' && (
-          <SettingsPage
-            nightMode={isNightMode}
-            onToggleNightMode={handleToggleNightMode}
-            onDataRestored={handleDataRestored}
-          />
+          <Suspense fallback={TAB_LOADING_FALLBACK}>
+            <SettingsPage
+              nightMode={isNightMode}
+              onToggleNightMode={handleToggleNightMode}
+              onDataRestored={handleDataRestored}
+            />
+          </Suspense>
         )}
-        </Suspense>
       </div>
     </AppLayout>
   );

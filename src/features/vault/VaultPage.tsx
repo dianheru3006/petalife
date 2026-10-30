@@ -60,7 +60,7 @@ const LibraryDioramaArt: FC<{
       width={1376}
       height={768}
       loading="eager"
-      decoding="async"
+      decoding="sync"
       fetchPriority={priority ? 'high' : 'auto'}
       className={className}
       style={style}
@@ -76,6 +76,8 @@ export interface VaultPageProps {
   onUpdateStatus: (id: string, status: LinkStatus) => void;
   isNightMode?: boolean;
   equippedCosmetics?: Partial<Record<CosmeticSlot, CosmeticId>>;
+  /** False saat tab Pustaka disembunyikan; mematikan timer idle & back layer. */
+  isActive?: boolean;
 }
 
 export const MOCHI_ACTIVITIES: LibraryMochiActivity[] = [
@@ -131,6 +133,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   onUpdateStatus,
   isNightMode = false,
   equippedCosmetics,
+  isActive = true,
 }) => {
   const [urlError, setUrlError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -196,7 +199,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   // Idle gentle activity rotation every 14 seconds when shelf is viewed
   const startIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearInterval(idleTimerRef.current);
-    if (selectedLinkId || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) {
+    if (!isActive || selectedLinkId || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) {
       return;
     }
 
@@ -211,7 +214,7 @@ export const VaultPage: FC<VaultPageProps> = ({
       step = (step + 1) % idleSequence.length;
       setMochiActivity(idleSequence[step]);
     }, 14_000);
-  }, [selectedLinkId]);
+  }, [isActive, selectedLinkId]);
 
   useEffect(() => {
     startIdleTimer();
@@ -284,9 +287,9 @@ export const VaultPage: FC<VaultPageProps> = ({
   };
 
   useTelegramBackButton([
-    { id: 'vault-delete-confirm', isOpen: Boolean(confirmDeleteId), priority: 30, onBack: () => setConfirmDeleteId(null) },
-    { id: 'vault-reading', isOpen: Boolean(selectedLinkId), priority: 20, onBack: closeReadingView },
-    { id: 'vault-archive-drawer', isOpen: isArchiveOpen && !selectedLinkId, priority: 10, onBack: () => setIsArchiveOpen(false) },
+    { id: 'vault-delete-confirm', isOpen: isActive && Boolean(confirmDeleteId), priority: 30, onBack: () => setConfirmDeleteId(null) },
+    { id: 'vault-reading', isOpen: isActive && Boolean(selectedLinkId), priority: 20, onBack: closeReadingView },
+    { id: 'vault-archive-drawer', isOpen: isActive && isArchiveOpen && !selectedLinkId, priority: 10, onBack: () => setIsArchiveOpen(false) },
   ]);
 
   // Card edit mode states
@@ -433,6 +436,18 @@ export const VaultPage: FC<VaultPageProps> = ({
     : undefined;
   const selectedIndex = selectedLink ? filteredLinks.findIndex(link => link.id === selectedLink.id) : -1;
 
+  // Pindah materi tanpa menyentuh area bawah layar. Bar pagination lama berada
+  // tepat di bawah BottomNav, sehingga 60% tombol "Berikutnya" tertutup nav.
+  const goToAdjacentLink = (step: number) => {
+    const target = filteredLinks[selectedIndex + step];
+    if (!target) return;
+    setSelectedLinkId(target.id);
+    setPlayingVideoId(null);
+    setEditingLinkId(null);
+    setConfirmDeleteId(null);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   // Tahap-4 Scale Workspace: Rak Terbaru (<=10: 7 hari terakhir + yang sedang
   // dibaca) dan Lemari Arsip bulanan; filter aktif tetap menyajikan hasil flat.
   const { mainShelfLinks, monthGroups, archiveCount } = useMemo(() => splitVaultWorkspace(filteredLinks), [filteredLinks]);
@@ -540,9 +555,39 @@ export const VaultPage: FC<VaultPageProps> = ({
               <span>Kembali ke Rak</span>
             </button>
 
-            <span className="text-xs font-semibold text-[#7A6E60]">
-              {selectedIndex >= 0 ? `Materi ${selectedIndex + 1} dari ${filteredLinks.length}` : 'Catatan Pustaka'}
-            </span>
+            {selectedIndex >= 0 ? (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => goToAdjacentLink(-1)}
+                  disabled={selectedIndex === 0}
+                  aria-label="Materi sebelumnya"
+                  title="Materi sebelumnya"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#EAE3D5] bg-white text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-[background-color,transform] disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+                >
+                  <ChevronLeft className="h-4 w-4 text-[#BA5218]" />
+                </button>
+                <span
+                  className="min-w-[2.5rem] text-center text-xs font-bold tabular-nums text-[#7A6E60] select-none"
+                  aria-live="polite"
+                  aria-label={`Materi ${selectedIndex + 1} dari ${filteredLinks.length}`}
+                >
+                  {selectedIndex + 1} / {filteredLinks.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToAdjacentLink(1)}
+                  disabled={selectedIndex === filteredLinks.length - 1}
+                  aria-label="Materi berikutnya"
+                  title="Materi berikutnya"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#EAE3D5] bg-white text-[#2E2E3A] shadow-xs hover:bg-[#FAF7F2] active:scale-95 transition-[background-color,transform] disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#BA5218]"
+                >
+                  <ChevronRight className="h-4 w-4 text-[#BA5218]" />
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs font-semibold text-[#7A6E60]">Catatan Pustaka</span>
+            )}
           </div>
 
           {/* Reading Card: Mochi Study Desk Card */}
@@ -835,47 +880,6 @@ export const VaultPage: FC<VaultPageProps> = ({
                   {isDeleting ? 'Menghapus…' : 'Ya, Hapus Materi'}
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Bottom Book Pagination Navigator */}
-          {selectedIndex >= 0 && (
-            <div className="flex items-center justify-between rounded-2xl border border-[#E8DFCF] bg-[#FDFBF7] px-3 py-1.5 shadow-xs text-xs font-bold text-[#4E4E5E]">
-              <button
-                type="button"
-                disabled={selectedIndex === 0}
-                onClick={() => {
-                  setSelectedLinkId(filteredLinks[selectedIndex - 1].id);
-                  setPlayingVideoId(null);
-                  setEditingLinkId(null);
-                  setConfirmDeleteId(null);
-                  window.scrollTo({ top: 0, behavior: 'instant' });
-                }}
-                className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-[#2E2E3A] hover:bg-[#F2ECE1] active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4 text-[#BA5218]" />
-                <span>Sebelumnya</span>
-              </button>
-
-              <div className="flex items-center text-xs font-bold text-[#6D5D4E] tracking-wide select-none">
-                <span>{selectedIndex + 1} / {filteredLinks.length}</span>
-              </div>
-
-              <button
-                type="button"
-                disabled={selectedIndex === filteredLinks.length - 1}
-                onClick={() => {
-                  setSelectedLinkId(filteredLinks[selectedIndex + 1].id);
-                  setPlayingVideoId(null);
-                  setEditingLinkId(null);
-                  setConfirmDeleteId(null);
-                  window.scrollTo({ top: 0, behavior: 'instant' });
-                }}
-                className="flex min-h-10 items-center gap-1 rounded-xl px-3 text-[#2E2E3A] hover:bg-[#F2ECE1] active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-              >
-                <span>Berikutnya</span>
-                <ChevronRight className="h-4 w-4 text-[#BA5218]" />
-              </button>
             </div>
           )}
         </div>

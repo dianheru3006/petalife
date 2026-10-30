@@ -141,7 +141,7 @@ export const VaultBookArtwork: FC<{ link: SavedLink; large?: boolean }> = memo((
             alt={`Pratinjau ${link.title}`}
             width={640}
             height={360}
-            loading="lazy"
+            loading="eager"
             decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
             onError={() => setFailedUrl(imageUrl!)}

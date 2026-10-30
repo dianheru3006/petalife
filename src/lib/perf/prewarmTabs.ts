@@ -37,14 +37,14 @@ export function shouldPrewarmChunks(network: PrewarmNetworkInfo = {}): boolean {
 }
 
 /**
- * Prefetch gambar diorama (148 KB total) bersifat konservatif:
- * HANYA aktif jika memori terbukti > 4 GB. Jika `deviceMemory` tidak tersedia
- * (undefined, mis. Safari atau WebView tanpa Device Memory API), jangan spekulatif
- * mengunduh gambar agar perangkat 4 GB tanpa API tetap terlindungi.
+ * Prefetch gambar diorama (148 KB total). Narzo 50A melaporkan deviceMemory=4;
+ * ambang lama `<= 4` justru mematikan prefetch tepat di perangkat target,
+ * sehingga latar Pustaka/Catatan baru di-decode saat tab dibuka. Aktif mulai
+ * 4 GB; perangkat 2-3 GB dan yang tidak melaporkan memori tetap dilewati.
  */
 export function shouldPrefetchImages(network: PrewarmNetworkInfo = {}): boolean {
   if (network.saveData) return false;
-  if (network.deviceMemory === undefined || network.deviceMemory <= 4) return false;
+  if (network.deviceMemory === undefined || network.deviceMemory < 4) return false;
   const effectiveType = (network.effectiveType || '').toLowerCase();
   return !SLOW_EFFECTIVE_TYPES.has(effectiveType);
 }
@@ -110,6 +110,20 @@ function prefetchImageViaLink(url: string): void {
     document.head.appendChild(link);
   } catch {
     // Diabaikan: prefetch bersifat best-effort.
+  }
+
+  // `<link rel=prefetch>` hanya mengunduh byte. Decode tetap terjadi saat tab
+  // dibuka, dan di Narzo itulah momen latar Mochi terlihat kosong. Dekode lebih
+  // awal saat idle membuat gambar sudah siap dipakai elemen <img> asli.
+  try {
+    if (typeof Image === 'undefined') return;
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = url;
+    const decoded = image.decode?.();
+    if (decoded) void decoded.catch(() => undefined);
+  } catch {
+    // Dekode awal juga best-effort.
   }
 }
 

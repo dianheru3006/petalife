@@ -43,10 +43,10 @@ export const BottomNav: FC<BottomNavProps> = ({
     <nav
       aria-label="Navigasi utama"
       className={cn(
-        'fixed bottom-[calc(1.35rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-1.75rem)] max-w-[348px] sm:max-w-[364px] z-40 backdrop-blur-xl rounded-full px-3 sm:px-3.5 py-2 sm:py-2.5 flex items-center justify-between select-none transition-all duration-500 ease-out border shadow-[0_16px_40px_rgba(46,46,58,0.12),0_2px_8px_rgba(0,0,0,0.04)]',
+        'fixed bottom-[calc(1.35rem+var(--tg-content-safe-area-inset-bottom,var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))))] left-1/2 -translate-x-1/2 w-[calc(100%-1.75rem)] max-w-[348px] sm:max-w-[364px] z-40 rounded-full px-3 sm:px-3.5 py-2 sm:py-2.5 flex items-center justify-between select-none transition-colors duration-300 ease-out border shadow-[0_16px_40px_rgba(46,46,58,0.12),0_2px_8px_rgba(0,0,0,0.04)]',
         isNightMode
-          ? 'bg-[#E5D8C3]/96 border-[#C7B59C] shadow-[0_16px_40px_rgba(60,45,30,0.18)]'
-          : 'bg-[#FAF7F2]/92 border-white/85'
+          ? 'bg-[#E5D8C3] border-[#C7B59C] shadow-[0_16px_40px_rgba(60,45,30,0.18)]'
+          : 'bg-[#FAF7F2] border-white/85'
       )}
     >
       {tabs.map(tab => {
@@ -59,7 +59,7 @@ export const BottomNav: FC<BottomNavProps> = ({
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-all duration-300 ease-out cursor-pointer min-w-[46px] min-h-[46px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
+              'transition-[background-color,color,transform] duration-200 ease-out cursor-pointer min-w-[46px] min-h-[46px] flex items-center justify-center rounded-full active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D97736]',
               isActive
                 ? isNightMode
                   ? 'bg-[#D6C7AF] text-[#2E2E3A] p-1.5 pr-4 shadow-2xs'
@@ -72,7 +72,7 @@ export const BottomNav: FC<BottomNavProps> = ({
             {/* Darker Circular Chip for Active Icon, subtle transparent for Inactive */}
             <span
               className={cn(
-                'w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ease-out',
+                'w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-[background-color,color,transform] duration-200 ease-out',
                 isActive
                   ? isNightMode
                     ? 'bg-[#AD9576] text-[#2E2E3A] shadow-2xs scale-100'
@@ -86,7 +86,7 @@ export const BottomNav: FC<BottomNavProps> = ({
             {/* Smooth Sliding Label */}
             <span
               className={cn(
-                'shrink-0 overflow-hidden whitespace-nowrap transition-all duration-300 ease-out font-black text-xs sm:text-[13px] leading-none',
+                'shrink-0 overflow-hidden whitespace-nowrap transition-opacity duration-150 ease-out font-black text-xs sm:text-[13px] leading-none',
                 isActive
                   ? 'max-w-[80px] opacity-100 ml-1.5 text-[#2E2E3A]'
                   : 'max-w-0 opacity-0 ml-0 pointer-events-none'

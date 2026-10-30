@@ -29,15 +29,16 @@ describe('shouldPrewarmChunks and shouldPrefetchImages', () => {
     expect(shouldPrefetchImages({ effectiveType: '4g' })).toBe(false);
   });
 
-  it('Sol Guard: allows chunks on 4 GB target device but guards image prefetch for > 4 GB', () => {
+  it('Sol Guard: allows chunks and image prefetch on the 4 GB target device', () => {
     // Chunks prewarm: disabled on <= 2 GB, enabled on 4 GB and above
     expect(shouldPrewarmChunks({ effectiveType: '4g', deviceMemory: 2 })).toBe(false);
     expect(shouldPrewarmChunks({ effectiveType: '4g', deviceMemory: 4 })).toBe(true);
     expect(shouldPrewarmChunks({ effectiveType: '4g', deviceMemory: 8 })).toBe(true);
 
-    // Images prefetch: disabled on <= 4 GB (preserves bitmap memory on 4 GB phone), enabled on 8 GB
+    // Images prefetch: disabled below 4 GB, enabled on the 4 GB Narzo target and above
     expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 2 })).toBe(false);
-    expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 4 })).toBe(false);
+    expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 3 })).toBe(false);
+    expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 4 })).toBe(true);
     expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: 8 })).toBe(true);
     // Conservative fallback: undefined deviceMemory disables image prefetch
     expect(shouldPrefetchImages({ effectiveType: '4g', deviceMemory: undefined })).toBe(false);
@@ -118,7 +119,7 @@ describe('prewarmInactiveTabsOnIdle', () => {
     expect(() => prewarmInactiveTabsOnIdle()).not.toThrow();
   });
 
-  it('Sol Wiring Check (4 GB client device): entry path computes prefetchImages=false and injects 0 link tags', () => {
+  it('Sol Wiring Check (4 GB client device): entry path prefetches images for the Narzo target', () => {
     const prefetchedLinks: string[] = [];
     const mockDocument = {
       readyState: 'complete',
@@ -144,7 +145,8 @@ describe('prewarmInactiveTabsOnIdle', () => {
 
     try {
       prewarmInactiveTabsOnIdle();
-      expect(prefetchedLinks).toHaveLength(0);
+      expect(prefetchedLinks).toEqual([...PREWARM_IMAGE_URLS]);
+      expect(prefetchedLinks).toHaveLength(2);
     } finally {
       vi.unstubAllGlobals();
     }

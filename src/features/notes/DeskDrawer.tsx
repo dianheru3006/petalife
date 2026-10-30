@@ -178,7 +178,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
     <section aria-label="Laci arsip catatan minggu-minggu lalu" className="relative mt-3">
       <div
         className={cn(
-          'overflow-hidden rounded-[24px] border transition-all duration-300 ease-out',
+          'overflow-hidden rounded-[24px] border transition-[box-shadow,border-color,background-color] duration-200 ease-out',
           isNightMode
             ? 'border-[#C9B59C] bg-[#E2D4BC] shadow-[0_4px_14px_#503A1F14]'
             : 'border-[#D9C9AC] bg-[#F0E7D4] shadow-[0_6px_18px_#66472612]',
@@ -231,7 +231,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
             >
               <ChevronDown
                 aria-hidden="true"
-                className={cn('h-5 w-5 motion-safe:transition-transform duration-300', isOpen && 'rotate-180')}
+                className={cn('h-5 w-5 will-change-transform transform-gpu motion-safe:transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]', isOpen && 'rotate-180')}
               />
             </span>
           </span>
@@ -328,7 +328,7 @@ export function DeskDrawer({ groups, totalCount, isNightMode = false, isOpen, on
                   </span>
                   <ChevronDown
                     aria-hidden="true"
-                    className={cn('h-4 w-4 shrink-0 text-[#9A8266] motion-safe:transition-transform duration-300', isExpanded && 'rotate-180')}
+                    className={cn('h-4 w-4 shrink-0 text-[#9A8266] will-change-transform transform-gpu motion-safe:transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]', isExpanded && 'rotate-180')}
                   />
                 </button>
                 {isExpanded && (
