@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeUrl, isValidUrl } from './urlUtils';
+import { normalizeUrl, isValidUrl, toSafeHttpUrl } from './urlUtils';
 
 describe('URL Normalization Policy', () => {
+  it('accepts web links and rejects executable or credential-bearing URLs', () => {
+    expect(toSafeHttpUrl('example.com/guide')).toBe('https://example.com/guide');
+    expect(toSafeHttpUrl('https://example.com/guide')).toBe('https://example.com/guide');
+    expect(toSafeHttpUrl('javascript:alert(1)')).toBeNull();
+    expect(toSafeHttpUrl('javascript:alert(1)@example.com')).toBeNull();
+    expect(toSafeHttpUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
+    expect(toSafeHttpUrl('https://user:pass@example.com/private')).toBeNull();
+    expect(isValidUrl('javascript:alert(1)')).toBe(false);
+  });
   it('normalizes protocol and strips www and casing', () => {
     expect(normalizeUrl('HTTP://WWW.YOUTUBE.COM/shorts/test'))
       .toBe('https://youtube.com/shorts/test');

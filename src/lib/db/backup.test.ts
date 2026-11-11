@@ -76,6 +76,18 @@ describe('Petalife backup format (P0: Settings had no export/restore)', () => {
   });
 
   describe('parseBackupFile', () => {
+    it('drops unsafe links before restoring a backup', async () => {
+      await restorePetalifeBackup({
+        schema: BACKUP_SCHEMA,
+        version: BACKUP_VERSION,
+        links: [link('safe'), link('unsafe', { url: 'javascript:alert(1)' })],
+        notes: [],
+      }, testDb, storage);
+
+      const restored = await testDb.savedLinks.toArray();
+      expect(restored.map(item => item.id)).toEqual(['safe']);
+    });
+
     it('rejects malformed JSON without throwing', () => {
       const result = parseBackupFile('{not json');
       expect(result.ok).toBe(false);

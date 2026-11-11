@@ -102,13 +102,24 @@ export function normalizeUrl(rawUrl: string): string {
  * Validates whether a string resembles a valid URL.
  */
 export function isValidUrl(urlStr: string): boolean {
-  if (!urlStr || typeof urlStr !== 'string') return false;
-  const trimmed = urlStr.trim();
-  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return toSafeHttpUrl(urlStr) !== null;
+}
+
+export function toSafeHttpUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed || /[\u0000-\u001f\u007f\\]/.test(trimmed) || trimmed.startsWith('//')) return null;
+
+  const hasScheme = /^[a-z][a-z\d+.-]*:/i.test(trimmed);
+  const hostPort = /^[^\s/?#:@]+\.[^\s/?#:@]+:\d+(?:[/?#]|$)/.test(trimmed);
+  if (hasScheme && !hostPort && !/^https?:\/\//i.test(trimmed)) return null;
+  const candidate = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
-    const parsed = new URL(withProtocol);
-    return parsed.hostname.includes('.');
+    const parsed = new URL(candidate);
+    if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname.includes('.')) return null;
+    if (parsed.username || parsed.password) return null;
+    return parsed.href;
   } catch {
-    return false;
+    return null;
   }
 }

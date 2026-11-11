@@ -1,6 +1,6 @@
 import type { SavedLink, LinkStatus } from '../types';
 import { db, PetalifeDatabase } from './database';
-import { normalizeUrl } from '../utils/urlUtils';
+import { normalizeUrl, toSafeHttpUrl } from '../utils/urlUtils';
 
 /**
  * Links Repository - Decoupled data access layer for Content Vault.
@@ -59,21 +59,21 @@ export interface CreateLinkInput {
 
 export async function createLink(input: CreateLinkInput, database: PetalifeDatabase = db): Promise<SavedLink> {
   const now = Date.now();
-  const normalized = normalizeUrl(input.url);
-
-  if (!normalized) {
+  const safeUrl = toSafeHttpUrl(input.url);
+  if (!safeUrl) {
     throw new Error('Please provide a valid URL address.');
   }
+  const normalized = normalizeUrl(safeUrl);
 
   // Check duplicate
-  const duplicate = await findDuplicateLink(input.url, database);
+  const duplicate = await findDuplicateLink(safeUrl, database);
   if (duplicate) {
     throw new Error('This link is already saved in your Vault! Review it or practice in Quiz.');
   }
 
   const newLink: SavedLink = {
     id: input.id || `link-${now}-${Math.random().toString(36).slice(2, 7)}`,
-    url: input.url.trim(),
+    url: safeUrl,
     urlHash: normalized,
     title: input.title.trim() || `Saved Link (${input.domain})`,
     platform: input.platform,
@@ -106,9 +106,15 @@ export async function updateLink(
     throw new Error(`Link with ID "${id}" was not found.`);
   }
 
+  const safeUrl = updates.url === undefined ? null : toSafeHttpUrl(updates.url);
+  if (updates.url !== undefined && !safeUrl) {
+    throw new Error('Please provide a valid URL address.');
+  }
+
   const updated: SavedLink = {
     ...existing,
     ...updates,
+    ...(safeUrl ? { url: safeUrl, urlHash: normalizeUrl(safeUrl) } : {}),
     updatedAt: Date.now(),
   };
 

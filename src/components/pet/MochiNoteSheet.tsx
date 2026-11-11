@@ -6,6 +6,7 @@ import { ExternalLink, Play, Globe, Pencil, X } from 'lucide-react';
 import { useVisualViewportInset } from '../../lib/hooks/useVisualViewportInset';
 import { useTelegramBackButton } from '../../lib/utils/telegramBack';
 import { detectPlatform, getYouTubeThumbnail } from '../../lib/utils';
+import { toSafeHttpUrl } from '../../lib/utils/urlUtils';
 import { formatStructuredNotes, getNoteViewSections, noteSummary, noteTextForDraft } from '../../lib/utils/noteView';
 import { getFocusableElements, resolveFocusTargetIndex, resolveInitialFocusIndex } from '../../lib/utils/focusTrap';
 import { VaultReadingSections } from '../../features/vault/VaultReadingSections';
@@ -150,6 +151,7 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
   if (!isOpen || !link) return null;
 
   const isYouTubeShort = link.platform === 'youtube' && detectPlatform(link.url).domain === 'YouTube Shorts';
+  const sourceHref = toSafeHttpUrl(link.url);
   const sourceDomain = link.platform === 'youtube' ? detectPlatform(link.url).domain : link.domain;
   const noteSections = getNoteViewSections(notes);
 
@@ -295,15 +297,19 @@ export const MochiNoteSheet: FC<MochiNoteSheetProps> = ({
                 <h3 className="text-sm font-bold text-[#2E2E3A] line-clamp-1 leading-snug">
                   {title || link.title || link.domain}
                 </h3>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-[#8C8275] hover:text-[#BA5218] flex items-center gap-1 mt-0.5 transition-colors group"
-                >
-                  <span className="truncate">{link.author ? `${link.author} · ${sourceDomain}` : sourceDomain}</span>
-                  <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                </a>
+                {sourceHref ? (
+                  <a
+                    href={sourceHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#8C8275] hover:text-[#BA5218] flex items-center gap-1 mt-0.5 transition-colors group"
+                  >
+                    <span className="truncate">{link.author ? `${link.author} · ${sourceDomain}` : sourceDomain}</span>
+                    <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  </a>
+                ) : (
+                  <span className="text-xs text-[#8C8275] mt-0.5">Tautan tidak aman</span>
+                )}
 
                 {/* Sol ADR-001 & ADR-003: Quality Status & Provenance Badges */}
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

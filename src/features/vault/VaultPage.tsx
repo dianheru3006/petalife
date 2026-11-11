@@ -2,6 +2,7 @@ import type { CSSProperties, FC } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SavedLink, LinkStatus, CosmeticId, CosmeticSlot } from '../../lib/types';
 import { detectPlatform, getYouTubeThumbnail, cn } from '../../lib/utils';
+import { toSafeHttpUrl } from '../../lib/utils/urlUtils';
 import { Button } from '../../components/ui/Button';
 import {
   Search,
@@ -431,6 +432,7 @@ export const VaultPage: FC<VaultPageProps> = ({
   }, [links, debouncedSearchQuery, selectedCategory, selectedStatusFilter]);
 
   const selectedLink = links.find(link => link.id === selectedLinkId);
+  const selectedLinkHref = selectedLink ? toSafeHttpUrl(selectedLink.url) : null;
   const youtubeVideoId = selectedLink?.platform === 'youtube'
     ? getYouTubeThumbnail(selectedLink.url)?.match(/\/vi\/([A-Za-z0-9_-]{11})\//)?.[1]
     : undefined;
@@ -719,9 +721,9 @@ export const VaultPage: FC<VaultPageProps> = ({
                     >
                       <VaultBookArtwork link={selectedLink} large />
                     </button>
-                  ) : (
+                  ) : selectedLinkHref ? (
                     <a
-                      href={selectedLink.url}
+                      href={selectedLinkHref}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`Buka sumber asli ${selectedLink.title}`}
@@ -729,19 +731,27 @@ export const VaultPage: FC<VaultPageProps> = ({
                     >
                       <VaultBookArtwork link={selectedLink} large />
                     </a>
+                  ) : (
+                    <div className="group block rounded-2xl">
+                      <VaultBookArtwork link={selectedLink} large />
+                    </div>
                   )}
 
                   {/* Single clean source link */}
                   <div className="flex justify-end pt-0.5">
-                    <a
-                      href={selectedLink.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8C8275] hover:text-[#BA5218] transition-colors"
-                    >
-                      <span>Buka sumber asli</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    {selectedLinkHref ? (
+                      <a
+                        href={selectedLinkHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#8C8275] hover:text-[#BA5218] transition-colors"
+                      >
+                        <span>Buka sumber asli</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : (
+                      <span className="text-xs font-semibold text-[#8C8275]">Tautan tidak aman</span>
+                    )}
                   </div>
                 </div>
 

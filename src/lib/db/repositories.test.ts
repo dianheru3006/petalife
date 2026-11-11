@@ -74,6 +74,20 @@ describe('IndexedDB Repositories & Data Layer', () => {
   });
 
   describe('Links Repository CRUD & Queries', () => {
+    it('keeps unsafe URLs out of the Vault on create and update', async () => {
+      await expect(createLink({
+        url: 'javascript:alert(1)', title: 'Unsafe', platform: 'web', domain: 'example.com',
+      }, testDb)).rejects.toThrow(/valid URL/i);
+      expect(await testDb.savedLinks.count()).toBe(0);
+
+      const saved = await createLink({
+        url: 'example.com/guide', title: 'Guide', platform: 'web', domain: 'example.com',
+      }, testDb);
+      expect(saved.url).toBe('https://example.com/guide');
+      await expect(updateLink(saved.id, { url: 'data:text/html,unsafe' }, testDb)).rejects.toThrow(/valid URL/i);
+      expect((await testDb.savedLinks.get(saved.id))?.url).toBe('https://example.com/guide');
+    });
+
     it('creates a new link with valid timestamps and default status', async () => {
       const link = await createLink(
         {

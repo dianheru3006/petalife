@@ -1,6 +1,7 @@
 import type { LinkStatus, Note, PlatformType, QuizHistoryEntry, RewardLedgerEntry, SavedLink, StudyAction, StudyEvent } from '../types';
 import type { Pet } from '../types';
 import { db, PetalifeDatabase } from './database';
+import { normalizeUrl, toSafeHttpUrl } from '../utils/urlUtils';
 import { DAILY_GOALS_STORAGE_KEY } from '../../features/dashboard/dailyGoalsStorage';
 import {
   PET_STORAGE_KEY,
@@ -92,7 +93,7 @@ const stringList = (value: unknown, max = 40): string[] =>
 function sanitizeLink(value: unknown): SavedLink | null {
   if (!isRecord(value)) return null;
   const id = text(value.id, 200);
-  const url = text(value.url, 2048);
+  const url = toSafeHttpUrl(text(value.url, 2048));
   const title = text(value.title, 300);
   if (!id || !url || !title) return null;
 
@@ -108,6 +109,7 @@ function sanitizeLink(value: unknown): SavedLink | null {
   return {
     id,
     url,
+    urlHash: normalizeUrl(url),
     title,
     platform,
     domain: text(value.domain, 120) || 'web-link',
